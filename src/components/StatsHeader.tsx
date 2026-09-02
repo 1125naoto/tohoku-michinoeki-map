@@ -18,14 +18,25 @@ export default function StatsHeader({ stats, prefFilter, onSelectPref }: Props) 
         aria-expanded={open}
         data-testid="stats-toggle"
       >
-        <span className="title">東北全体</span>
-        <span className="big" data-testid="stats-visited">
-          {stats.visited}／{stats.total}駅
+        <span className="stat-block">
+          <span className="lbl">東北</span>
+          <span className="val" data-testid="stats-visited">
+            {stats.visited}／{stats.total}駅
+          </span>
         </span>
-        <span className="big" data-testid="stats-percent">
-          {stats.percent}％
+        <span className="stat-block">
+          <span className="lbl">達成率</span>
+          <span className="val" data-testid="stats-percent">
+            {stats.percent}％
+          </span>
         </span>
-        <span className="sub">スタンプ {stats.stamped}</span>
+        <span className="stat-block">
+          <span className="lbl">スタンプ</span>
+          <span className="val" data-testid="stats-stamped">
+            {stats.stamped}
+            <small>個</small>
+          </span>
+        </span>
         <span className="chev">{open ? '▲ 閉じる' : '▼ 県別'}</span>
       </button>
       {open && (

@@ -17,12 +17,18 @@ async function noHorizontalScroll(page: import('@playwright/test').Page) {
 test('主要画面のスクリーンショット @smoke', async ({ page }, testInfo) => {
   const p = testInfo.project.name;
 
-  // 1. 地図初期表示（訪問0件）
+  // 1. 地図初期表示（訪問0件・初回は凡例が自動展開された状態）
   await page.goto('/');
   await page.waitForSelector('.leaflet-tile-loaded', { timeout: 20000 }).catch(() => {});
   await page.waitForTimeout(800);
-  await shot(page, '01-map', p);
+  await shot(page, '01-map-firstrun-legend', p);
   await noHorizontalScroll(page);
+  // 凡例を閉じて通常状態の地図を記録
+  if (await page.getByTestId('legend-panel').isVisible().catch(() => false)) {
+    await page.getByTestId('legend-toggle').click();
+  }
+  await page.waitForTimeout(400);
+  await shot(page, '01b-map', p);
 
   // 2. ピン密集地域（拡大: 仙台近郊）+ 地図拡大縮小
   await page.getByTestId('chip-宮城県').click();

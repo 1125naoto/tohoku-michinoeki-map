@@ -10,6 +10,15 @@ async function gotoStation(page: Page, id = STATION_ID) {
   await expect(page.getByTestId('station-sheet')).toBeVisible();
 }
 
+/** 初回自動展開される凡例がマーカーに重ならないよう閉じる */
+async function closeLegend(page: Page) {
+  const panel = page.getByTestId('legend-panel');
+  if (await panel.isVisible().catch(() => false)) {
+    await page.getByTestId('legend-toggle').click();
+    await expect(panel).toBeHidden();
+  }
+}
+
 test.describe('地図と詳細カード @smoke', () => {
   test('地図が表示され、帰属表示・達成率ヘッダーがある', async ({ page }) => {
     await page.goto('/');
@@ -22,9 +31,45 @@ test.describe('地図と詳細カード @smoke', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test('ピン相当のマーカーまたはクラスタが描画される', async ({ page }) => {
+  test('道の駅マーカーまたはクラスタが描画される', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.cluster-icon, .pin').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.cluster-pill, .rs-marker').first()).toBeVisible({ timeout: 15000 });
+  });
+
+  test('クラスタは紺色ピルで「N駅」表示、タップで範囲へズーム @smoke', async ({ page }) => {
+    await page.goto('/');
+    const pill = page.locator('.cluster-pill').first();
+    await expect(pill).toBeVisible({ timeout: 15000 });
+    await expect(pill).toHaveText(/^\d+駅$/);
+    const before = await page.locator('.cluster-pill').count();
+    await pill.click();
+    await page.waitForTimeout(1500);
+    const after =
+      (await page.locator('.cluster-pill').count()) + (await page.locator('.rs-marker').count());
+    expect(after).toBeGreaterThanOrEqual(before);
+  });
+
+  test('地域・表示フィルターがグループ分けされている @smoke', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('toolbar', { name: '地域で絞り込み' })).toBeVisible();
+    await expect(page.getByRole('toolbar', { name: '表示状態で絞り込み' })).toBeVisible();
+    await expect(page.locator('.fg-label').nth(0)).toHaveText('地域');
+    await expect(page.locator('.fg-label').nth(1)).toHaveText('表示');
+  });
+
+  test('凡例: 初回は自動展開、折りたたみでき、2回目以降は閉じている @smoke', async ({ page }) => {
+    await page.goto('/');
+    const panel = page.getByTestId('legend-panel');
+    await expect(panel).toBeVisible(); // 初回のみ自動展開
+    await expect(panel).toContainText('行きたい');
+    await expect(panel).toContainText('スタンプ取得済み');
+    await expect(panel).toContainText('道の駅の件数');
+    await page.getByTestId('legend-toggle').click();
+    await expect(panel).toBeHidden();
+    await page.reload();
+    await expect(page.getByTestId('legend-panel')).toBeHidden(); // 毎回大きな説明は出さない
+    await page.getByTestId('legend-toggle').click();
+    await expect(page.getByTestId('legend-panel')).toBeVisible();
   });
 });
 
@@ -63,6 +108,47 @@ test.describe('詳細カードの操作', () => {
     // 未訪問に戻す
     await page.getByTestId('btn-reset').click();
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+  });
+
+  test('ホバーで駅名ツールチップが表示される @smoke', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeLegend(page);
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    await expect(marker).toBeVisible();
+    await marker.hover();
+    await expect(page.locator('.leaflet-tooltip.rs-tooltip')).toContainText(`道の駅 ${STATION_NAME}`);
+  });
+
+  test('同じ駅への2回目タップで公式HPが開き、閉じて再タップでは開かない', async ({ page, context }) => {
+    let popups = 0;
+    context.on('page', () => popups++);
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeLegend(page);
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    await expect(marker).toBeVisible();
+    // 選択中の同じ駅をもう一度タップ → 公式情報ページ（フォールバック含む）が新タブで開く
+    const [popup] = await Promise.all([context.waitForEvent('page'), marker.click()]);
+    await popup.waitForURL(/michi-no-eki\.jp|thr\.mlit\.go\.jp|mlit\.go\.jp|https?:\/\//, { timeout: 15000 }).catch(() => {});
+    expect(popups).toBe(1);
+    await popup.close();
+    // ✕で閉じる → 次のタップは「選択のみ」で外部サイトは開かない
+    await page.getByTestId('sheet-x').click();
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
+    await marker.click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.waitForTimeout(800);
+    expect(popups).toBe(1);
+  });
+
+  test('地図の何もない場所をタップすると詳細カードが閉じる', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeLegend(page);
+    // 画面上部の海側（マーカーなし領域）をタップ
+    await page.getByTestId('map-root').click({ position: { x: 30, y: 40 } });
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
   });
 
   test('長い駅名でもカードが崩れない', async ({ page }) => {

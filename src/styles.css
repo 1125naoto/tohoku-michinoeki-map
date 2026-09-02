@@ -13,6 +13,9 @@
   --visited: #2e7d32;
   --unvisited: #d84a3a;
   --preopen: #8a8f98;
+  --stamp: #6a3ab2;
+  /* 選択状態・クラスタは訪問状態の色（緑/黄/赤）と衝突しない紺色 */
+  --select: #1c5bb0;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
   --radius: 14px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -109,32 +112,40 @@ a {
 }
 .stats-main {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
   width: 100%;
   background: none;
   padding: 2px 0;
   min-height: 0;
   text-align: left;
 }
-.stats-main .title {
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.stat-block .lbl {
+  font-size: 11px;
   font-weight: 700;
-  font-size: 15px;
-}
-.stats-main .big {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--primary);
-}
-.stats-main .sub {
   color: var(--text-sub);
-  font-size: 13px;
+}
+.stat-block .val {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.stat-block .val small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
 }
 .stats-main .chev {
   margin-left: auto;
   color: var(--text-sub);
-  font-size: 13px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 .pref-grid {
   display: grid;
@@ -165,34 +176,50 @@ a {
   font-size: 12px;
 }
 
-/* ===== フィルター行 ===== */
-.filter-row {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 8px 12px;
+/* ===== フィルター行（地域・表示の2グループ） ===== */
+.filter-groups {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  padding: 2px 0 6px;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 3px 12px;
   scrollbar-width: none;
 }
 .filter-row::-webkit-scrollbar {
   display: none;
 }
+.fg-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-sub);
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 4px 7px;
+  letter-spacing: 1px;
+  min-width: 40px;
+  text-align: center;
+}
 .chip {
   flex-shrink: 0;
   border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 14px;
-  min-height: 38px;
+  padding: 5px 12px;
+  font-size: 13px;
+  min-height: 32px;
   border: 1px solid var(--border);
   background: var(--surface);
   white-space: nowrap;
 }
 .chip.active {
-  background: var(--primary);
-  color: var(--primary-contrast);
-  border-color: var(--primary);
+  background: var(--select);
+  color: #fff;
+  border-color: var(--select);
   font-weight: 700;
 }
 
@@ -215,71 +242,174 @@ a {
   font-size: 14px;
   font-weight: 700;
 }
-.pin {
+/* ===== 道の駅サインボード型マーカー（独自SVGピクトグラム） ===== */
+.rs-marker {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 41px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+.rs-post {
+  display: block;
+}
+.rs-sign {
+  width: 34px;
+  height: 28px;
+  border-radius: 7px;
+  background: #fff;
+  border: 2.5px solid #778190;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50% 50% 50% 4px;
-  transform: rotate(-45deg);
-  border: 2px solid #fff;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
 }
-.pin > span {
-  transform: rotate(45deg);
-  font-size: 15px;
-  font-weight: 900;
-  color: #fff;
-  line-height: 1;
+.rs-post {
+  width: 4px;
+  height: 9px;
+  background: #6d757f;
+  margin: 0 auto;
+  border-radius: 0 0 2px 2px;
 }
-.pin.none {
-  background: var(--unvisited);
-}
-.pin.want {
-  background: var(--want);
-}
-.pin.visited {
-  background: var(--visited);
-}
-.pin.pre {
-  background: var(--preopen);
-}
-.pin .stamp-badge {
+.rs-badge {
   position: absolute;
-  right: -7px;
   top: -7px;
-  transform: rotate(45deg);
-  background: #7b1fa2;
-  color: #fff;
-  border-radius: 50%;
+  right: -7px;
   width: 17px;
   height: 17px;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid #fff;
-}
-.cluster-icon {
-  background: var(--primary);
-  color: #fff;
   border-radius: 50%;
+  border: 1.5px solid #fff;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* 状態: 枠色 + バッジ（色以外に記号でも判別可能） */
+.rs-marker.want .rs-sign {
+  border-color: var(--want);
+}
+.rs-marker.want .rs-badge {
+  background: var(--want);
+  color: #3d2c00;
+}
+.rs-marker.visited .rs-sign {
+  border-color: var(--visited);
+}
+.rs-marker.visited .rs-badge {
+  background: var(--visited);
+}
+.rs-marker.stamp .rs-sign {
+  border-color: var(--stamp);
+}
+.rs-marker.stamp .rs-badge {
+  background: var(--stamp);
+}
+.rs-marker.pre .rs-sign {
+  border-color: #9aa0a6;
+  border-style: dashed;
+  background: #e8eaed;
+}
+.rs-marker.pre .rs-badge {
+  background: #9aa0a6;
+}
+
+/* ===== クラスタ: 中立の紺色ピル「N駅」（状態色と非衝突） ===== */
+.cluster-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2.5px solid var(--select);
+  color: var(--select);
   font-weight: 800;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== 凡例・操作案内 ===== */
+.legend-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.legend-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.legend-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  width: 232px;
+  font-size: 12px;
+}
+.legend-panel h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.legend-item .rs-marker {
+  transform: scale(0.72);
+  transform-origin: left center;
+  width: 34px;
+  height: 41px;
+  flex-shrink: 0;
+  filter: none;
+}
+.legend-item .cluster-pill {
+  padding: 0 8px;
+  height: 24px;
+  font-size: 11px;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.legend-hint {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+
+/* Leafletツールチップ（駅名）を読みやすく */
+.leaflet-tooltip.rs-tooltip {
+  font-size: 13px;
+  font-weight: 700;
+  color: #22301f;
+  background: #fff;
+  border: 1px solid #c6ccc0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px 9px;
+  white-space: nowrap;
 }
 
 /* ===== ボトムシート ===== */
-.sheet-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.25);
-}
+/* 非モーダルのボトムシート: 地図は操作可能なまま（同じ駅への2回目タップ→公式HPを実現） */
 .sheet {
   position: absolute;
   left: 0;
@@ -288,10 +418,21 @@ a {
   z-index: 1001;
   background: var(--surface);
   border-radius: 18px 18px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
   padding: 8px 16px calc(16px + var(--safe-bottom));
-  max-height: 72%;
+  max-height: 62%;
   overflow-y: auto;
+}
+.sheet-x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
 }
 .sheet-grip {
   width: 42px;

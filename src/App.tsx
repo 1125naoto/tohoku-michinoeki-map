@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   PlanParams,
   PlannedRoute,
@@ -185,9 +185,36 @@ export default function App() {
     setRouteLine(null);
   }, []);
 
-  const openStation = useCallback((id: string) => {
-    setSelectedId(id);
-    setTab('map');
+  // 直前に選択中の駅ID（同じ駅への2回目タップ/クリック判定用。連打でも正しく動くようrefで保持）
+  const selectedIdRef = useRef<string | null>(selectedId);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  const openOfficial = useCallback((id: string) => {
+    const st = getStation(id);
+    if (!st) return;
+    // 公式URLがない施設は登録済み情報ページ（全国道の駅連絡会/国交省）へフォールバック
+    window.open(st.officialUrl ?? st.infoUrl, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const openStation = useCallback(
+    (id: string) => {
+      if (selectedIdRef.current === id) {
+        // 詳細表示中の同じ駅への2回目タップ → 公式HPを新しいタブで開く
+        openOfficial(id);
+        return;
+      }
+      // 別の駅（または未選択）→ 選択を切り替えるだけ。公式HPは開かない
+      setSelectedId(id);
+      setTab('map');
+    },
+    [openOfficial],
+  );
+
+  const closeSheet = useCallback(() => {
+    setSelectedId(null);
+    if (location.hash.startsWith('#station=')) history.replaceState(null, '', location.pathname);
   }, []);
 
   return (
@@ -198,35 +225,40 @@ export default function App() {
         </div>
       )}
       <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
-      <div className="filter-row" role="toolbar" aria-label="絞り込み">
-        <button
-          className={`chip${prefFilter === null ? ' active' : ''}`}
-          onClick={() => setPrefFilter(null)}
-          data-testid="chip-tohoku"
-        >
-          東北全体
-        </button>
-        {stats.byPref.map((p) => (
+      <div className="filter-groups">
+        <div className="filter-row" role="toolbar" aria-label="地域で絞り込み">
+          <span className="fg-label">地域</span>
           <button
-            key={p.pref}
-            className={`chip${prefFilter === p.pref ? ' active' : ''}`}
-            onClick={() => setPrefFilter(prefFilter === p.pref ? null : p.pref)}
-            data-testid={`chip-${p.pref}`}
+            className={`chip${prefFilter === null ? ' active' : ''}`}
+            onClick={() => setPrefFilter(null)}
+            data-testid="chip-tohoku"
           >
-            {p.pref.replace('県', '')} {p.visited}/{p.total}
+            東北全体
           </button>
-        ))}
-        <span style={{ borderLeft: '1px solid var(--border)', margin: '0 2px' }} />
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f.key}
-            className={`chip${statusFilter === f.key ? ' active' : ''}`}
-            onClick={() => setStatusFilter(f.key)}
-            data-testid={`filter-${f.key}`}
-          >
-            {f.label}
-          </button>
-        ))}
+          {stats.byPref.map((p) => (
+            <button
+              key={p.pref}
+              className={`chip${prefFilter === p.pref ? ' active' : ''}`}
+              onClick={() => setPrefFilter(prefFilter === p.pref ? null : p.pref)}
+              data-testid={`chip-${p.pref}`}
+            >
+              {p.pref.replace('県', '')} {p.visited}/{p.total}
+            </button>
+          ))}
+        </div>
+        <div className="filter-row" role="toolbar" aria-label="表示状態で絞り込み">
+          <span className="fg-label">表示</span>
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              className={`chip${statusFilter === f.key ? ' active' : ''}`}
+              onClick={() => setStatusFilter(f.key)}
+              data-testid={`filter-${f.key}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <main className="app-main">
@@ -238,6 +270,7 @@ export default function App() {
             prefFilter={prefFilter}
             statusFilter={statusFilter}
             onSelect={openStation}
+            onMapTap={closeSheet}
             pickMode={pickMode}
             onPick={(p) => {
               setOrigin({ lat: p.lat, lng: p.lng, label: `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
@@ -246,6 +279,7 @@ export default function App() {
             }}
             routeLine={routeLine}
             focusStationId={tab === 'map' ? selectedId : null}
+            sheetOpen={selectedId != null}
           />
           {trip && activeSaved && tab === 'map' && (
             <button className="trip-banner" onClick={() => setTab('route')} data-testid="trip-banner">
@@ -333,10 +367,7 @@ export default function App() {
             visits={visits}
             onSetStatus={setStatus}
             onSetStamp={setStamp}
-            onClose={() => {
-              setSelectedId(null);
-              if (location.hash.startsWith('#station=')) history.replaceState(null, '', location.pathname);
-            }}
+            onClose={closeSheet}
           />
         )}
       </main>

@@ -21,11 +21,15 @@ export default function StationSheet({ station: st, visits, onSetStatus, onSetSt
   const status = rec?.status ?? 'none';
   const stamp = rec?.stamp ?? false;
 
+  const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
   return (
     <>
-      <div className="sheet-backdrop" onClick={onClose} data-testid="sheet-backdrop" />
       <section className="sheet" data-testid="station-sheet" aria-label={`道の駅${st.name}の詳細`}>
         <div className="sheet-grip" />
+        <button className="sheet-x" onClick={onClose} aria-label="閉じる" data-testid="sheet-x">
+          ✕
+        </button>
         <h2>道の駅 {st.name}</h2>
         {st.kana && <p className="kana">{st.kana}</p>}
         <p className="addr">
@@ -98,6 +102,8 @@ export default function StationSheet({ station: st, visits, onSetStatus, onSetSt
           </a>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
+          💡 地図上の同じアイコンを{isTouch ? 'もう一度タップ' : 'もう一度クリック'}しても公式HPが開きます。
+          <br />
           営業時間・休館日は変わりやすいため、出発前に公式ページで最新情報を確認してください。
         </p>
         <button style={{ width: '100%', marginTop: 4 }} onClick={onClose} data-testid="sheet-close">
