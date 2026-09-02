@@ -10,8 +10,10 @@ interface Props {
   visits: VisitMap;
   prefFilter: Prefecture | null;
   statusFilter: StatusFilter;
-  /** 1回目のタップ/クリック: 選択して詳細表示（Appが同一駅の2回目を公式HPに振り分ける） */
-  onSelect: (id: string) => void;
+  /** シングルタップ確定（300ms以内に2回目が来なかった場合）: 訪問切り替え */
+  onTapStation: (id: string) => void;
+  /** 同一マーカーへの素早い2回目のタップ/ダブルクリック: 公式HPを開く（状態は変更しない） */
+  onOpenOfficial: (id: string) => void;
   /** マーカー以外の地図タップ（詳細カードを閉じる用） */
   onMapTap: () => void;
   /** 出発地点の地図指定モード */
@@ -23,6 +25,13 @@ interface Props {
   /** 詳細カード表示中か（フォーカス時に上へずらす量の判断用） */
   sheetOpen: boolean;
 }
+
+/**
+ * シングル/ダブルタップの判定時間(ms)。
+ * 1回目のタップはこの時間だけ保留し、その間に同じマーカーへ2回目が来たら
+ * シングルタップ処理をキャンセルして公式HPを開く（訪問状態は変更しない）。
+ */
+export const TAP_DECIDE_MS = 300;
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
 
@@ -51,18 +60,27 @@ export function matchesFilter(st: Station, visits: VisitMap, statusFilter: Statu
   }
 }
 
+/** 状態ごとのマーク背景色（白い図形は全状態で白のまま維持） */
+export const STATE_COLOR: Record<MarkerState, string> = {
+  none: '#1a4f9e', // 未訪問: 青
+  want: '#d9640a', // 行きたい: 濃いオレンジ
+  visited: '#198754', // 訪問済み: 緑
+  stamp: '#6a3ab2', // スタンプ取得済み: 紫
+  pre: '#8f959d', // 開業前: グレー
+};
+
 /**
  * 道の駅マーク（独自作成SVG）。
  * 公式シンボルマークは国土交通省の登録商標で利用申請が必要なため画像素材は使用せず、
- * 案内標識で一般的な意匠の特徴（濃い青の角丸正方形・白い2本の木・丸窓と縦長入口のある
+ * 案内標識で一般的な意匠の特徴（角丸正方形・白い2本の木・丸窓と縦長入口のある
  * 白い家・下部の白い道路ライン）を独自に描画したベクターデータ。
- * 外周に白い縁取りを持ち、地図上で背景に埋もれない。
+ * 背景色は訪問状態で変わる（color引数）。外周に白い縁取りを持つ。
  */
-const SIGN_SVG =
+const signSvg = (color: string) =>
   '<svg viewBox="0 0 60 60" aria-hidden="true">' +
-  // 白い縁取り + 濃い青の角丸正方形
+  // 白い縁取り + 状態色の角丸正方形
   '<rect x="0" y="0" width="60" height="60" rx="12" fill="#ffffff"/>' +
-  '<rect x="2.2" y="2.2" width="55.6" height="55.6" rx="10" fill="#1a4f9e"/>' +
+  `<rect x="2.2" y="2.2" width="55.6" height="55.6" rx="10" fill="${color}"/>` +
   // 白い木（左奥・大）: 丸い樹冠 + 幹（2本が別々の木に見えるよう間隔を確保）
   '<circle cx="18.5" cy="17.5" r="5.6" fill="#fff"/>' +
   '<circle cx="15" cy="22.5" r="4.3" fill="#fff"/>' +
@@ -75,10 +93,10 @@ const SIGN_SVG =
   '<rect x="5.8" y="33.5" width="2.6" height="13.3" fill="#fff"/>' +
   // 白い家（右）: 切妻屋根の輪郭
   '<path d="M29 24.5 L41.5 12.5 L54 24.5 V43.5 H29 Z" fill="#fff"/>' +
-  // 家の中の丸い窓（青抜き）
-  '<circle cx="41.5" cy="26.5" r="3.6" fill="#1a4f9e"/>' +
-  // 家の中の縦長の入口（青抜き）
-  '<rect x="38.4" y="33.5" width="6.2" height="10" fill="#1a4f9e"/>' +
+  // 家の中の丸い窓（背景色で抜く）
+  `<circle cx="41.5" cy="26.5" r="3.6" fill="${color}"/>` +
+  // 家の中の縦長の入口（背景色で抜く）
+  `<rect x="38.4" y="33.5" width="6.2" height="10" fill="${color}"/>` +
   // 下部の白い道路ライン
   '<rect x="5" y="46.5" width="50" height="5.2" rx="1.2" fill="#fff"/>' +
   '</svg>';
@@ -93,8 +111,8 @@ export const BADGE_SYMBOL: Record<MarkerState, string> = {
 
 export function markerHtml(state: MarkerState, stationId: string): string {
   const badge = state === 'none' ? '' : `<span class="rs-badge">${BADGE_SYMBOL[state]}</span>`;
-  // マーク本体は全状態で青白のまま（開業前のみCSSでグレー表示）。状態は右上バッジで区別
-  return `<div class="rs-marker ${state}" data-sid="${stationId}">${SIGN_SVG}${badge}</div>`;
+  // マーク全体を状態色で塗り分け（色+バッジの二重符号化）。白い図形は常に白
+  return `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}</div>`;
 }
 
 const LEGEND_SEEN_KEY = 'tohoku-me:legend-seen:v1';
@@ -165,9 +183,25 @@ function Legend() {
             <span>近くにある道の駅の件数</span>
           </div>
           <div className="legend-hint">
-            {isTouch
-              ? '1回タップで詳細・同じ駅をもう一度タップで公式HP'
-              : 'カーソルで駅名・クリックで詳細・ダブルクリックで公式HP'}
+            {isTouch ? (
+              <>
+                1タップ: 訪問済み／未訪問を切り替え
+                <br />
+                2タップ: 公式HPを開く
+                <br />
+                詳しい情報: タップ後の「詳細」ボタン
+              </>
+            ) : (
+              <>
+                カーソル: 駅名表示
+                <br />
+                1クリック: 訪問済み／未訪問を切り替え
+                <br />
+                ダブルクリック: 公式HPを開く
+                <br />
+                詳しい情報: クリック後の「詳細」ボタン
+              </>
+            )}
           </div>
         </div>
       )}
@@ -180,7 +214,8 @@ export default function MapView({
   visits,
   prefFilter,
   statusFilter,
-  onSelect,
+  onTapStation,
+  onOpenOfficial,
   onMapTap,
   pickMode,
   onPick,
@@ -194,12 +229,49 @@ export default function MapView({
   const lineRef = useRef<L.Polyline | null>(null);
   const pickRef = useRef(pickMode);
   const onPickRef = useRef(onPick);
-  const onSelectRef = useRef(onSelect);
+  const onTapRef = useRef(onTapStation);
+  const onOfficialRef = useRef(onOpenOfficial);
   const onMapTapRef = useRef(onMapTap);
   pickRef.current = pickMode;
   onPickRef.current = onPick;
-  onSelectRef.current = onSelect;
+  onTapRef.current = onTapStation;
+  onOfficialRef.current = onOpenOfficial;
   onMapTapRef.current = onMapTap;
+
+  // シングル/ダブルタップ判定（個別マーカーのみ対象。クラスタには適用しない）
+  const pendingTapRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  // click×2 と dblclick の両方から呼ばれても公式HPを二重に開かないためのガード
+  const lastOfficialRef = useRef<{ id: string; at: number } | null>(null);
+  const openOfficialOnce = (id: string) => {
+    const last = lastOfficialRef.current;
+    const now = Date.now();
+    if (last && last.id === id && now - last.at < 700) return;
+    lastOfficialRef.current = { id, at: now };
+    onOfficialRef.current(id);
+  };
+  const handleMarkerTap = (id: string) => {
+    const pending = pendingTapRef.current;
+    if (pending && pending.id === id) {
+      // 同じマーカーへの2回目 → シングルタップをキャンセルして公式HP（状態変更なし）
+      clearTimeout(pending.timer);
+      pendingTapRef.current = null;
+      openOfficialOnce(id);
+      return;
+    }
+    if (pending) {
+      // 別のマーカー → 保留中のシングルタップを即時確定（ダブルタップ扱いにしない）
+      clearTimeout(pending.timer);
+      pendingTapRef.current = null;
+      onTapRef.current(pending.id);
+    }
+    pendingTapRef.current = {
+      id,
+      timer: setTimeout(() => {
+        pendingTapRef.current = null;
+        onTapRef.current(id);
+      }, TAP_DECIDE_MS),
+    };
+  };
 
   // 初期化
   useEffect(() => {
@@ -269,10 +341,17 @@ export default function MapView({
         className: 'rs-tooltip',
         opacity: 1,
       });
-      marker.on('click', () => onSelectRef.current(st.id));
-      // マーカー連打で地図のダブルクリックズームを発火させない
+      marker.on('click', () => handleMarkerTap(st.id));
+      // 一部ブラウザ(WebKit等)は素早い2回目のclickをdblclickに集約するため、
+      // dblclickもダブルタップ=公式HPとして扱う（地図ズームへの伝播は止める）
       marker.on('dblclick', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e.originalEvent);
+        const pending = pendingTapRef.current;
+        if (pending && pending.id === st.id) {
+          clearTimeout(pending.timer);
+          pendingTapRef.current = null;
+        }
+        openOfficialOnce(st.id);
       });
       cluster.addLayer(marker);
     }

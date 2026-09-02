@@ -47,6 +47,8 @@ test.describe('地図と詳細カード @smoke', () => {
     const after =
       (await page.locator('.cluster-pill').count()) + (await page.locator('.rs-marker').count());
     expect(after).toBeGreaterThanOrEqual(before);
+    // クラスタのタップでは訪問状態を変更しない
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
   });
 
   test('地域・表示フィルターがグループ分けされている @smoke', async ({ page }) => {
@@ -64,6 +66,10 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).toContainText('行きたい');
     await expect(panel).toContainText('スタンプ取得済み');
     await expect(panel).toContainText('道の駅の件数');
+    // 新しい操作説明（1タップ/1クリック=訪問切替、2タップ/ダブルクリック=公式HP）
+    await expect(panel).toContainText('訪問済み／未訪問を切り替え');
+    await expect(panel).toContainText('公式HP');
+    await expect(panel).not.toContainText('1回タップで詳細'); // 旧案内を残さない
     await page.getByTestId('legend-toggle').click();
     await expect(panel).toBeHidden();
     await page.reload();
@@ -110,7 +116,7 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
   });
 
-  test('ホバーで駅名ツールチップが表示される @smoke', async ({ page }) => {
+  test('ホバーで駅名ツールチップが表示され、訪問状態は変わらない @smoke', async ({ page }) => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeLegend(page);
@@ -118,28 +124,96 @@ test.describe('詳細カードの操作', () => {
     await expect(marker).toBeVisible();
     await marker.hover();
     await expect(page.locator('.leaflet-tooltip.rs-tooltip')).toContainText(`道の駅 ${STATION_NAME}`);
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅'); // hoverでは変更しない
   });
 
-  test('同じ駅への2回目タップで公式HPが開き、閉じて再タップでは開かない', async ({ page, context }) => {
+  test('1タップで訪問済み⇔未訪問が切り替わり、色・達成率・保存が即時反映される', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    // 1タップ → 訪問済み（判定時間経過後に確定）
+    await marker.click();
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みにしました');
+    await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible(); // 緑+✓
+    // もう1タップ → 未訪問へ戻る + 「元に戻す」表示
+    await page.waitForTimeout(400);
+    await marker.click();
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('未訪問に戻しました');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
+    // 元に戻す → 訪問済みが復元される
+    await page.getByTestId('tap-toast-undo').click();
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    // 再読み込み後も状態と色が残る
+    await page.reload();
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible();
+  });
+
+  test('素早い2タップは訪問状態を変えずに公式HPを開く（1回目も実行されない）', async ({ page, context }) => {
     let popups = 0;
     context.on('page', () => popups++);
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    await expect(marker).toBeVisible();
-    // 選択中の同じ駅をもう一度タップ → 公式情報ページ（フォールバック含む）が新タブで開く
-    const [popup] = await Promise.all([context.waitForEvent('page'), marker.click()]);
-    await popup.waitForURL(/michi-no-eki\.jp|thr\.mlit\.go\.jp|mlit\.go\.jp|https?:\/\//, { timeout: 15000 }).catch(() => {});
+    // 実際の時間差を伴う2タップ（判定時間300ms未満の間隔）
+    const popupPromise = context.waitForEvent('page');
+    await marker.click();
+    await page.waitForTimeout(90);
+    await marker.click();
+    const popup = await popupPromise;
+    await popup.waitForURL(/https?:\/\//, { timeout: 15000 }).catch(() => {});
     expect(popups).toBe(1);
     await popup.close();
-    // ✕で閉じる → 次のタップは「選択のみ」で外部サイトは開かない
-    await page.getByTestId('sheet-x').click();
-    await expect(page.getByTestId('station-sheet')).toBeHidden();
-    await marker.click();
+    // 訪問状態は一切変わっていない（1回目のシングルタップ処理もキャンセルされている）
+    await page.waitForTimeout(600);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toHaveCount(0);
+  });
+
+  test('別の駅を連続タップしても公式HPは開かず、それぞれ訪問切替になる', async ({ page, context }) => {
+    let popups = 0;
+    context.on('page', () => popups++);
+    // 安達 上り線/下り線（約1km・同一ズームで両方DOMに存在）
+    await page.goto('/#station=mne-19019');
     await expect(page.getByTestId('station-sheet')).toBeVisible();
-    await page.waitForTimeout(800);
-    expect(popups).toBe(1);
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    const a = page.locator('[data-sid="mne-19019"]');
+    const b = page.locator('[data-sid="mne-19926"]');
+    await expect(a).toBeVisible();
+    // 300ms以内に別マーカーをタップ（重なり得るためヒットテストを迂回して発火）
+    await a.dispatchEvent('click');
+    await page.waitForTimeout(100);
+    await b.dispatchEvent('click');
+    await page.waitForTimeout(600);
+    expect(popups).toBe(0); // ダブルタップ扱いにならない
+    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // 両方とも訪問切替
+  });
+
+  test('1タップ後のポップアップの「詳細」から既存の詳細カードを開ける', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    await page.locator(`[data-sid="${STATION_ID}"]`).click();
+    await expect(page.getByTestId('tap-toast')).toBeVisible();
+    await page.getByTestId('tap-toast-detail').click();
+    const sheet = page.getByTestId('station-sheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText(STATION_NAME);
+    // 詳細カード内の行きたい・スタンプ・リンク等の既存操作が維持されている
+    await expect(sheet.getByTestId('btn-stamp')).toBeVisible();
+    await expect(sheet.getByTestId('link-official')).toBeVisible();
+    await expect(sheet.getByTestId('link-gmap')).toBeVisible();
   });
 
   test('地図の何もない場所をタップすると詳細カードが閉じる', async ({ page }) => {

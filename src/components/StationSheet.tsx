@@ -102,7 +102,8 @@ export default function StationSheet({ station: st, visits, onSetStatus, onSetSt
           </a>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
-          💡 地図上の同じアイコンを{isTouch ? 'もう一度タップ' : 'もう一度クリック'}しても公式HPが開きます。
+          💡 地図のマーカーは1{isTouch ? 'タップ' : 'クリック'}で訪問済み／未訪問の切り替え、素早い2回
+          {isTouch ? 'タップ' : 'クリック'}で公式HPが開きます。
           <br />
           営業時間・休館日は変わりやすいため、出発前に公式ページで最新情報を確認してください。
         </p>

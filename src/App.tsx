@@ -7,6 +7,7 @@ import type {
   StatusFilter,
   StopProgress,
   TripState,
+  VisitRecord,
   VisitStatus,
 } from './types';
 import { STATIONS, getStation } from './data';
@@ -185,11 +186,28 @@ export default function App() {
     setRouteLine(null);
   }, []);
 
-  // 直前に選択中の駅ID（同じ駅への2回目タップ/クリック判定用。連打でも正しく動くようrefで保持）
-  const selectedIdRef = useRef<string | null>(selectedId);
+  // 最新の訪問記録をコールバックから参照するためのref
+  const visitsRef = useRef(visits);
   useEffect(() => {
-    selectedIdRef.current = selectedId;
-  }, [selectedId]);
+    visitsRef.current = visits;
+  }, [visits]);
+
+  /** 1タップ後に表示するコンパクトなポップアップ（駅名+結果+詳細+元に戻す） */
+  interface TapToast {
+    stationId: string;
+    name: string;
+    message: string;
+    /** 元に戻す用: 変更前の記録（undefined=記録なし、null=元に戻す非表示） */
+    prev: VisitRecord | undefined | null;
+    key: number;
+  }
+  const [toast, setToast] = useState<TapToast | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((t: Omit<TapToast, 'key'>) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ ...t, key: Date.now() });
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
+  }, []);
 
   const openOfficial = useCallback((id: string) => {
     const st = getStation(id);
@@ -198,19 +216,44 @@ export default function App() {
     window.open(st.officialUrl ?? st.infoUrl, '_blank', 'noopener,noreferrer');
   }, []);
 
-  const openStation = useCallback(
+  /** 1タップ確定: 未訪問⇔訪問済みを直接切り替え（スタンプ済み・開業前は変更しない） */
+  const handleTapStation = useCallback(
     (id: string) => {
-      if (selectedIdRef.current === id) {
-        // 詳細表示中の同じ駅への2回目タップ → 公式HPを新しいタブで開く
-        openOfficial(id);
+      const st = getStation(id);
+      if (!st) return;
+      const rec = visitsRef.current[id];
+      if (st.status !== 'open') {
+        showToast({ stationId: id, name: st.name, message: '開業前の施設です', prev: null });
         return;
       }
-      // 別の駅（または未選択）→ 選択を切り替えるだけ。公式HPは開かない
-      setSelectedId(id);
-      setTab('map');
+      if (rec?.stamp) {
+        // スタンプ取得済みはタップでは変更しない（誤操作で実績を消さない）
+        showToast({ stationId: id, name: st.name, message: 'スタンプ取得済み（変更は「詳細」から）', prev: null });
+        return;
+      }
+      if (rec?.status === 'visited') {
+        setStatus(id, 'none');
+        showToast({ stationId: id, name: st.name, message: '未訪問に戻しました', prev: rec });
+      } else {
+        setStatus(id, 'visited');
+        showToast({ stationId: id, name: st.name, message: '訪問済みにしました ✓', prev: rec });
+      }
     },
-    [openOfficial],
+    [showToast, setStatus],
   );
+
+  /** 元に戻す: 変更前の記録を復元 */
+  const undoToast = useCallback(() => {
+    if (!toast || toast.prev === null) return;
+    setVisits((cur) => {
+      const next = { ...cur };
+      if (toast.prev) next[toast.stationId] = toast.prev;
+      else delete next[toast.stationId];
+      saveVisits(next);
+      return next;
+    });
+    setToast(null);
+  }, [toast]);
 
   const closeSheet = useCallback(() => {
     setSelectedId(null);
@@ -269,7 +312,8 @@ export default function App() {
             visits={visits}
             prefFilter={prefFilter}
             statusFilter={statusFilter}
-            onSelect={openStation}
+            onTapStation={handleTapStation}
+            onOpenOfficial={openOfficial}
             onMapTap={closeSheet}
             pickMode={pickMode}
             onPick={(p) => {
@@ -285,6 +329,34 @@ export default function App() {
             <button className="trip-banner" onClick={() => setTab('route')} data-testid="trip-banner">
               ▶ 旅行中: {activeSaved.name}（タップで旅行画面へ）
             </button>
+          )}
+          {toast && tab === 'map' && (
+            <div className="tap-toast" data-testid="tap-toast" key={toast.key}>
+              <div className="tap-toast-text">
+                <b data-testid="tap-toast-name">道の駅 {toast.name}</b>
+                <span data-testid="tap-toast-msg">{toast.message}</span>
+              </div>
+              <div className="tap-toast-actions">
+                {toast.prev !== null && (
+                  <button onClick={undoToast} data-testid="tap-toast-undo">
+                    元に戻す
+                  </button>
+                )}
+                <button
+                  className="btn-primary"
+                  data-testid="tap-toast-detail"
+                  onClick={() => {
+                    setSelectedId(toast.stationId);
+                    setToast(null);
+                  }}
+                >
+                  詳細
+                </button>
+                <button aria-label="閉じる" onClick={() => setToast(null)} data-testid="tap-toast-close">
+                  ✕
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

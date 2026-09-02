@@ -284,12 +284,65 @@ a {
 .rs-marker.stamp .rs-badge {
   background: var(--stamp);
 }
-/* 開業前: マーク全体を薄いグレー表示 + 「準」バッジ */
-.rs-marker.pre > svg {
-  filter: grayscale(1) brightness(1.25) opacity(0.62);
-}
+/* 開業前: グレー背景（SVG側で着色）+「準」バッジ */
 .rs-marker.pre .rs-badge {
   background: #9aa0a6;
+}
+
+/* ===== 1タップ後のポップアップ（駅名+結果+詳細+元に戻す） ===== */
+.tap-toast {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 64px;
+  z-index: 950;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toast-in 0.18s ease-out;
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.tap-toast-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+.tap-toast-text b {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tap-toast-text span {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+.tap-toast-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.tap-toast-actions button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* ===== クラスタ: 中立の紺色ピル「N駅」（状態色と非衝突） ===== */
