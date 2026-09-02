@@ -30,6 +30,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // 新しいSWを待機させず即時有効化し、開いているページも即座に制御下へ。
+        // 古いprecacheは削除（古いアイコン等が配信され続けるのを防ぐ）
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // アプリ本体+道の駅データ(JSにバンドル)をプリキャッシュ → オフラインで一覧閲覧可
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
         navigateFallback: '/index.html',

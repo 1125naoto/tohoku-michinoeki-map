@@ -207,6 +207,10 @@ test.describe('フィルターと達成率', () => {
 });
 
 test.describe('堅牢性', () => {
+  // page.route によるネットワーク遮断がService Worker経由のfetchに効かないため、
+  // このグループはSWを無効化して実行する（検証対象はUI側のエラー処理でSWとは無関係）
+  test.use({ serviceWorkers: 'block' });
+
   test('保存データが壊れていても画面が落ちない', async ({ page }) => {
     await page.addInitScript((key) => {
       localStorage.setItem(key, '{{{{ broken');

@@ -41,10 +41,29 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 // PWA Service Worker 登録（vite-plugin-pwa が生成）
-if ('serviceWorker' in navigator && !location.hostname.includes('localhost-dev')) {
+// 更新方針: 新しいSWは skipWaiting+clientsClaim で即時有効化され、
+// 制御が切り替わった瞬間にページを1回だけ自動再読み込みする。
+// これにより古いprecache（旧アイコン等）が表示され続けることを防ぎ、
+// ユーザーに手動のキャッシュ削除を求めない。
+if ('serviceWorker' in navigator) {
+  // 読み込み時点で既にSWの制御下だったページだけを対象にする
+  // （初回インストール時のclients.claimでは再読み込みしない）
+  const hadController = navigator.serviceWorker.controller != null;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
-      /* SW未生成(dev)や未対応環境では黙ってスキップ */
-    });
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then((reg) => {
+        // 表示のたびに更新確認（ブラウザ任せにせず明示的にチェック）
+        reg.update().catch(() => {});
+      })
+      .catch(() => {
+        /* SW未生成(dev)や未対応環境では黙ってスキップ */
+      });
   });
 }
