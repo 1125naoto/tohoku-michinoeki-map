@@ -70,6 +70,10 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).toContainText('訪問済み／未訪問を切り替え');
     await expect(panel).toContainText('公式HP');
     await expect(panel).not.toContainText('1回タップで詳細'); // 旧案内を残さない
+    // 凡例の「訪問済み」サンプルが赤（旧・緑の定義が残っていない）
+    const visitedSample = panel.locator('.rs-marker.visited');
+    expect(await visitedSample.innerHTML()).toContain('#d83a34');
+    expect(await panel.innerHTML()).not.toContain('#198754');
     await page.getByTestId('legend-toggle').click();
     await expect(panel).toBeHidden();
     await page.reload();
@@ -134,12 +138,18 @@ test.describe('詳細カードの操作', () => {
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    // 未訪問は青 #1a4f9e
+    await expect(marker).toBeVisible();
+    expect(await marker.innerHTML()).toContain('#1a4f9e');
     // 1タップ → 訪問済み（判定時間経過後に確定）
     await marker.click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みにしました');
     await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible(); // 緑+✓
+    const visitedMarker = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
+    await expect(visitedMarker).toBeVisible({ timeout: 10000 }); // 赤+✓
+    expect(await visitedMarker.innerHTML()).toContain('#d83a34'); // 訪問済み=赤
+    expect(await visitedMarker.innerHTML()).not.toContain('#198754'); // 旧・緑が残っていない
     // もう1タップ → 未訪問へ戻る + 「元に戻す」表示
     await page.waitForTimeout(400);
     await marker.click();
@@ -149,11 +159,13 @@ test.describe('詳細カードの操作', () => {
     // 元に戻す → 訪問済みが復元される
     await page.getByTestId('tap-toast-undo').click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    // 再読み込み後も状態と色が残る
+    // 再読み込み後も状態と赤色が残る
     await page.reload();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     await page.goto(`/#station=${STATION_ID}`);
-    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible();
+    const afterReload = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
+    await expect(afterReload).toBeVisible({ timeout: 15000 });
+    expect(await afterReload.innerHTML()).toContain('#d83a34');
   });
 
   test('素早い2タップは訪問状態を変えずに公式HPを開く（1回目も実行されない）', async ({ page, context }) => {
@@ -164,19 +176,26 @@ test.describe('詳細カードの操作', () => {
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    // 実際の時間差を伴う2タップ（判定時間300ms未満の間隔）
+    // 実際の時間差を伴う2タップ（判定窓400ms内の間隔）。
+    // 2回目はactionability待ちで判定窓を超えないよう直接イベント発火する
     const popupPromise = context.waitForEvent('page');
     await marker.click();
-    await page.waitForTimeout(90);
-    await marker.click();
+    await page.waitForTimeout(60);
+    await marker.dispatchEvent('click');
     const popup = await popupPromise;
     await popup.waitForURL(/https?:\/\//, { timeout: 15000 }).catch(() => {});
-    expect(popups).toBe(1);
+    expect(popups).toBe(1); // 公式HPは1回だけ・直接開く
     await popup.close();
+    // 中間画面（詳細シート・トースト・ダイアログ等）を一切挟んでいない
+    await page.waitForTimeout(700);
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
+    await expect(page.getByRole('dialog')).toBeHidden();
     // 訪問状態は一切変わっていない（1回目のシングルタップ処理もキャンセルされている）
-    await page.waitForTimeout(600);
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toHaveCount(0);
+    // 二重に開かない（さらに待っても2枚目のタブが出ない）
+    expect(popups).toBe(1);
   });
 
   test('別の駅を連続タップしても公式HPは開かず、それぞれ訪問切替になる', async ({ page, context }) => {

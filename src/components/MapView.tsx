@@ -29,9 +29,11 @@ interface Props {
 /**
  * シングル/ダブルタップの判定時間(ms)。
  * 1回目のタップはこの時間だけ保留し、その間に同じマーカーへ2回目が来たら
- * シングルタップ処理をキャンセルして公式HPを開く（訪問状態は変更しない）。
+ * シングルタップ処理をキャンセルして公式HPを「直接」開く（訪問状態は変更しない）。
+ * 400ms: 普通の速さの2タップを確実に拾いつつ、1タップの反応遅延が気にならない値
+ * （PC/スマホ相当の実時間差テストで確認）。
  */
-export const TAP_DECIDE_MS = 300;
+export const TAP_DECIDE_MS = 400;
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
 
@@ -64,7 +66,7 @@ export function matchesFilter(st: Station, visits: VisitMap, statusFilter: Statu
 export const STATE_COLOR: Record<MarkerState, string> = {
   none: '#1a4f9e', // 未訪問: 青
   want: '#d9640a', // 行きたい: 濃いオレンジ
-  visited: '#198754', // 訪問済み: 緑
+  visited: '#d83a34', // 訪問済み: 赤
   stamp: '#6a3ab2', // スタンプ取得済み: 紫
   pre: '#8f959d', // 開業前: グレー
 };
@@ -394,7 +396,9 @@ export default function MapView({
     if (!st) return;
     const zoom = Math.max(map.getZoom(), 12);
     const target = map.project([st.lat, st.lng], zoom).add([0, sheetOpen ? 90 : 0]);
-    map.setView(map.unproject(target, zoom), zoom, { animate: true });
+    // アニメーション中にマーカー再構築が走るとクラスタ判定が移動前のズームを
+    // 参照して個別マーカーが出ないことがあるため、非アニメで確定させる
+    map.setView(map.unproject(target, zoom), zoom, { animate: false });
   }, [focusStationId, stations, sheetOpen]);
 
   return (
