@@ -242,41 +242,27 @@ a {
   font-size: 14px;
   font-weight: 700;
 }
-/* ===== 道の駅サインボード型マーカー（独自SVGピクトグラム） ===== */
+/* ===== 道の駅マーク型マーカー（青地・白い木2本・白い家・道路ライン / 独自SVG） ===== */
 .rs-marker {
   position: relative;
   display: block;
-  width: 34px;
-  height: 41px;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+  width: 38px;
+  height: 38px;
+  /* 白縁取りはSVG内で描画。影で地図背景に埋もれないようにする（過度に大きくしない） */
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
 }
-.rs-post {
+.rs-marker > svg {
   display: block;
+  width: 100%;
+  height: 100%;
 }
-.rs-sign {
-  width: 34px;
-  height: 28px;
-  border-radius: 7px;
-  background: #fff;
-  border: 2.5px solid #778190;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-.rs-post {
-  width: 4px;
-  height: 9px;
-  background: #6d757f;
-  margin: 0 auto;
-  border-radius: 0 0 2px 2px;
-}
+/* マーク本体は全状態で青白を維持し、状態は右上バッジのみで区別 */
 .rs-badge {
   position: absolute;
   top: -7px;
   right: -7px;
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 1.5px solid #fff;
   color: #fff;
@@ -286,31 +272,21 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-/* 状態: 枠色 + バッジ（色以外に記号でも判別可能） */
-.rs-marker.want .rs-sign {
-  border-color: var(--want);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .rs-marker.want .rs-badge {
   background: var(--want);
   color: #3d2c00;
 }
-.rs-marker.visited .rs-sign {
-  border-color: var(--visited);
-}
 .rs-marker.visited .rs-badge {
   background: var(--visited);
-}
-.rs-marker.stamp .rs-sign {
-  border-color: var(--stamp);
 }
 .rs-marker.stamp .rs-badge {
   background: var(--stamp);
 }
-.rs-marker.pre .rs-sign {
-  border-color: #9aa0a6;
-  border-style: dashed;
-  background: #e8eaed;
+/* 開業前: マーク全体を薄いグレー表示 + 「準」バッジ */
+.rs-marker.pre > svg {
+  filter: grayscale(1) brightness(1.25) opacity(0.62);
 }
 .rs-marker.pre .rs-badge {
   background: #9aa0a6;
@@ -373,11 +349,17 @@ a {
   gap: 8px;
   padding: 3px 0;
 }
+.legend-item > span:first-child {
+  display: block;
+  flex-shrink: 0;
+  width: 38px;
+  height: 34px;
+}
 .legend-item .rs-marker {
-  transform: scale(0.72);
+  transform: scale(0.78);
   transform-origin: left center;
-  width: 34px;
-  height: 41px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   filter: none;
 }

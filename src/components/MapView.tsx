@@ -52,19 +52,35 @@ export function matchesFilter(st: Station, visits: VisitMap, statusFilter: Statu
 }
 
 /**
- * 道の駅サインボード型ピクトグラム（独自SVG）。
- * 公式「道の駅」ロゴは全国「道の駅」連絡会の商標のため使用せず、
- * 標識風の看板 + 緑屋根の施設 + 道路 で「道の駅」を表す独自デザイン。
+ * 道の駅マーク（独自作成SVG）。
+ * 公式シンボルマークは国土交通省の登録商標で利用申請が必要なため画像素材は使用せず、
+ * 案内標識で一般的な意匠の特徴（濃い青の角丸正方形・白い2本の木・丸窓と縦長入口のある
+ * 白い家・下部の白い道路ライン）を独自に描画したベクターデータ。
+ * 外周に白い縁取りを持ち、地図上で背景に埋もれない。
  */
 const SIGN_SVG =
-  '<svg viewBox="0 0 24 19" width="23" height="18" aria-hidden="true">' +
-  '<rect x="0" y="13.5" width="24" height="5.5" rx="1" fill="#8f98a3"/>' +
-  '<rect x="2" y="15.7" width="4" height="1.3" fill="#fff"/>' +
-  '<rect x="10" y="15.7" width="4" height="1.3" fill="#fff"/>' +
-  '<rect x="18" y="15.7" width="4" height="1.3" fill="#fff"/>' +
-  '<path d="M12 0.5 L19.5 7 L4.5 7 Z" fill="#2e7d32"/>' +
-  '<rect x="6.2" y="7" width="11.6" height="6.5" rx="0.8" fill="#57a05b"/>' +
-  '<rect x="10.6" y="9.2" width="2.8" height="4.3" fill="#fff"/>' +
+  '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+  // 白い縁取り + 濃い青の角丸正方形
+  '<rect x="0" y="0" width="60" height="60" rx="12" fill="#ffffff"/>' +
+  '<rect x="2.2" y="2.2" width="55.6" height="55.6" rx="10" fill="#1a4f9e"/>' +
+  // 白い木（左奥・大）: 丸い樹冠 + 幹（2本が別々の木に見えるよう間隔を確保）
+  '<circle cx="18.5" cy="17.5" r="5.6" fill="#fff"/>' +
+  '<circle cx="15" cy="22.5" r="4.3" fill="#fff"/>' +
+  '<circle cx="22" cy="22.5" r="4.3" fill="#fff"/>' +
+  '<rect x="17" y="24" width="3.1" height="22.8" fill="#fff"/>' +
+  // 白い木（左手前・小）
+  '<circle cx="7" cy="29" r="3.9" fill="#fff"/>' +
+  '<circle cx="4.7" cy="32.5" r="3" fill="#fff"/>' +
+  '<circle cx="9.3" cy="32.5" r="3" fill="#fff"/>' +
+  '<rect x="5.8" y="33.5" width="2.6" height="13.3" fill="#fff"/>' +
+  // 白い家（右）: 切妻屋根の輪郭
+  '<path d="M29 24.5 L41.5 12.5 L54 24.5 V43.5 H29 Z" fill="#fff"/>' +
+  // 家の中の丸い窓（青抜き）
+  '<circle cx="41.5" cy="26.5" r="3.6" fill="#1a4f9e"/>' +
+  // 家の中の縦長の入口（青抜き）
+  '<rect x="38.4" y="33.5" width="6.2" height="10" fill="#1a4f9e"/>' +
+  // 下部の白い道路ライン
+  '<rect x="5" y="46.5" width="50" height="5.2" rx="1.2" fill="#fff"/>' +
   '</svg>';
 
 export const BADGE_SYMBOL: Record<MarkerState, string> = {
@@ -77,22 +93,16 @@ export const BADGE_SYMBOL: Record<MarkerState, string> = {
 
 export function markerHtml(state: MarkerState, stationId: string): string {
   const badge = state === 'none' ? '' : `<span class="rs-badge">${BADGE_SYMBOL[state]}</span>`;
-  return (
-    `<div class="rs-marker ${state}" data-sid="${stationId}">` +
-    `<div class="rs-sign">${SIGN_SVG}</div><div class="rs-post"></div>${badge}</div>`
-  );
+  // マーク本体は全状態で青白のまま（開業前のみCSSでグレー表示）。状態は右上バッジで区別
+  return `<div class="rs-marker ${state}" data-sid="${stationId}">${SIGN_SVG}${badge}</div>`;
 }
 
 const LEGEND_SEEN_KEY = 'tohoku-me:legend-seen:v1';
 
+// 地図上とまったく同じマークHTMLを凡例でも使用（見た目の不一致を避ける）
 function LegendSample({ state }: { state: MarkerState }) {
-  const badge = state === 'none' ? null : <span className="rs-badge">{BADGE_SYMBOL[state]}</span>;
   return (
-    <span className={`rs-marker ${state}`} aria-hidden="true">
-      <span className="rs-sign" dangerouslySetInnerHTML={{ __html: SIGN_SVG }} />
-      <span className="rs-post" style={{ display: 'block' }} />
-      {badge}
-    </span>
+    <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: markerHtml(state, `legend-${state}`) }} />
   );
 }
 
@@ -246,9 +256,9 @@ export default function MapView({
         icon: L.divIcon({
           html: markerHtml(state, st.id),
           className: '',
-          iconSize: [34, 41],
-          iconAnchor: [17, 41],
-          tooltipAnchor: [0, -42],
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+          tooltipAnchor: [0, -24],
         }),
         alt: `道の駅${st.name}`,
         keyboard: true,
