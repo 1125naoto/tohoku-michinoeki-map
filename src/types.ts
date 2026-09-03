@@ -47,13 +47,20 @@ export interface StationDataFile {
   stations: Station[];
 }
 
-/** ユーザーの訪問状態 */
-export type VisitStatus = 'none' | 'want' | 'visited';
+/**
+ * ユーザーが付ける駅の状態（相互排他の主要状態）。
+ * タップするたびに unvisited → visited → wishlist → stamped → unvisited と1段階ずつ循環する。
+ * 開業前(upcoming)は駅マスターデータ(status)由来で、ユーザー操作では変更できない。
+ */
+export type StationState = 'unvisited' | 'visited' | 'wishlist' | 'stamped';
 
 export interface VisitRecord {
-  status: VisitStatus;
+  state: StationState;
+  /** 訪問済み/スタンプ取得済みになった日時 */
   visitedAt: string | null;
-  stamp: boolean;
+  /** 行きたいになった日時 */
+  wishlistAt: string | null;
+  /** スタンプ取得済みになった日時 */
   stampAt: string | null;
   updatedAt: string;
 }

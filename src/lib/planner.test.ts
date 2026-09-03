@@ -64,9 +64,9 @@ describe('ルート提案', () => {
     const visits: VisitMap = {};
     for (const st of STATIONS) {
       visits[st.id] = {
-        status: 'visited',
+        state: 'visited',
         visitedAt: '2026-01-01T00:00:00Z',
-        stamp: false,
+        wishlistAt: null,
         stampAt: null,
         updatedAt: '2026-01-01T00:00:00Z',
       };
@@ -96,9 +96,9 @@ describe('ルート提案', () => {
     )[8]; // 9番目に近い駅（通常の最多制覇では選ばれにくい距離）
     const visits: VisitMap = {
       [target.id]: {
-        status: 'want',
+        state: 'wishlist',
         visitedAt: null,
-        stamp: false,
+        wishlistAt: '2026-01-01T00:00:00Z',
         stampAt: null,
         updatedAt: '2026-01-01T00:00:00Z',
       },

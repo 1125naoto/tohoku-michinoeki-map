@@ -70,9 +70,9 @@ describe('達成率の集計', () => {
     const targets = STATIONS.slice(0, 42);
     for (const st of targets) {
       visits[st.id] = {
-        status: 'visited',
+        state: st.id === targets[0].id ? 'stamped' : 'visited',
         visitedAt: '2026-09-01T00:00:00Z',
-        stamp: st.id === targets[0].id,
+        wishlistAt: null,
         stampAt: st.id === targets[0].id ? '2026-09-01T00:00:00Z' : null,
         updatedAt: '2026-09-01T00:00:00Z',
       };
@@ -87,9 +87,9 @@ describe('達成率の集計', () => {
     const visits: VisitMap = {};
     for (const st of STATIONS) {
       visits[st.id] = {
-        status: 'visited',
+        state: 'stamped',
         visitedAt: '2026-09-01T00:00:00Z',
-        stamp: true,
+        wishlistAt: null,
         stampAt: '2026-09-01T00:00:00Z',
         updatedAt: '2026-09-01T00:00:00Z',
       };

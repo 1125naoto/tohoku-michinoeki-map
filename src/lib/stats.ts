@@ -11,6 +11,7 @@ export interface PrefStat {
 
 export interface Stats {
   total: number;
+  /** 達成数 = visited + stamped */
   visited: number;
   stamped: number;
   want: number;
@@ -31,18 +32,18 @@ export function computeStats(stations: Station[], visits: VisitMap): Stats {
     const ps = byPref.get(st.pref);
     if (!ps) continue;
     ps.total++;
-    const rec = visits[st.id];
-    if (rec?.status === 'visited') {
+    const state = visits[st.id]?.state;
+    if (state === 'visited' || state === 'stamped') {
       visited++;
       ps.visited++;
     }
-    if (rec?.status === 'want') {
-      want++;
-      ps.want++;
-    }
-    if (rec?.stamp) {
+    if (state === 'stamped') {
       stamped++;
       ps.stamped++;
+    }
+    if (state === 'wishlist') {
+      want++;
+      ps.want++;
     }
   }
   const total = stations.length;

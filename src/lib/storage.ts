@@ -2,15 +2,18 @@
  * localStorage への永続化。
  * - マスターデータ(駅一覧)とユーザー記録を完全分離（記録は駅IDのみ参照）
  * - 壊れたデータを読んでもアプリを落とさない（バックアップ退避して空で継続）
- * - 将来のスキーマ変更に備えて keyごとにバージョンを持つ
+ * - v1(status+stampフラグ) → v2(相互排他のstate) へ自動移行。v1データは消さずに残す
  */
-import type { SavedRoute, TripState, VisitMap, VisitRecord, VisitStatus } from '../types';
+import type { SavedRoute, StationState, TripState, VisitMap, VisitRecord } from '../types';
 
 export const KEYS = {
-  visits: 'tohoku-me:visits:v1',
+  visits: 'tohoku-me:visits:v2',
   routes: 'tohoku-me:routes:v1',
   trip: 'tohoku-me:trip:v1',
 } as const;
+
+/** 旧形式（〜d6dc4af）の訪問記録キー。移行後もバックアップとして残す */
+export const LEGACY_VISITS_KEY = 'tohoku-me:visits:v1';
 
 function getStore(): Storage | null {
   try {
@@ -63,15 +66,11 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-const VISIT_STATUSES: VisitStatus[] = ['none', 'want', 'visited'];
+const STATES: StationState[] = ['unvisited', 'visited', 'wishlist', 'stamped'];
 
 export function isVisitRecord(v: unknown): v is VisitRecord {
   if (!isRecord(v)) return false;
-  return (
-    VISIT_STATUSES.includes(v.status as VisitStatus) &&
-    typeof v.stamp === 'boolean' &&
-    typeof v.updatedAt === 'string'
-  );
+  return STATES.includes(v.state as StationState) && typeof v.updatedAt === 'string';
 }
 
 export function isVisitMap(v: unknown): v is VisitMap {
@@ -95,11 +94,74 @@ export function isTripState(v: unknown): v is TripState {
   return isRecord(v) && typeof v.savedRouteId === 'string' && isRecord(v.progress);
 }
 
+// ---- v1 → v2 移行 ----
+
+/**
+ * 旧形式 {status:'none'|'want'|'visited', stamp:boolean, ...} を新しい排他状態へ変換する。
+ * 優先順位: スタンプ取得済み > 行きたい > 訪問済み > 未訪問
+ */
+export function migrateLegacyVisits(rawV1: unknown): VisitMap {
+  const out: VisitMap = {};
+  if (!isRecord(rawV1)) return out;
+  for (const [id, rec] of Object.entries(rawV1)) {
+    if (!isRecord(rec)) continue;
+    const status = rec.status;
+    const stamp = rec.stamp === true;
+    let state: StationState = 'unvisited';
+    if (stamp) state = 'stamped';
+    else if (status === 'want') state = 'wishlist';
+    else if (status === 'visited') state = 'visited';
+    if (state === 'unvisited') continue; // 空記録は持ち越さない
+    const now = new Date().toISOString();
+    out[id] = {
+      state,
+      visitedAt:
+        state === 'visited' || state === 'stamped'
+          ? typeof rec.visitedAt === 'string'
+            ? rec.visitedAt
+            : now
+          : null,
+      wishlistAt: state === 'wishlist' ? (typeof rec.updatedAt === 'string' ? rec.updatedAt : now) : null,
+      stampAt: state === 'stamped' ? (typeof rec.stampAt === 'string' ? rec.stampAt : now) : null,
+      updatedAt: typeof rec.updatedAt === 'string' ? rec.updatedAt : now,
+    };
+  }
+  return out;
+}
+
 // ---- 読み書きAPI ----
 
 export function loadVisits(): VisitMap {
+  const store = getStore();
+  if (store) {
+    let hasV2 = false;
+    try {
+      hasV2 = store.getItem(KEYS.visits) != null;
+    } catch {
+      /* noop */
+    }
+    if (!hasV2) {
+      // 初回のみ v1 から移行（v1は消さずバックアップとして残す）
+      try {
+        const rawV1 = store.getItem(LEGACY_VISITS_KEY);
+        if (rawV1 != null) {
+          let migrated: VisitMap = {};
+          try {
+            migrated = migrateLegacyVisits(JSON.parse(rawV1));
+          } catch {
+            /* v1が壊れている場合は空から開始（v1自体は触らない） */
+          }
+          safeSave(KEYS.visits, migrated);
+          return migrated;
+        }
+      } catch {
+        /* noop */
+      }
+    }
+  }
   return safeLoad<VisitMap>(KEYS.visits, isVisitMap, {});
 }
+
 export function saveVisits(v: VisitMap): void {
   safeSave(KEYS.visits, v);
 }
@@ -123,7 +185,7 @@ export function saveTrip(t: TripState | null): void {
 export function clearAllUserData(): void {
   const store = getStore();
   if (!store) return;
-  for (const k of Object.values(KEYS)) {
+  for (const k of [...Object.values(KEYS), LEGACY_VISITS_KEY]) {
     try {
       store.removeItem(k);
     } catch {
@@ -132,36 +194,40 @@ export function clearAllUserData(): void {
   }
 }
 
-// ---- 訪問記録の更新ヘルパー ----
+// ---- 状態遷移 ----
 
-export function emptyRecord(): VisitRecord {
-  return { status: 'none', visitedAt: null, stamp: false, stampAt: null, updatedAt: new Date().toISOString() };
+/** タップ1回で進む循環順: 未訪問 → 訪問済み → 行きたい → スタンプ取得済み → 未訪問 */
+export const STATE_CYCLE: StationState[] = ['unvisited', 'visited', 'wishlist', 'stamped'];
+
+export function nextState(cur: StationState): StationState {
+  const i = STATE_CYCLE.indexOf(cur);
+  return STATE_CYCLE[(i + 1) % STATE_CYCLE.length];
 }
 
-export function applyStatus(map: VisitMap, stationId: string, status: VisitStatus, now = new Date()): VisitMap {
-  const prev = map[stationId] ?? emptyRecord();
-  const rec: VisitRecord = {
-    ...prev,
-    status,
-    visitedAt: status === 'visited' ? (prev.visitedAt ?? now.toISOString()) : prev.visitedAt,
-    updatedAt: now.toISOString(),
-  };
-  if (status === 'none') {
-    rec.visitedAt = null;
+/** 駅の状態を指定の排他状態へ変更する（各状態へ変わった日時を保存） */
+export function applyState(map: VisitMap, stationId: string, state: StationState, now = new Date()): VisitMap {
+  const iso = now.toISOString();
+  if (state === 'unvisited') {
+    const next = { ...map };
+    delete next[stationId];
+    return next;
   }
+  const prev = map[stationId];
+  const rec: VisitRecord = {
+    state,
+    visitedAt:
+      state === 'visited' || state === 'stamped'
+        ? state === 'visited'
+          ? iso
+          : (prev?.visitedAt ?? iso)
+        : null,
+    wishlistAt: state === 'wishlist' ? iso : null,
+    stampAt: state === 'stamped' ? iso : null,
+    updatedAt: iso,
+  };
   return { ...map, [stationId]: rec };
 }
 
-/** スタンプ取得: 内部では訪問と区別して保持しつつ、状態も visited に揃える */
-export function applyStamp(map: VisitMap, stationId: string, stamp: boolean, now = new Date()): VisitMap {
-  const prev = map[stationId] ?? emptyRecord();
-  const rec: VisitRecord = {
-    ...prev,
-    stamp,
-    stampAt: stamp ? (prev.stampAt ?? now.toISOString()) : null,
-    status: stamp ? 'visited' : prev.status,
-    visitedAt: stamp ? (prev.visitedAt ?? now.toISOString()) : prev.visitedAt,
-    updatedAt: now.toISOString(),
-  };
-  return { ...map, [stationId]: rec };
+export function stateOf(map: VisitMap, stationId: string): StationState {
+  return map[stationId]?.state ?? 'unvisited';
 }

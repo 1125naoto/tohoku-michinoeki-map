@@ -10,10 +10,11 @@ interface Props {
   visits: VisitMap;
   prefFilter: Prefecture | null;
   statusFilter: StatusFilter;
-  /** シングルタップ確定（300ms以内に2回目が来なかった場合）: 訪問切り替え */
+  /**
+   * マーカーのタップ/クリック。押すたびに即時に状態を1段階進める
+   * （時間差判定・保留タイマーは存在しない。公式HPはトースト/詳細のボタンから開く）
+   */
   onTapStation: (id: string) => void;
-  /** 同一マーカーへの素早い2回目のタップ/ダブルクリック: 公式HPを開く（状態は変更しない） */
-  onOpenOfficial: (id: string) => void;
   /** マーカー以外の地図タップ（詳細カードを閉じる用） */
   onMapTap: () => void;
   /** 出発地点の地図指定モード */
@@ -26,39 +27,37 @@ interface Props {
   sheetOpen: boolean;
 }
 
-/**
- * シングル/ダブルタップの判定時間(ms)。
- * 1回目のタップはこの時間だけ保留し、その間に同じマーカーへ2回目が来たら
- * シングルタップ処理をキャンセルして公式HPを「直接」開く（訪問状態は変更しない）。
- * 400ms: 普通の速さの2タップを確実に拾いつつ、1タップの反応遅延が気にならない値
- * （PC/スマホ相当の実時間差テストで確認）。
- */
-export const TAP_DECIDE_MS = 400;
-
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
 
+/** 排他状態 → マーカー表示状態（CSSクラス名）への対応 */
 export function visitState(st: Station, visits: VisitMap): MarkerState {
   if (st.status !== 'open') return 'pre';
-  const rec = visits[st.id];
-  if (rec?.stamp) return 'stamp';
-  if (rec?.status === 'visited') return 'visited';
-  if (rec?.status === 'want') return 'want';
-  return 'none';
+  switch (visits[st.id]?.state) {
+    case 'stamped':
+      return 'stamp';
+    case 'visited':
+      return 'visited';
+    case 'wishlist':
+      return 'want';
+    default:
+      return 'none';
+  }
 }
 
+/** 状態フィルター（相互排他: 各駅は必ずどれか1つの一覧にだけ現れる） */
 export function matchesFilter(st: Station, visits: VisitMap, statusFilter: StatusFilter): boolean {
-  const rec = visits[st.id];
+  const state = visits[st.id]?.state ?? 'unvisited';
   switch (statusFilter) {
     case 'all':
       return true;
     case 'none':
-      return st.status === 'open' && (!rec || rec.status === 'none');
+      return st.status === 'open' && state === 'unvisited';
     case 'want':
-      return rec?.status === 'want';
+      return state === 'wishlist';
     case 'visited':
-      return rec?.status === 'visited';
+      return state === 'visited';
     case 'stamp':
-      return rec?.stamp === true;
+      return state === 'stamped';
   }
 }
 
@@ -185,23 +184,13 @@ function Legend() {
             <span>近くにある道の駅の件数</span>
           </div>
           <div className="legend-hint">
-            {isTouch ? (
+            道の駅マークを押すたびに、未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問の順で切り替わります。
+            <br />
+            公式HP・詳細は、押した後に出るボタンから開けます。
+            {!isTouch && (
               <>
-                1タップ: 訪問済み／未訪問を切り替え
                 <br />
-                2タップ: 公式HPを開く
-                <br />
-                詳しい情報: タップ後の「詳細」ボタン
-              </>
-            ) : (
-              <>
-                カーソル: 駅名表示
-                <br />
-                1クリック: 訪問済み／未訪問を切り替え
-                <br />
-                ダブルクリック: 公式HPを開く
-                <br />
-                詳しい情報: クリック後の「詳細」ボタン
+                カーソルを合わせると駅名を表示します。
               </>
             )}
           </div>
@@ -217,7 +206,6 @@ export default function MapView({
   prefFilter,
   statusFilter,
   onTapStation,
-  onOpenOfficial,
   onMapTap,
   pickMode,
   onPick,
@@ -232,67 +220,23 @@ export default function MapView({
   const pickRef = useRef(pickMode);
   const onPickRef = useRef(onPick);
   const onTapRef = useRef(onTapStation);
-  const onOfficialRef = useRef(onOpenOfficial);
   const onMapTapRef = useRef(onMapTap);
   pickRef.current = pickMode;
   onPickRef.current = onPick;
   onTapRef.current = onTapStation;
-  onOfficialRef.current = onOpenOfficial;
   onMapTapRef.current = onMapTap;
 
-  // シングル/ダブルタップ判定（個別マーカーのみ対象。クラスタには適用しない）。
-  // タップ履歴（最後のタップID/時刻・保留中single・公式HPを開いた時刻）は
-  // マーカー再構築やReact再描画の影響を受けないコンポーネントレベルのrefで保持する。
-  const pendingTapRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  // 1回の物理タップから touchend と click が二重発火しても「1タップ=1段階」を守るための
+  // デデュープ（80ms未満の同一ID再入は同じ物理タップとみなす）。
+  // 履歴はマーカー再構築やReact再描画の影響を受けないコンポーネントレベルのrefで保持する。
   const lastTapRef = useRef<{ id: string; at: number } | null>(null);
-  // click×2 と dblclick の両方から呼ばれても公式HPを二重に開かないためのガード
-  const lastOfficialRef = useRef<{ id: string; at: number } | null>(null);
-  const openOfficialOnce = (id: string) => {
-    const last = lastOfficialRef.current;
-    const now = Date.now();
-    if (last && last.id === id && now - last.at < 700) return;
-    lastOfficialRef.current = { id, at: now };
-    onOfficialRef.current(id);
-  };
-  const tapLog = (ev: string, id: string) => {
-    const w = window as unknown as { __tapLog?: { t: number; ev: string; id: string }[] };
-    (w.__tapLog ??= []).push({ t: Date.now(), ev, id });
-  };
   const handleMarkerTap = (id: string) => {
-    tapLog('click', id);
-    // 同一の物理タップからtouch系とclickが二重発火した場合の防御
-    // （80ms未満の同一ID再入は同じ1タップとみなして無視する）
     const now = Date.now();
     const lastTap = lastTapRef.current;
     lastTapRef.current = { id, at: now };
-    if (lastTap && lastTap.id === id && now - lastTap.at < 80) {
-      tapLog('dedupe-skip', id);
-      return;
-    }
-    const pending = pendingTapRef.current;
-    if (pending && pending.id === id) {
-      // 同じマーカーへの2回目 → シングルタップをキャンセルして公式HP（状態変更なし）
-      clearTimeout(pending.timer);
-      pendingTapRef.current = null;
-      tapLog('double->official', id);
-      openOfficialOnce(id);
-      return;
-    }
-    if (pending) {
-      // 別のマーカー → 保留中のシングルタップを即時確定（ダブルタップ扱いにしない）
-      clearTimeout(pending.timer);
-      pendingTapRef.current = null;
-      tapLog('flush-single', pending.id);
-      onTapRef.current(pending.id);
-    }
-    pendingTapRef.current = {
-      id,
-      timer: setTimeout(() => {
-        pendingTapRef.current = null;
-        tapLog('single-exec', id);
-        onTapRef.current(id);
-      }, TAP_DECIDE_MS),
-    };
+    if (lastTap && lastTap.id === id && now - lastTap.at < 80) return;
+    // タップ間隔に関係なく、押した瞬間に状態を1段階だけ進める（保留・時間差判定なし）
+    onTapRef.current(id);
   };
 
   // 初期化
@@ -364,17 +308,10 @@ export default function MapView({
         opacity: 1,
       });
       marker.on('click', () => handleMarkerTap(st.id));
-      // 一部ブラウザ(WebKit等)は素早い2回目のclickをdblclickに集約するため、
-      // dblclickもダブルタップ=公式HPとして扱う（地図ズームへの伝播は止める）
+      // マーカー連打が地図のダブルクリックズームを発火させないよう伝播だけ止める
+      // （dblclickに機能は割り当てない。各clickが既に1段階ずつ進めている）
       marker.on('dblclick', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e.originalEvent);
-        tapLog('dblclick', st.id);
-        const pending = pendingTapRef.current;
-        if (pending && pending.id === st.id) {
-          clearTimeout(pending.timer);
-          pendingTapRef.current = null;
-        }
-        openOfficialOnce(st.id);
       });
       cluster.addLayer(marker);
     }

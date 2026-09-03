@@ -64,7 +64,8 @@ export default function TripView({
           {r.stops.map((s) => {
             const st = getStation(s.stationId);
             const done = trip.progress[s.stationId] === 'done';
-            const already = visits[s.stationId]?.status === 'visited';
+            const stState = visits[s.stationId]?.state;
+            const already = stState === 'visited' || stState === 'stamped';
             return (
               <div key={s.stationId} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed var(--border)' }}>
                 <label style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -83,7 +84,7 @@ export default function TripView({
                   <input
                     type="checkbox"
                     style={{ minHeight: 22, width: 22 }}
-                    checked={checkedStamp[s.stationId] ?? visits[s.stationId]?.stamp ?? false}
+                    checked={checkedStamp[s.stationId] ?? stState === 'stamped'}
                     onChange={(e) => setCheckedStamp({ ...checkedStamp, [s.stationId]: e.target.checked })}
                   />
                   印
@@ -98,10 +99,16 @@ export default function TripView({
             onClick={() => {
               const visitIds = r.stops
                 .map((s) => s.stationId)
-                .filter((id) => checkedVisit[id] ?? (trip.progress[id] === 'done' || visits[id]?.status === 'visited'));
+                .filter(
+                  (id) =>
+                    checkedVisit[id] ??
+                    (trip.progress[id] === 'done' ||
+                      visits[id]?.state === 'visited' ||
+                      visits[id]?.state === 'stamped'),
+                );
               const stampIds = r.stops
                 .map((s) => s.stationId)
-                .filter((id) => checkedStamp[id] ?? visits[id]?.stamp ?? false);
+                .filter((id) => checkedStamp[id] ?? visits[id]?.state === 'stamped');
               onFinish(visitIds, stampIds);
             }}
           >

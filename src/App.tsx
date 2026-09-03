@@ -4,23 +4,23 @@ import type {
   PlannedRoute,
   Prefecture,
   SavedRoute,
+  StationState,
   StatusFilter,
   StopProgress,
   TripState,
   VisitRecord,
-  VisitStatus,
 } from './types';
 import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planRoutes } from './lib/planner';
 import type { LatLng } from './lib/geo';
 import {
-  applyStamp,
-  applyStatus,
+  applyState,
   clearAllUserData,
   loadRoutes,
   loadTrip,
   loadVisits,
+  nextState,
   saveRoutes,
   saveTrip,
   saveVisits,
@@ -83,16 +83,9 @@ export default function App() {
   }, []);
 
   // ---- 訪問記録 ----
-  const setStatus = useCallback((id: string, status: VisitStatus) => {
+  const setState = useCallback((id: string, state: StationState) => {
     setVisits((prev) => {
-      const next = applyStatus(prev, id, status);
-      saveVisits(next);
-      return next;
-    });
-  }, []);
-  const setStamp = useCallback((id: string, stamp: boolean) => {
-    setVisits((prev) => {
-      const next = applyStamp(prev, id, stamp);
+      const next = applyState(prev, id, state);
       saveVisits(next);
       return next;
     });
@@ -153,8 +146,13 @@ export default function App() {
     (visitedIds: string[], stampIds: string[]) => {
       setVisits((prev) => {
         let next = prev;
-        for (const id of visitedIds) next = applyStatus(next, id, 'visited');
-        for (const id of stampIds) next = applyStamp(next, id, true);
+        const stampSet = new Set(stampIds);
+        for (const id of visitedIds) {
+          if (stampSet.has(id)) continue; // スタンプ側で処理
+          if (next[id]?.state === 'stamped') continue; // 既存スタンプを格下げしない
+          next = applyState(next, id, 'visited');
+        }
+        for (const id of stampIds) next = applyState(next, id, 'stamped');
         saveVisits(next);
         return next;
       });
@@ -230,30 +228,31 @@ export default function App() {
     }
   }, []);
 
-  /** 1タップ確定: 未訪問⇔訪問済みを直接切り替え（スタンプ済み・開業前は変更しない） */
+  /**
+   * マーカーのタップ: 状態を1段階だけ進める（未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問）。
+   * タップ間隔に関係なく、押した瞬間に即時反映する。開業前はユーザー操作では変更しない。
+   */
+  const STATE_MESSAGE: Record<StationState, string> = {
+    unvisited: '未訪問に戻しました',
+    visited: '訪問済みに変更しました ✓',
+    wishlist: '行きたいに変更しました ★',
+    stamped: 'スタンプ取得済みに変更しました 印',
+  };
   const handleTapStation = useCallback(
     (id: string) => {
       const st = getStation(id);
       if (!st) return;
-      const rec = visitsRef.current[id];
       if (st.status !== 'open') {
-        showToast({ stationId: id, name: st.name, message: '開業前の施設です', prev: null });
+        showToast({ stationId: id, name: st.name, message: '開業前の施設です（状態は変更できません）', prev: null });
         return;
       }
-      if (rec?.stamp) {
-        // スタンプ取得済みはタップでは変更しない（誤操作で実績を消さない）
-        showToast({ stationId: id, name: st.name, message: 'スタンプ取得済み（変更は「詳細」から）', prev: null });
-        return;
-      }
-      if (rec?.status === 'visited') {
-        setStatus(id, 'none');
-        showToast({ stationId: id, name: st.name, message: '未訪問に戻しました', prev: rec });
-      } else {
-        setStatus(id, 'visited');
-        showToast({ stationId: id, name: st.name, message: '訪問済みにしました ✓', prev: rec });
-      }
+      const prev = visitsRef.current[id];
+      const next = nextState(prev?.state ?? 'unvisited');
+      setState(id, next);
+      showToast({ stationId: id, name: st.name, message: STATE_MESSAGE[next], prev });
     },
-    [showToast, setStatus],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showToast, setState],
   );
 
   /** 元に戻す: 変更前の記録を復元 */
@@ -327,7 +326,6 @@ export default function App() {
             prefFilter={prefFilter}
             statusFilter={statusFilter}
             onTapStation={handleTapStation}
-            onOpenOfficial={openOfficial}
             onMapTap={closeSheet}
             pickMode={pickMode}
             onPick={(p) => {
@@ -357,6 +355,12 @@ export default function App() {
                   </button>
                 )}
                 <button
+                  data-testid="tap-toast-official"
+                  onClick={() => openOfficial(toast.stationId)}
+                >
+                  公式HP
+                </button>
+                <button
                   className="btn-primary"
                   data-testid="tap-toast-detail"
                   onClick={() => {
@@ -383,8 +387,8 @@ export default function App() {
                 visits={visits}
                 getStation={getStation}
                 onProgress={setProgress}
-                onVisit={(id) => setStatus(id, 'visited')}
-                onStamp={(id) => setStamp(id, true)}
+                onVisit={(id) => setState(id, 'visited')}
+                onStamp={(id) => setState(id, 'stamped')}
                 onFinish={finishTrip}
                 onShowMap={() => previewOnMap(activeSaved.route)}
                 onExit={() => setTab('map')}
@@ -448,13 +452,7 @@ export default function App() {
         )}
 
         {selected && tab === 'map' && (
-          <StationSheet
-            station={selected}
-            visits={visits}
-            onSetStatus={setStatus}
-            onSetStamp={setStamp}
-            onClose={closeSheet}
-          />
+          <StationSheet station={selected} visits={visits} onSetState={setState} onClose={closeSheet} />
         )}
       </main>
 

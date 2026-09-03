@@ -81,10 +81,12 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).toContainText('行きたい');
     await expect(panel).toContainText('スタンプ取得済み');
     await expect(panel).toContainText('道の駅の件数');
-    // 新しい操作説明（1タップ/1クリック=訪問切替、2タップ/ダブルクリック=公式HP）
-    await expect(panel).toContainText('訪問済み／未訪問を切り替え');
-    await expect(panel).toContainText('公式HP');
-    await expect(panel).not.toContainText('1回タップで詳細'); // 旧案内を残さない
+    // 新しい操作説明（押すたびに1段階循環）
+    await expect(panel).toContainText('未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問');
+    // 旧・時間差判定の案内を残さない
+    await expect(panel).not.toContainText('2タップ');
+    await expect(panel).not.toContainText('ダブルクリック');
+    await expect(panel).not.toContainText('素早く');
     // 凡例の「訪問済み」サンプルが赤（旧・緑の定義が残っていない）
     const visitedSample = panel.locator('.rs-marker.visited');
     expect(await visitedSample.innerHTML()).toContain('#d83a34');
@@ -113,18 +115,21 @@ test.describe('詳細カードの操作', () => {
     expect(decodeURIComponent(href!)).toContain(STATION_NAME);
   });
 
-  test('未訪問→訪問済み→未訪問、行きたい、スタンプの遷移と即時反映', async ({ page }) => {
+  test('詳細カードから排他状態を直接設定できる（行きたい/訪問/スタンプ/未訪問）', async ({ page }) => {
     await gotoStation(page);
-    // 行きたい
+    // 行きたい（達成数には含めない）
     await page.getByTestId('btn-want').click();
     await expect(page.getByTestId('station-sheet')).toContainText('行きたい');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
     // 訪問済み
     await page.getByTestId('btn-visited').click();
-    await expect(page.getByTestId('station-sheet')).toContainText('訪問済み');
+    await expect(page.getByTestId('station-sheet')).toContainText('✓ 訪問済み');
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    // スタンプ（訪問とは別管理）
+    // スタンプ取得済み（達成数+スタンプ数に含める）
     await page.getByTestId('btn-stamp').click();
     await expect(page.getByTestId('station-sheet')).toContainText('スタンプ取得済み');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
     // 再読み込み後も保持
     await page.reload();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
@@ -147,43 +152,77 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅'); // hoverでは変更しない
   });
 
-  test('1タップで訪問済み⇔未訪問が切り替わり、色・達成率・保存が即時反映される', async ({ page }) => {
+  /** マーカー背景色（2番目のrect）のfill属性とcomputed styleを取得 */
+  const markerFill = (page: Page, sid: string) =>
+    page.evaluate((id) => {
+      const rect = document.querySelector(`.rs-marker[data-sid="${id}"] svg rect:nth-of-type(2)`);
+      return rect ? { attr: rect.getAttribute('fill'), computed: getComputedStyle(rect).fill } : null;
+    }, sid);
+
+  test('タップするたびに1段階循環し、色・達成数・スタンプ数・保存が即時反映される', async ({ page }) => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    // 未訪問は青 #1a4f9e
     await expect(marker).toBeVisible();
-    expect(await marker.innerHTML()).toContain('#1a4f9e');
-    // 1タップ → 訪問済み（判定時間経過後に確定）
+    // 初期状態: 青 #1a4f9e
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+
+    // 1回目: 赤・訪問済み
     await marker.click();
-    await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みにしました');
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
     await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    const visitedMarker = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
-    await expect(visitedMarker).toBeVisible({ timeout: 10000 }); // 赤+✓
-    expect(await visitedMarker.innerHTML()).toContain('#d83a34'); // 訪問済み=赤
-    expect(await visitedMarker.innerHTML()).not.toContain('#198754'); // 旧・緑が残っていない
-    // もう1タップ → 未訪問へ戻る + 「元に戻す」表示
-    await page.waitForTimeout(400);
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
+
+    // 2回目: オレンジ・行きたい（達成数から外れる）
+    await page.waitForTimeout(500);
+    await marker.click();
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('行きたいに変更しました');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d9640a');
+
+    // 元に戻す → 直前の訪問済みへ復元
+    await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
+    await page.getByTestId('tap-toast-undo').click();
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
+
+    // 赤→オレンジ→紫: スタンプ取得済み（達成数+スタンプ数に加算）
+    await page.waitForTimeout(500);
+    await marker.click(); // → wishlist
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await page.waitForTimeout(500);
+    await marker.click(); // → stamped
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('スタンプ取得済みに変更しました');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
+    await expect(page.locator(`.rs-marker.stamp[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#6a3ab2');
+
+    // 4回目: 青・未訪問へ戻る（達成数・スタンプ数から外れる）
+    await page.waitForTimeout(500);
     await marker.click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('未訪問に戻しました');
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
-    // 元に戻す → 訪問済みが復元される
-    await page.getByTestId('tap-toast-undo').click();
+    await expect(page.getByTestId('stats-stamped')).toContainText('0');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+
+    // もう1周目の先頭へ: 赤に戻り、再読み込み後も維持される
+    await page.waitForTimeout(500);
+    await marker.click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    // 再読み込み後も状態と赤色が残る
     await page.reload();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     await page.goto(`/#station=${STATION_ID}`);
-    const afterReload = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
-    await expect(afterReload).toBeVisible({ timeout: 15000 });
-    expect(await afterReload.innerHTML()).toContain('#d83a34');
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 15000 });
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
   });
 
-  test('素早い2タップは訪問状態を変えずに公式HPを開く（1回目も実行されない）', async ({ page, context }) => {
+  test('連打でも1タップ=1段階（タップ間隔に依存しない・タップ回数で公式HPは開かない）', async ({ page, context }) => {
     let popups = 0;
     context.on('page', () => popups++);
     await page.goto(`/#station=${STATION_ID}`);
@@ -191,29 +230,26 @@ test.describe('詳細カードの操作', () => {
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    // 実際の時間差を伴う2タップ（判定窓400ms内の間隔）。
-    // 2回目はactionability待ちで判定窓を超えないよう直接イベント発火する
-    const popupPromise = context.waitForEvent('page');
+    // 素早めの連続2タップ → ちょうど2段階進む（未訪問→訪問済み→行きたい）
     await marker.click();
-    await page.waitForTimeout(60);
-    await marker.dispatchEvent('click');
-    const popup = await popupPromise;
-    await popup.waitForURL(/https?:\/\//, { timeout: 15000 }).catch(() => {});
-    expect(popups).toBe(1); // 公式HPは1回だけ・直接開く
-    await popup.close();
-    // 中間画面（詳細シート・トースト・ダイアログ等）を一切挟んでいない
-    await page.waitForTimeout(700);
-    await expect(page.getByTestId('station-sheet')).toBeHidden();
-    await expect(page.getByTestId('tap-toast')).toBeHidden();
-    await expect(page.getByRole('dialog')).toBeHidden();
-    // 訪問状態は一切変わっていない（1回目のシングルタップ処理もキャンセルされている）
+    await page.waitForTimeout(250);
+    await marker.click();
+    await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toHaveCount(0);
-    // 二重に開かない（さらに待っても2枚目のタブが出ない）
-    expect(popups).toBe(1);
+    // さらに2タップ → 紫→青（1周完了）
+    await page.waitForTimeout(250);
+    await marker.click();
+    await page.waitForTimeout(250);
+    await marker.click();
+    await page.waitForTimeout(600);
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('0');
+    // タップ回数では公式HPを開かない
+    expect(popups).toBe(0);
   });
 
-  test('別の駅を連続タップしても公式HPは開かず、それぞれ訪問切替になる', async ({ page, context }) => {
+  test('別の駅を連続タップしても、それぞれ独立に1段階だけ進む', async ({ page, context }) => {
     let popups = 0;
     context.on('page', () => popups++);
     // 安達 上り線/下り線（約1km・同一ズームで両方DOMに存在）
@@ -224,16 +260,16 @@ test.describe('詳細カードの操作', () => {
     const a = page.locator('[data-sid="mne-19019"]');
     const b = page.locator('[data-sid="mne-19926"]');
     await expect(a).toBeVisible();
-    // 300ms以内に別マーカーをタップ（重なり得るためヒットテストを迂回して発火）
+    // 短い間隔で別マーカーをタップ（重なり得るためヒットテストを迂回して発火）
     await a.dispatchEvent('click');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(120);
     await b.dispatchEvent('click');
     await page.waitForTimeout(600);
-    expect(popups).toBe(0); // ダブルタップ扱いにならない
-    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // 両方とも訪問切替
+    expect(popups).toBe(0);
+    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // 両方とも1段階（訪問済み）
   });
 
-  test('実ポインター操作: 1タップ切替(赤#d83a34)と2タップ公式HP直行 @smoke', async ({ page, context }, testInfo) => {
+  test('実ポインター操作: 青→赤→オレンジ→紫→青のフルサイクルとトーストの公式HP @smoke', async ({ page, context }, testInfo) => {
     const isTouch = testInfo.project.name !== 'desktop';
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
@@ -247,35 +283,33 @@ test.describe('詳細カードの操作', () => {
     // 実デバイス相当の入力（座標指定）: スマホ=touchscreen.tap / PC=mouse.click
     const tap = async () => (isTouch ? page.touchscreen.tap(cx, cy) : page.mouse.click(cx, cy));
 
-    // --- 1タップ → 赤 #d83a34 ---
-    await tap();
-    await page.waitForTimeout(700); // 判定時間400ms + 描画余裕
-    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    const fill = await page.evaluate((sid) => {
-      const rect = document.querySelector(`.rs-marker[data-sid="${sid}"] svg rect:nth-of-type(2)`);
-      return rect ? { attr: rect.getAttribute('fill'), computed: getComputedStyle(rect).fill } : null;
-    }, STATION_ID);
-    expect(fill?.attr).toBe('#d83a34'); // SVG属性
-    expect(fill?.computed).toBe('rgb(216, 58, 52)'); // 実表示色（computed style）
-    // --- もう1タップ → 青へ戻す ---
-    await tap();
-    await page.waitForTimeout(700);
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    const expectStage = async (attr: string, computed: string, stats: string, stamped: string) => {
+      await page.waitForTimeout(600);
+      const fill = await markerFill(page, STATION_ID);
+      expect(fill?.attr).toBe(attr);
+      expect(fill?.computed).toBe(computed);
+      await expect(page.getByTestId('stats-visited')).toContainText(stats);
+      await expect(page.getByTestId('stats-stamped')).toContainText(stamped);
+    };
 
-    // --- 2タップ（実座標・実時間差150ms）→ 公式HP直行・状態不変・点滅なし ---
-    const lsBefore = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v1'));
-    await page.evaluate((sid) => {
-      (window as unknown as { __classLog: string[] }).__classLog = [];
-      const obs = new MutationObserver(() => {
-        const m = document.querySelector(`.rs-marker[data-sid="${sid}"]`);
-        if (m) (window as unknown as { __classLog: string[] }).__classLog.push(m.className);
-      });
-      obs.observe(document.querySelector('.map-root')!, { subtree: true, childList: true, attributes: true });
-    }, STATION_ID);
+    await tap(); // 1回目: 青→赤
+    await expectStage('#d83a34', 'rgb(216, 58, 52)', '1／182駅', '0');
+    await tap(); // 2回目: 赤→オレンジ
+    await expectStage('#d9640a', 'rgb(217, 100, 10)', '0／182駅', '0');
+    await tap(); // 3回目: オレンジ→紫
+    await expectStage('#6a3ab2', 'rgb(106, 58, 178)', '1／182駅', '1');
+    await tap(); // 4回目: 紫→青
+    await expectStage('#1a4f9e', 'rgb(26, 79, 158)', '0／182駅', '0');
+
+    // touchend/click二重発火があれば1タップで2段階進むはず → 上の各段階検証がそれを排除している
+
+    // トーストの「公式HP」ボタン → 中間画面なしで公式ページを直接開き、状態は変わらない
+    await tap(); // → 訪問済み(赤)・トースト表示
+    await page.waitForTimeout(400);
+    await expect(page.getByTestId('tap-toast')).toBeVisible();
+    const lsBefore = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
     const popupPromise = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
-    await tap();
-    await page.waitForTimeout(150);
-    await tap();
+    await page.getByTestId('tap-toast-official').click();
     const popup = await popupPromise;
     let landedUrl = '';
     if (popup) {
@@ -283,24 +317,15 @@ test.describe('詳細カードの操作', () => {
       landedUrl = popup.url();
       await popup.close();
     } else {
-      // ポップアップ不可の環境では現在のタブで直接遷移する仕様
-      await page.waitForURL(/michi-no-eki\.jp|mlit\.go\.jp/, { timeout: 15000 });
+      await page.waitForURL(/michi-no-eki\.jp|mlit\.go\.jp|shichinohe/, { timeout: 15000 });
       landedUrl = page.url();
       await page.goBack();
     }
-    expect(landedUrl).toMatch(/michi-no-eki\.jp|mlit\.go\.jp|https?:\/\//);
-    await page.waitForTimeout(700);
-    // 訪問状態・記録が一切変わっていない（青→赤→青の点滅もない）
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    const lsAfter = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v1'));
+    expect(landedUrl).toMatch(/https?:\/\//);
+    await page.waitForTimeout(500);
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅'); // 公式HPで状態は変わらない
+    const lsAfter = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
     expect(lsAfter).toBe(lsBefore);
-    const classLog = await page.evaluate(
-      () => (window as unknown as { __classLog: string[] }).__classLog ?? [],
-    );
-    expect(classLog.some((c) => c.includes('visited'))).toBe(false);
-    // 中間画面（詳細シート・トースト）も開いていない
-    await expect(page.getByTestId('station-sheet')).toBeHidden();
-    await expect(page.getByTestId('tap-toast')).toBeHidden();
   });
 
   test('1タップ後のポップアップの「詳細」から既存の詳細カードを開ける', async ({ page }) => {
@@ -310,6 +335,9 @@ test.describe('詳細カードの操作', () => {
     await closeLegend(page);
     await page.locator(`[data-sid="${STATION_ID}"]`).click();
     await expect(page.getByTestId('tap-toast')).toBeVisible();
+    // トーストには公式HP・詳細・元に戻すの独立ボタンがある
+    await expect(page.getByTestId('tap-toast-official')).toBeVisible();
+    await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
     await page.getByTestId('tap-toast-detail').click();
     const sheet = page.getByTestId('station-sheet');
     await expect(sheet).toBeVisible();
@@ -349,6 +377,27 @@ test.describe('フィルターと達成率', () => {
     await page.getByTestId('filter-visited').click();
     await expect(page.getByTestId('map-root')).toBeVisible();
     await page.getByTestId('filter-all').click();
+  });
+
+  test('状態フィルターが排他状態と連動する（訪問済み⇔行きたいの移動）', async ({ page }) => {
+    await gotoStation(page);
+    await page.getByTestId('btn-visited').click(); // 詳細から訪問済みへ
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    // 訪問済み一覧に出る / 未訪問一覧から消える
+    await page.getByTestId('filter-visited').click();
+    await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('filter-none').click();
+    await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toHaveCount(0);
+    // タップで行きたいへ → 訪問済み一覧から消え、行きたい一覧に出る
+    await page.getByTestId('filter-all').click();
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // visited → wishlist
+    await page.waitForTimeout(400);
+    await page.getByTestId('filter-want').click();
+    await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('filter-visited').click();
+    await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toHaveCount(0);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅'); // 達成数から外れる
   });
 
   test('県別グリッドの分母が自動計算されている @smoke', async ({ page }) => {
@@ -496,8 +545,9 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
   });
 
-  test('候補0件時の表示', async ({ page }) => {
-    // 全駅訪問済みにして未訪問のみで検索
+  test('候補0件時の表示（状態変更は再読み込みなしでルート候補へ反映される）', async ({ page }) => {
+    // 全駅訪問済み(v2)にして未訪問のみで検索。ルート計算は保存値を都度読むため
+    // ページ再読み込みなしで反映されることも同時に検証する
     await page.goto('/');
     const ids = await page.evaluate(() => (window as unknown as { __stationIds?: string[] }).__stationIds);
     await page.evaluate(
@@ -505,13 +555,13 @@ test.describe('ルート提案から旅行中まで', () => {
         const now = new Date().toISOString();
         const map: Record<string, unknown> = {};
         for (const id of idList as string[]) {
-          map[id] = { status: 'visited', visitedAt: now, stamp: false, stampAt: null, updatedAt: now };
+          map[id] = { state: 'visited', visitedAt: now, wishlistAt: null, stampAt: null, updatedAt: now };
         }
         localStorage.setItem(key as string, JSON.stringify(map));
       },
-      [VISITS_KEY, ids] as const,
+      ['tohoku-me:visits:v2', ids] as const,
     );
-    await page.reload();
+    // 再読み込みしない
     await page.getByTestId('tab-route').click();
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);

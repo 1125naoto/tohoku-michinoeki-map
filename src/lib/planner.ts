@@ -28,16 +28,18 @@ function buildCandidates(stations: Station[], visits: VisitMap, p: PlanParams): 
     .filter((st) => (p.prefs.length === 0 ? true : p.prefs.includes(st.pref)))
     .filter((st) => (p.crossPref ? true : st.pref === (p.prefs.length === 1 ? p.prefs[0] : originPref)))
     .map((st) => {
-      const rec = visits[st.id];
+      const state = visits[st.id]?.state ?? 'unvisited';
       return {
         st,
-        want: rec?.status === 'want',
-        visited: rec?.status === 'visited',
+        // wishlist は候補に含め、行きたい優先コースで加点される
+        want: state === 'wishlist',
+        // visited / stamped は未訪問ルート候補から除外
+        visited: state === 'visited' || state === 'stamped',
       };
     })
     .filter((c) => {
       if (p.target === 'all') return true;
-      return !c.visited; // unvisited / want_priority は訪問済みを除外
+      return !c.visited; // unvisited / want_priority は訪問済み(スタンプ含む)を除外
     });
 }
 
