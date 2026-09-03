@@ -98,6 +98,12 @@ export interface PlanParams {
   includeVisited: boolean;
   /** スタンプ済みも候補に含める（初期OFF） */
   includeStamped: boolean;
+  /** 営業時間内に到着できる駅を優先（初期ON。時間外予想は優先度を下げるが完全除外はしない） */
+  preferOpenHours: boolean;
+  /** 営業時間外予想の駅も候補に含める（初期ON。OFFで除外） */
+  includeClosedHours: boolean;
+  /** 営業時間不明（要確認）の駅も候補に含める（初期ON。OFFで除外） */
+  includeUnknownHours: boolean;
 }
 
 export interface RouteLeg {
@@ -139,6 +145,8 @@ export interface PlannedRoute {
   returnAt: string;
   /** 'road'=実道路時間(OSRM) / 'approx'=概算 */
   roadData: 'road' | 'approx';
+  /** 到着予定時刻で見た営業見込みの内訳 */
+  hoursSummary: { open: number; closing: number; closed: number; unknown: number };
 }
 
 /** 保存済みルート */

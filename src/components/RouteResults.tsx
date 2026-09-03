@@ -2,6 +2,27 @@ import { useState } from 'react';
 import type { PlannedRoute, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { directionsUrls } from '../lib/gmaps';
+import { statusAtArrival, type ArrivalHours } from '../lib/hours';
+
+/** 到着見込みの小さなバッジ */
+const ARRIVAL_BADGE: Record<ArrivalHours, { cls: string; text: string }> = {
+  open: { cls: 'hopen', text: '営業中' },
+  closing: { cls: 'want', text: 'まもなく終了' },
+  closed: { cls: 'hclosed', text: '時間外の可能性' },
+  unknown: { cls: 'pre', text: '要確認' },
+};
+
+/** コースカードの営業見込みサマリー */
+export function HoursSummaryRow({ r }: { r: PlannedRoute }) {
+  const s = r.hoursSummary;
+  return (
+    <div className="route-meta" data-testid="hours-summary" style={{ marginTop: 2 }}>
+      <span>🕒 営業中に到着見込み {s.open + s.closing}駅</span>
+      {s.closed > 0 && <span>時間外の可能性 {s.closed}駅</span>}
+      {s.unknown > 0 && <span>要確認 {s.unknown}駅</span>}
+    </div>
+  );
+}
 
 interface Props {
   routes: PlannedRoute[];
@@ -41,6 +62,8 @@ function RoadDataNote({ r }: { r: PlannedRoute }) {
       {r.roadData === 'road'
         ? '実際の道路にもとづく時間ですが、リアルタイムの渋滞は反映していません。出発前にGoogleマップで最新の状況を確認してください。'
         : '所要時間は目安です。実際の経路・渋滞・通行止めはGoogleマップで確認してください。'}
+      <br />
+      営業の見込みは通常営業時間に基づく目安です。臨時休業・季節変更は公式情報をご確認ください。
     </div>
   );
 }
@@ -71,13 +94,17 @@ export function RouteTimeline({
         const state = progress?.[s.stationId];
         const cls =
           s.stationId === currentId ? 'current' : state === 'done' ? 'done' : state === 'skipped' ? 'skipped' : '';
+        const arrival = ARRIVAL_BADGE[statusAtArrival(s.stationId, new Date(s.arriveAt))];
         return (
           <li key={s.stationId} className={cls}>
             <span className="time">{formatHM(new Date(s.arriveAt))}</span>
             <span>
               <b>
                 {i + 1}. 道の駅 {st?.name ?? s.stationId}
-              </b>
+              </b>{' '}
+              <span className={`badge ${arrival.cls}`} style={{ fontSize: 11 }}>
+                {arrival.text}
+              </span>
               <br />
               <span className="leg">
                 ← 約{leg.distanceKm}km・{formatMin(leg.driveMin)} ／ 滞在{s.stayMin}分（
@@ -188,6 +215,7 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
                 {r.params.returnToStart ? '帰着' : 'ゴール'}
               </span>
             </div>
+            <HoursSummaryRow r={r} />
           </button>
         ))}
         <button style={{ width: '100%' }} onClick={onBack} data-testid="route-back">
@@ -223,6 +251,7 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
           </span>
           <span>総走行 約{open.totalKm}km</span>
         </div>
+        <HoursSummaryRow r={open} />
         <RouteTimeline r={open} getStation={getStation} />
         <RoadDataNote r={open} />
       </div>

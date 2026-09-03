@@ -17,13 +17,16 @@ async function noHorizontalScroll(page: import('@playwright/test').Page) {
 test('主要画面のスクリーンショット @smoke', async ({ page }, testInfo) => {
   const p = testInfo.project.name;
 
-  // 1. 地図初期表示（訪問0件・初回は凡例が自動展開された状態）
+  // 1. 地図初期表示（訪問0件・初回は凡例+ホーム画面追加案内が表示された状態）
   await page.goto('/');
   await page.waitForSelector('.leaflet-tile-loaded', { timeout: 20000 }).catch(() => {});
   await page.waitForTimeout(800);
   await shot(page, '01-map-firstrun-legend', p);
   await noHorizontalScroll(page);
-  // 凡例を閉じて通常状態の地図を記録
+  // 案内・凡例を閉じて通常状態の地図を記録
+  if (await page.getByTestId('a2hs-banner').isVisible().catch(() => false)) {
+    await page.getByTestId('a2hs-close').click();
+  }
   if (await page.getByTestId('legend-panel').isVisible().catch(() => false)) {
     await page.getByTestId('legend-toggle').click();
   }
@@ -94,4 +97,39 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
   await expect(page.getByTestId('offline-banner')).toBeVisible();
   await shot(page, '10-offline', p);
   await noHorizontalScroll(page);
+});
+
+test('営業状態のスクリーンショット（時刻固定） @smoke', async ({ page }, testInfo) => {
+  const p = testInfo.project.name;
+  // 営業中（JST 金曜10:00）。先にオーバーレイを閉じてからディープリンクする
+  await page.clock.install({ time: new Date('2026-09-04T01:00:00Z') });
+  await page.goto('/');
+  if (await page.getByTestId('a2hs-banner').isVisible().catch(() => false))
+    await page.getByTestId('a2hs-close').click();
+  if (await page.getByTestId('legend-panel').isVisible().catch(() => false))
+    await page.getByTestId('legend-toggle').click();
+  await page.goto('/#station=mne-18900');
+  await expect(page.getByTestId('hours-status')).toContainText('営業中');
+  await page.waitForTimeout(600);
+  await shot(page, '11-hours-open', p);
+  // 営業時間の詳細展開
+  await page.getByTestId('hours-detail-toggle').click();
+  await shot(page, '12-hours-detail', p);
+
+  // まもなく終了（JST 17:30）※同一ハッシュへのgotoはリロードされないためreloadで反映
+  await page.clock.setFixedTime(new Date('2026-09-04T08:30:00Z'));
+  await page.reload();
+  await expect(page.getByTestId('hours-status')).toContainText('まもなく終了');
+  await shot(page, '13-hours-closing', p);
+
+  // 営業時間外（JST 23:00）
+  await page.clock.setFixedTime(new Date('2026-09-04T14:00:00Z'));
+  await page.reload();
+  await expect(page.getByTestId('hours-status')).toContainText('営業時間外');
+  await shot(page, '14-hours-closed', p);
+
+  // 要確認
+  await page.goto('/#station=mne-22686');
+  await expect(page.getByTestId('hours-status')).toContainText('要確認');
+  await shot(page, '15-hours-unknown', p);
 });

@@ -4,6 +4,7 @@ import 'leaflet.markercluster';
 import type { Prefecture, Station, StatusFilter, VisitMap } from '../types';
 import { TOHOKU_BOUNDS } from '../data';
 import type { LatLng } from '../lib/geo';
+import { getStatus, type HoursKind } from '../lib/hours';
 
 interface Props {
   stations: Station[];
@@ -27,6 +28,8 @@ interface Props {
   focusStationId: string | null;
   /** 詳細カード表示中か（フォーカス時に上へずらす量の判断用） */
   sheetOpen: boolean;
+  /** 営業状態判定の基準時刻（1分ごとに更新される。テストではclockで固定可能） */
+  now: Date;
 }
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
@@ -112,10 +115,22 @@ export const BADGE_SYMBOL: Record<MarkerState, string> = {
   pre: '準',
 };
 
-export function markerHtml(state: MarkerState, stationId: string): string {
+/** 営業状態ドット（マーカー左下）: 色+記号の二重符号化。訪問状態の色と混同しない別バッジ */
+const HOURS_DOT: Record<HoursKind, { cls: string; glyph: string } | null> = {
+  open: { cls: 'hrs-open', glyph: '' }, // 緑・中抜きリング
+  closing: { cls: 'hrs-closing', glyph: '!' }, // 黄
+  closed: { cls: 'hrs-closed', glyph: '×' }, // 濃グレー
+  unknown: { cls: 'hrs-unknown', glyph: '?' }, // グレー
+  upcoming: null, // 開業前は既存の「準」バッジのみ
+};
+
+export function markerHtml(state: MarkerState, stationId: string, hoursKind?: HoursKind): string {
   const badge = state === 'none' ? '' : `<span class="rs-badge">${BADGE_SYMBOL[state]}</span>`;
-  // マーク全体を状態色で塗り分け（色+バッジの二重符号化）。白い図形は常に白
-  return `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}</div>`;
+  const dotSpec = hoursKind ? HOURS_DOT[hoursKind] : null;
+  const dot = dotSpec ? `<span class="hrs-dot ${dotSpec.cls}" aria-hidden="true">${dotSpec.glyph}</span>` : '';
+  // マーク全体を訪問状態色で塗り分け（色+バッジの二重符号化）。白い図形は常に白。
+  // 営業状態は左下の小さなドットで別表示する
+  return `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}</div>`;
 }
 
 const LEGEND_SEEN_KEY = 'tohoku-me:legend-seen:v1';
@@ -160,18 +175,18 @@ function Legend() {
       </button>
       {open && (
         <div className="legend-panel" data-testid="legend-panel">
-          <h4>アイコンの見方</h4>
+          <h4>訪問状態（マーク全体の色）</h4>
           <div className="legend-item">
             <LegendSample state="none" />
             <span>道の駅（未訪問）</span>
           </div>
           <div className="legend-item">
-            <LegendSample state="want" />
-            <span>★ 行きたい</span>
-          </div>
-          <div className="legend-item">
             <LegendSample state="visited" />
             <span>✓ 訪問済み</span>
+          </div>
+          <div className="legend-item">
+            <LegendSample state="want" />
+            <span>★ 行きたい</span>
           </div>
           <div className="legend-item">
             <LegendSample state="stamp" />
@@ -181,6 +196,23 @@ function Legend() {
             <LegendSample state="pre" />
             <span>準 開業前</span>
           </div>
+          <h4 style={{ marginTop: 8 }}>営業状態（左下の小さな丸）</h4>
+          <div className="legend-item">
+            <span className="hrs-dot hrs-open legend-dot" />
+            <span>営業中</span>
+          </div>
+          <div className="legend-item">
+            <span className="hrs-dot hrs-closing legend-dot">!</span>
+            <span>まもなく終了</span>
+          </div>
+          <div className="legend-item">
+            <span className="hrs-dot hrs-closed legend-dot">×</span>
+            <span>営業時間外</span>
+          </div>
+          <div className="legend-item">
+            <span className="hrs-dot hrs-unknown legend-dot">?</span>
+            <span>要確認</span>
+          </div>
           <div className="legend-item">
             <span className="cluster-pill">3駅</span>
             <span>近くにある道の駅の件数</span>
@@ -189,6 +221,8 @@ function Legend() {
             道の駅マークを押すたびに、未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問の順で切り替わります。
             <br />
             公式HP・詳細は、押した後に出るボタンから開けます。
+            <br />
+            ※営業状態は通常営業時間に基づく目安です。臨時休業・季節変更は公式情報をご確認ください。
             {!isTouch && (
               <>
                 <br />
@@ -215,6 +249,7 @@ export default function MapView({
   routeStops,
   focusStationId,
   sheetOpen,
+  now,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -294,9 +329,10 @@ export default function MapView({
     );
     for (const st of shown) {
       const state = visitState(st, visits);
+      const hs = getStatus(st.id, now);
       const marker = L.marker([st.lat, st.lng], {
         icon: L.divIcon({
-          html: markerHtml(state, st.id),
+          html: markerHtml(state, st.id, hs.kind),
           className: '',
           iconSize: [38, 38],
           iconAnchor: [19, 19],
@@ -305,8 +341,10 @@ export default function MapView({
         alt: `道の駅${st.name}`,
         keyboard: true,
       });
-      // PC: ホバーで駅名ツールチップ
-      marker.bindTooltip(`道の駅 ${st.name}`, {
+      // PC: ホバーで駅名+営業状態+今日の営業時間
+      const hoursLine =
+        hs.kind === 'upcoming' ? '開業前' : `${hs.label}${hs.today !== '—' ? `<br>本日: ${hs.today}` : ''}`;
+      marker.bindTooltip(`<b>道の駅 ${st.name}</b><br>${hoursLine}`, {
         direction: 'top',
         className: 'rs-tooltip',
         opacity: 1,
@@ -319,7 +357,7 @@ export default function MapView({
       });
       cluster.addLayer(marker);
     }
-  }, [stations, visits, prefFilter, statusFilter]);
+  }, [stations, visits, prefFilter, statusFilter, now]);
 
   // 県フィルターで表示範囲を調整
   useEffect(() => {
@@ -391,9 +429,56 @@ export default function MapView({
     map.setView(map.unproject(target, zoom), zoom, { animate: false });
   }, [focusStationId, stations, sheetOpen]);
 
+  // 現在地表示
+  const meMarkerRef = useRef<L.CircleMarker | null>(null);
+  const [locMsg, setLocMsg] = useState<string | null>(null);
+  const locate = () => {
+    if (!('geolocation' in navigator)) {
+      setLocMsg('この端末では位置情報を使えません');
+      setTimeout(() => setLocMsg(null), 3000);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const map = mapRef.current;
+        if (!map) return;
+        const ll: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        if (meMarkerRef.current) meMarkerRef.current.setLatLng(ll);
+        else
+          meMarkerRef.current = L.circleMarker(ll, {
+            radius: 8,
+            color: '#fff',
+            weight: 2.5,
+            fillColor: '#1565c0',
+            fillOpacity: 1,
+          }).addTo(map);
+        map.setView(ll, Math.max(map.getZoom(), 12));
+      },
+      () => {
+        setLocMsg('現在地を取得できませんでした');
+        setTimeout(() => setLocMsg(null), 3000);
+      },
+      { timeout: 10000 },
+    );
+  };
+  const locateRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (locateRef.current) L.DomEvent.disableClickPropagation(locateRef.current);
+  }, []);
+
   return (
     <div className="map-root" ref={rootRef} data-testid="map-root">
       {pickMode && <div className="map-hint">地図をタップして出発地点を指定</div>}
+      {locMsg && <div className="map-hint">{locMsg}</div>}
+      <button
+        ref={locateRef}
+        className="locate-btn"
+        onClick={locate}
+        aria-label="現在地を表示"
+        data-testid="locate-btn"
+      >
+        📍
+      </button>
       <Legend />
     </div>
   );

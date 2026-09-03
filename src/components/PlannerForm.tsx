@@ -56,6 +56,9 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
   const [crossPref, setCrossPref] = useState(true);
   const [includeVisited, setIncludeVisited] = useState(false);
   const [includeStamped, setIncludeStamped] = useState(false);
+  const [preferOpenHours, setPreferOpenHours] = useState(true);
+  const [includeClosedHours, setIncludeClosedHours] = useState(true);
+  const [includeUnknownHours, setIncludeUnknownHours] = useState(true);
 
   const useGeolocation = () => {
     setGeoError(null);
@@ -114,6 +117,9 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
       priority,
       includeVisited,
       includeStamped,
+      preferOpenHours,
+      includeClosedHours,
+      includeUnknownHours,
     });
   };
 
@@ -289,6 +295,28 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
       </div>
 
       <div className="card">
+        <h3>営業時間</h3>
+        <button
+          className={`seg-toggle ${preferOpenHours ? 'active' : ''}`}
+          style={{
+            width: '100%',
+            border: '1px solid var(--border)',
+            background: preferOpenHours ? 'var(--select)' : 'var(--surface)',
+            color: preferOpenHours ? '#fff' : 'var(--text)',
+            fontWeight: 700,
+          }}
+          onClick={() => setPreferOpenHours(!preferOpenHours)}
+          data-testid="prefer-open-hours"
+          aria-pressed={preferOpenHours}
+        >
+          🕒 営業時間内に到着できる駅を優先 {preferOpenHours ? 'ON' : 'OFF'}
+        </button>
+        <p className="msg info" style={{ marginBottom: 0 }}>
+          通常営業時間に基づく目安です。臨時休業・季節変更は公式情報をご確認ください。
+        </p>
+      </div>
+
+      <div className="card">
         <h3>5. 出発地点へ戻る？</h3>
         <div className="seg">
           <button className={returnToStart ? 'active' : ''} onClick={() => setReturnToStart(true)}>
@@ -388,6 +416,28 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="field">
+              <label>営業時間の条件</label>
+              <div className="seg">
+                <button
+                  className={includeClosedHours ? 'active' : ''}
+                  onClick={() => setIncludeClosedHours(!includeClosedHours)}
+                  data-testid="include-closed-hours"
+                >
+                  時間外予想の駅も含める{includeClosedHours ? ' ✓' : ''}
+                </button>
+                <button
+                  className={includeUnknownHours ? 'active' : ''}
+                  onClick={() => setIncludeUnknownHours(!includeUnknownHours)}
+                  data-testid="include-unknown-hours"
+                >
+                  営業時間不明の駅も含める{includeUnknownHours ? ' ✓' : ''}
+                </button>
+              </div>
+              <p className="msg info" style={{ marginBottom: 0 }}>
+                駐車場・トイレは24時間使えるため、時間外でも立ち寄り自体は可能です。
+              </p>
             </div>
             <div className="field">
               <label>もう行った駅も候補に入れる？（ふだんはOFF）</label>

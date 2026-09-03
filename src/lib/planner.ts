@@ -14,6 +14,7 @@
 import type { PlanParams, PlannedRoute, RouteLeg, RouteStop, Station, VisitMap } from '../types';
 import { estimateLegMin, formatMin, haversineKm, roadDistanceKm, type LatLng } from './geo';
 import { osrmProvider, type RouteMatrix, type RoutingProvider } from './routing';
+import { statusAtArrival, type ArrivalHours } from './hours';
 
 /** ルート対象になり得る駅か（開業前(upcoming)・休止は常に除外） */
 export function isRoutable(st: Station): boolean {
@@ -33,6 +34,8 @@ interface Candidate {
   visitedAlready: boolean;
   /** 行列内のインデックス（0=出発地点） */
   mi: number;
+  /** 出発地点から直行した場合の到着時点の営業見込み（優先度調整用の概算） */
+  hoursDirect: ArrivalHours;
 }
 
 const MAX_MATRIX_STATIONS = 22;
@@ -72,6 +75,7 @@ function buildCandidates(stations: Station[], visits: VisitMap, p: PlanParams): 
       want: state === 'wishlist',
       visitedAlready: state === 'visited' || state === 'stamped',
       mi: -1,
+      hoursDirect: 'unknown' as ArrivalHours,
     }));
   // 直線距離で近い順に絞る（実道路リクエストを最小化）
   list.sort((a, b) => haversineKm(p.origin, a.st) - haversineKm(p.origin, b.st));
@@ -186,7 +190,9 @@ function greedyInsert(
         const ev = evaluate(trial, matrix, p);
         if (!ev || ev.totalMin > effectiveBudget) continue;
         const added = ev.totalMin - (prevEv?.totalMin ?? 0);
-        const score = added / (c.want ? wantWeight : 1);
+        // 営業時間内優先: 時間外予想の駅は優先度を下げる（完全除外はしない）
+        const hoursPenalty = p.preferOpenHours && c.hoursDirect === 'closed' ? 0.25 : 1;
+        const score = added / ((c.want ? wantWeight : 1) * hoursPenalty);
         if (score < bestScore) {
           bestScore = score;
           bestOrder = trial;
@@ -269,6 +275,11 @@ function buildRoute(
   }
   const newCount = order.filter((c) => !c.visitedAlready).length;
   const wantCount = order.filter((c) => c.want).length;
+  // 実際の到着予定時刻で営業見込みを集計
+  const hoursSummary = { open: 0, closing: 0, closed: 0, unknown: 0 };
+  for (const s of stops) {
+    hoursSummary[statusAtArrival(s.stationId, new Date(s.arriveAt))]++;
+  }
 
   let reason: string;
   if (p.priority === 'wishlist' && wantCount > 0) {
@@ -299,6 +310,7 @@ function buildRoute(
     wantCount,
     returnAt: t.toISOString(),
     roadData,
+    hoursSummary,
   };
 }
 
@@ -343,6 +355,16 @@ export async function planCourses(
     roadData = 'approx';
   }
 
+  // 出発地点から直行した場合の到着時点の営業見込み（優先度・除外オプション用の概算）
+  const departAtDate = new Date(p.departAt);
+  let pool = cands.map((c) => {
+    const arrive = new Date(departAtDate.getTime() + Math.ceil(matrix.durationsMin[0][c.mi]) * 60000);
+    return { ...c, hoursDirect: statusAtArrival(c.st.id, arrive) };
+  });
+  if (!p.includeClosedHours) pool = pool.filter((c) => c.hoursDirect !== 'closed');
+  if (!p.includeUnknownHours) pool = pool.filter((c) => c.hoursDirect !== 'unknown');
+  if (pool.length === 0) return { courses: [], roadData };
+
   const results: PlannedRoute[] = [];
   const seen = new Set<string>();
   let bestCount = 0;
@@ -352,7 +374,7 @@ export async function planCourses(
     if (effectiveBudget <= p.stayMin) continue; // 設定時間が短すぎる
     const cap = spec.capStops(p.maxStops, bestCount || p.maxStops);
     const order = twoOpt(
-      greedyInsert(cands, matrix, p, effectiveBudget, spec.wantWeight(p), cap),
+      greedyInsert(pool, matrix, p, effectiveBudget, spec.wantWeight(p), cap),
       matrix,
       p,
     );

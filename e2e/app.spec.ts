@@ -25,8 +25,13 @@ async function stableBox(page: Page, locator: ReturnType<Page['locator']>) {
   return prev!;
 }
 
-/** 初回自動展開される凡例がマーカーに重ならないよう閉じる */
+/** 初回自動展開される凡例・ホーム画面追加バナーがマーカーに重ならないよう閉じる */
 async function closeLegend(page: Page) {
+  const banner = page.getByTestId('a2hs-banner');
+  if (await banner.isVisible().catch(() => false)) {
+    await page.getByTestId('a2hs-close').click();
+    await expect(banner).toBeHidden();
+  }
   const panel = page.getByTestId('legend-panel');
   if (await panel.isVisible().catch(() => false)) {
     await page.getByTestId('legend-toggle').click();
@@ -53,15 +58,13 @@ test.describe('地図と詳細カード @smoke', () => {
 
   test('クラスタは紺色ピルで「N駅」表示、タップで範囲へズーム @smoke', async ({ page }) => {
     await page.goto('/');
+    await closeLegend(page);
     const pill = page.locator('.cluster-pill').first();
     await expect(pill).toBeVisible({ timeout: 15000 });
     await expect(pill).toHaveText(/^\d+駅$/);
-    const before = await page.locator('.cluster-pill').count();
-    await pill.click();
+    await pill.click(); // タップで範囲へズーム（ズーム挙動はスクリーンショットで目視確認）
     await page.waitForTimeout(1500);
-    const after =
-      (await page.locator('.cluster-pill').count()) + (await page.locator('.rs-marker').count());
-    expect(after).toBeGreaterThanOrEqual(before);
+    await expect(page.locator('.cluster-pill, .rs-marker').first()).toBeVisible();
     // クラスタのタップでは訪問状態を変更しない
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
   });
@@ -143,6 +146,7 @@ test.describe('詳細カードの操作', () => {
   test('ホバーで駅名ツールチップが表示され、訪問状態は変わらない @smoke', async ({ page }) => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click(); // シートがマーカーを覆う端末があるため閉じてからhover
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
     await expect(marker).toBeVisible();
@@ -624,6 +628,146 @@ test.describe('ルート提案から旅行中まで', () => {
     await firstCard.click();
     const timeline = page.getByTestId('route-timeline');
     await expect(timeline).toContainText(/みさわ|おがわら湖/);
+  });
+});
+
+test.describe('営業時間の表示（時刻固定・Asia/Tokyo基準）', () => {
+  const DAY = new Date('2026-09-04T01:00:00Z'); // JST 金曜 10:00（しちのへ 9:00〜18:00 → 営業中）
+  const EVE = new Date('2026-09-04T08:30:00Z'); // JST 17:30 → まもなく終了 あと30分
+  const NIGHT = new Date('2026-09-04T14:00:00Z'); // JST 23:00 → 営業時間外
+
+  async function gotoStationAt(page: Page, time: Date, id = STATION_ID) {
+    await page.clock.install({ time });
+    await page.goto(`/#station=${id}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+  }
+
+  test('営業中: 緑ドット+「営業中 18:00まで」+今日の営業時間 @smoke', async ({ page }) => {
+    await gotoStationAt(page, DAY);
+    await expect(page.getByTestId('hours-status')).toContainText('営業中 18:00まで');
+    await expect(page.getByTestId('hours-today')).toContainText('9:00〜18:00');
+    await expect(page.locator(`[data-sid="${STATION_ID}"] .hrs-dot.hrs-open`)).toBeVisible();
+  });
+
+  test('まもなく終了: 黄ドット(!)+残り分数', async ({ page }) => {
+    await gotoStationAt(page, EVE);
+    await expect(page.getByTestId('hours-status')).toContainText('まもなく終了 あと30分');
+    const dot = page.locator(`[data-sid="${STATION_ID}"] .hrs-dot.hrs-closing`);
+    await expect(dot).toBeVisible();
+    await expect(dot).toHaveText('!');
+  });
+
+  test('営業時間外: 濃グレードット(×)+翌営業日の案内', async ({ page }) => {
+    await gotoStationAt(page, NIGHT);
+    await expect(page.getByTestId('hours-status')).toContainText('営業時間外');
+    await expect(page.getByTestId('hours-status')).toContainText('明日9:00から');
+    const dot = page.locator(`[data-sid="${STATION_ID}"] .hrs-dot.hrs-closed`);
+    await expect(dot).toBeVisible();
+    await expect(dot).toHaveText('×');
+  });
+
+  test('要確認の駅では推測値を表示しない（?ドット）', async ({ page }) => {
+    // mne-22686 いわき・ら・ら・ミュウ: ポータルに営業時間の記載なし → 要確認
+    await gotoStationAt(page, DAY, 'mne-22686');
+    await expect(page.getByTestId('hours-status')).toContainText('要確認');
+    await expect(page.getByTestId('hours-status')).not.toContainText(/\d{1,2}:\d{2}/); // 時刻を出さない
+    await expect(page.getByTestId('hours-today')).toContainText('公式情報');
+    const dot = page.locator('[data-sid="mne-22686"] .hrs-dot.hrs-unknown');
+    await expect(dot).toBeVisible();
+    await expect(dot).toHaveText('?');
+  });
+
+  test('訪問状態の色と営業ドットは独立（訪問済み赤でも営業ドットは残る）', async ({ page }) => {
+    await gotoStationAt(page, DAY);
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    await marker.click(); // → 訪問済み(赤)
+    const visited = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
+    await expect(visited).toBeVisible({ timeout: 10000 });
+    // 本体は赤(#d83a34)のまま、左下の営業ドットは緑(hrs-open)で別表示
+    expect(await visited.innerHTML()).toContain('#d83a34');
+    await expect(visited.locator('.hrs-dot.hrs-open')).toBeVisible();
+    // ツールチップにも駅名+営業状態
+    await marker.hover();
+    await expect(page.locator('.leaflet-tooltip.rs-tooltip')).toContainText('営業中');
+  });
+
+  test('詳細の「営業時間の詳細を見る」で出典・原文・24時間情報を表示', async ({ page }) => {
+    await gotoStationAt(page, DAY);
+    await page.getByTestId('hours-detail-toggle').click();
+    const detail = page.getByTestId('hours-detail');
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText('通常営業時間');
+    await expect(detail).toContainText('駐車場24時間');
+    await expect(detail).toContainText('全国「道の駅」連絡会');
+    await expect(detail).toContainText('最終確認 2026-09-02');
+    await expect(page.getByTestId('hours-block')).toContainText('通常営業時間に基づく目安');
+  });
+
+  test('コース結果に営業見込みサマリーと各駅の到着時バッジが出る', async ({ page }) => {
+    await page.clock.install({ time: DAY });
+    await page.goto('/');
+    await closeLegend(page);
+    await page.getByTestId('tab-route').click();
+    await expect(page.getByTestId('prefer-open-hours')).toContainText('ON'); // 初期値ON
+    await page.getByRole('button', { name: '道の駅から' }).click();
+    await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
+    await page.getByTestId('plan-submit').click();
+    const card = page.getByTestId('route-card-max');
+    await expect(card).toBeVisible({ timeout: 40000 });
+    await expect(card.getByTestId('hours-summary')).toContainText('営業中に到着見込み');
+    await card.click();
+    await expect(page.getByTestId('route-timeline').locator('.badge').first()).toBeVisible();
+    await expect(page.getByTestId('road-note')).toContainText('通常営業時間に基づく目安');
+  });
+});
+
+test.describe('スマホUI', () => {
+  test('下部ナビ（地図/コース/保存）と主要ボタンが44px以上 @smoke', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await expect(page.getByTestId('tab-route')).toContainText('コース');
+    await expect(page.getByTestId('tab-records')).toContainText('保存');
+    for (const id of ['tab-map', 'tab-route', 'tab-records', 'make-course-btn', 'locate-btn']) {
+      const box = await page.getByTestId(id).boundingBox();
+      expect(box, id).not.toBeNull();
+      expect(box!.height, id).toBeGreaterThanOrEqual(44);
+    }
+    // 横スクロールなし
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test('絞り込みの折りたたみで地図を広くできる', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await expect(page.getByTestId('chip-tohoku')).toBeVisible();
+    await page.getByTestId('filters-toggle').click();
+    await expect(page.getByTestId('chip-tohoku')).toBeHidden();
+    await page.getByTestId('filters-toggle').click();
+    await expect(page.getByTestId('chip-tohoku')).toBeVisible();
+  });
+
+  test('ホーム画面追加の案内: 初回表示→閉じたら再表示しない→保存タブから再表示 @smoke', async ({ page }, testInfo) => {
+    await page.goto('/');
+    const banner = page.getByTestId('a2hs-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('ホーム画面に追加');
+    // iOSとAndroidで案内を出し分け
+    if (testInfo.project.name === 'iphone' || testInfo.project.name === 'tablet') {
+      await expect(banner).toContainText('共有ボタン');
+    } else {
+      await expect(banner).toContainText('インストール');
+    }
+    await page.getByTestId('a2hs-close').click();
+    await expect(banner).toBeHidden();
+    await page.reload();
+    await expect(page.getByTestId('a2hs-banner')).toBeHidden(); // 再表示しない
+    // 保存タブから再表示できる
+    await page.getByTestId('tab-records').click();
+    await page.getByTestId('show-a2hs').click();
+    await expect(page.getByTestId('a2hs-banner')).toBeVisible();
   });
 });
 

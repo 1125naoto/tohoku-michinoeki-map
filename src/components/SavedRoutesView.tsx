@@ -12,6 +12,7 @@ interface Props {
   onRecalc: (r: SavedRoute) => void;
   onDelete: (id: string) => void;
   onResetAll: () => void;
+  onShowInstallHint: () => void;
 }
 
 export default function SavedRoutesView({
@@ -22,6 +23,7 @@ export default function SavedRoutesView({
   onRecalc,
   onDelete,
   onResetAll,
+  onShowInstallHint,
 }: Props) {
   const [deleting, setDeleting] = useState<SavedRoute | null>(null);
   const [resetting, setResetting] = useState(false);
@@ -68,6 +70,13 @@ export default function SavedRoutesView({
       ))}
 
       <div className="card" style={{ marginTop: 24 }}>
+        <h3>アプリとして使う</h3>
+        <button style={{ width: '100%' }} onClick={onShowInstallHint} data-testid="show-a2hs">
+          📲 ホーム画面への追加方法を見る
+        </button>
+      </div>
+
+      <div className="card">
         <h3>データ管理</h3>
         <p className="msg info">
           訪問記録・スタンプ・保存ルートはこの端末のブラウザ内（localStorage）にのみ保存されます。

@@ -56,6 +56,9 @@ function baseParams(over: Partial<PlanParams> = {}): PlanParams {
     priority: 'unvisited',
     includeVisited: false,
     includeStamped: false,
+    preferOpenHours: true,
+    includeClosedHours: true,
+    includeUnknownHours: true,
     ...over,
   };
 }
@@ -228,5 +231,59 @@ describe('実道路時間と概算フォールバック', () => {
   it('各コースに理由文がある', async () => {
     const { courses } = await plan({});
     for (const r of courses) expect(r.reason.length).toBeGreaterThan(5);
+  });
+});
+
+describe('営業時間との連携', () => {
+  const night = '2026-09-04T22:00:00+09:00'; // JST 22時 = ほぼ全駅が営業時間外
+
+  it('到着予定時刻ベースの営業見込み集計(hoursSummary)を持つ', async () => {
+    const { courses } = await plan({});
+    for (const r of courses) {
+      const s = r.hoursSummary;
+      expect(s.open + s.closing + s.closed + s.unknown).toBe(r.stops.length);
+    }
+  });
+
+  it('昼出発では営業中見込みが多数、夜出発では営業時間外が多数になる', async () => {
+    const day = await plan({});
+    const dayMax = day.courses.find((r) => r.key === 'max')!;
+    expect(dayMax.hoursSummary.open + dayMax.hoursSummary.closing).toBeGreaterThan(0);
+    const nightRes = await plan({}, { departAt: night });
+    const nightMax = nightRes.courses.find((r) => r.key === 'max');
+    if (nightMax) {
+      expect(nightMax.hoursSummary.closed).toBeGreaterThan(0);
+    }
+  });
+
+  it('「営業時間外予想の駅も含める」をOFFにすると夜間は候補が消える（既定では完全除外しない）', async () => {
+    const included = await plan({}, { departAt: night }); // 既定: 含める+優先度ダウン
+    expect(included.courses.length).toBeGreaterThan(0);
+    const excluded = await plan({}, { departAt: night, includeClosedHours: false });
+    // 夜22時出発では営業中到着できる駅がほぼ無いため、候補0件になる
+    expect(excluded.courses.length).toBe(0);
+  });
+
+  it('営業時間内優先ON/OFFでコース内容に差が出得る（ONは時間外駅の優先度を下げる）', async () => {
+    // 夕方出発: まもなく閉まる駅が混在する時間帯
+    const evening = '2026-09-04T16:30:00+09:00';
+    const on = await plan({}, { departAt: evening, preferOpenHours: true });
+    const off = await plan({}, { departAt: evening, preferOpenHours: false });
+    expect(on.courses.length).toBeGreaterThan(0);
+    expect(off.courses.length).toBeGreaterThan(0);
+    // どちらも時間予算は厳守
+    for (const r of [...on.courses, ...off.courses]) {
+      expect(r.totalMin + r.marginMin).toBeLessThanOrEqual(240);
+    }
+  });
+
+  it('営業時間不明の駅は既定で候補に含まれ、OFFで除外できる', async () => {
+    // 要確認駅(例: mne-22686 いわき・ら・ら・ミュウ)の近くから出発
+    const origin = { lat: 36.945, lng: 140.89, label: 'いわき市街' };
+    const def = await plan({}, { origin, budgetMin: 180 });
+    const hasUnknown = def.courses.some((r) => r.hoursSummary.unknown > 0);
+    expect(hasUnknown).toBe(true); // 既定では含まれる
+    const strict = await plan({}, { origin, budgetMin: 180, includeUnknownHours: false });
+    for (const r of strict.courses) expect(r.hoursSummary.unknown).toBe(0);
   });
 });

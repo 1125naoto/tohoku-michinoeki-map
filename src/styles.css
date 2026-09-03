@@ -345,6 +345,127 @@ a {
   font-weight: 700;
 }
 
+/* ===== 営業状態ドット（マーカー左下・訪問状態の色と混同しない別バッジ） ===== */
+.hrs-dot {
+  position: absolute;
+  left: -6px;
+  bottom: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hrs-dot.hrs-open {
+  background: #1a9850;
+}
+/* 営業中は色+中抜きリングの形状でも判別できるようにする */
+.hrs-dot.hrs-open::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+.hrs-dot.hrs-closing {
+  background: #f4b400;
+  color: #4a3000;
+}
+.hrs-dot.hrs-closed {
+  background: #4a4f58;
+}
+.hrs-dot.hrs-unknown {
+  background: #9aa0a6;
+}
+.legend-dot {
+  position: static;
+  flex-shrink: 0;
+}
+
+/* 現在地ボタン */
+.locate-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 150px;
+  z-index: 900;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* フィルター折りたたみ */
+.filters-toggle {
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 12px;
+  background: var(--surface);
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-align: left;
+}
+
+/* ホーム画面追加の案内バナー */
+.a2hs-banner {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 130px;
+  z-index: 940;
+  background: var(--surface);
+  border: 1px solid var(--select);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.a2hs-banner b {
+  font-size: 14px;
+}
+.a2hs-banner .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.a2hs-banner .actions button {
+  flex: 1;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* 旅行中タブの強調 */
+.tabbar button.trip-live {
+  color: #d9640a;
+  font-weight: 800;
+}
+.tabbar button.trip-live .icon {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
 /* 訪問順の番号マーカー */
 .order-pin {
   width: 26px;
@@ -534,6 +655,23 @@ a {
 .badge.pre {
   background: rgba(138, 143, 152, 0.2);
   color: var(--preopen);
+}
+/* 営業状態専用バッジ（訪問状態の配色と混同しないための独立色） */
+.badge.hopen {
+  background: rgba(26, 152, 80, 0.16);
+  color: #157a42;
+}
+.badge.hclosed {
+  background: rgba(74, 79, 88, 0.18);
+  color: #4a4f58;
+}
+@media (prefers-color-scheme: dark) {
+  .badge.hopen {
+    color: #5fd08f;
+  }
+  .badge.hclosed {
+    color: #b9bec7;
+  }
 }
 .note-box {
   background: var(--surface2);

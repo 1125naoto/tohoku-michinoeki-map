@@ -71,6 +71,36 @@ export default function App() {
   const [routeStops, setRouteStops] = useState<{ lat: number; lng: number; order: number }[] | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  // 営業状態表示の基準時刻（1分ごとに更新。テストはclock固定で制御可能）
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+  const now = useMemo(() => new Date(nowTick), [nowTick]);
+
+  // ホーム画面追加の案内（初回のみ・閉じたら再表示しない。保存タブから再表示可能）
+  const A2HS_KEY = 'tohoku-me:a2hs-hint:v1';
+  const isStandalone = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true;
+  const [showA2hs, setShowA2hs] = useState(() => {
+    try {
+      return !isStandalone() && localStorage.getItem(A2HS_KEY) == null;
+    } catch {
+      return false;
+    }
+  });
+  const dismissA2hs = useCallback(() => {
+    setShowA2hs(false);
+    try {
+      localStorage.setItem(A2HS_KEY, '1');
+    } catch {
+      /* noop */
+    }
+  }, []);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   const stats = useMemo(() => computeStats(STATIONS, visits), [visits]);
   const selected = selectedId ? getStation(selectedId) : undefined;
@@ -343,7 +373,15 @@ export default function App() {
         </div>
       )}
       <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
-      <div className="filter-groups">
+      <button
+        className="filters-toggle"
+        onClick={() => setFiltersOpen(!filtersOpen)}
+        aria-expanded={filtersOpen}
+        data-testid="filters-toggle"
+      >
+        {filtersOpen ? '▲ 絞り込みをたたむ' : '▼ 絞り込み（地域・表示）'}
+      </button>
+      <div className="filter-groups" style={filtersOpen ? undefined : { display: 'none' }}>
         <div className="filter-row" role="toolbar" aria-label="地域で絞り込み">
           <span className="fg-label">地域</span>
           <button
@@ -399,6 +437,7 @@ export default function App() {
             routeStops={routeStops}
             focusStationId={tab === 'map' ? selectedId : null}
             sheetOpen={selectedId != null}
+            now={now}
           />
           {routeLine && routeLineApprox && tab === 'map' && (
             <div className="map-hint" style={{ top: 56 }} data-testid="route-approx-note">
@@ -414,6 +453,20 @@ export default function App() {
             >
               🚗 コースを作る
             </button>
+          )}
+          {tab === 'map' && showA2hs && !selectedId && !pickMode && (
+            <div className="a2hs-banner" data-testid="a2hs-banner">
+              <b>📲 ホーム画面に追加すると、アプリのように使えます</b>
+              <br />
+              {isIOS
+                ? 'Safariの共有ボタン（□↑）→「ホーム画面に追加」を選んでください。'
+                : 'ブラウザのメニュー（⋮）→「アプリをインストール」または「ホーム画面に追加」を選んでください。'}
+              <div className="actions">
+                <button className="btn-primary" onClick={dismissA2hs} data-testid="a2hs-close">
+                  わかった
+                </button>
+              </div>
+            </div>
           )}
           {trip && activeSaved && tab === 'map' && (
             <button className="trip-banner" onClick={() => setTab('route')} data-testid="trip-banner">
@@ -533,6 +586,10 @@ export default function App() {
               }}
               onDelete={(id) => persistRoutes(loadRoutes().filter((r) => r.id !== id))}
               onResetAll={resetAll}
+              onShowInstallHint={() => {
+                setShowA2hs(true);
+                setTab('map');
+              }}
             />
           </div>
         )}
@@ -546,15 +603,20 @@ export default function App() {
         <button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')} data-testid="tab-map">
           <span className="icon">🗾</span>地図
         </button>
-        <button className={tab === 'route' ? 'active' : ''} onClick={() => setTab('route')} data-testid="tab-route">
-          <span className="icon">🚗</span>ルート
+        <button
+          className={`${tab === 'route' ? 'active' : ''}${trip ? ' trip-live' : ''}`}
+          onClick={() => setTab('route')}
+          data-testid="tab-route"
+        >
+          <span className="icon">🚗</span>
+          {trip ? '旅行中' : 'コース'}
         </button>
         <button
           className={tab === 'records' ? 'active' : ''}
           onClick={() => setTab('records')}
           data-testid="tab-records"
         >
-          <span className="icon">📖</span>記録
+          <span className="icon">📖</span>保存
         </button>
       </nav>
     </div>
