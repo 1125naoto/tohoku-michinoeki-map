@@ -25,6 +25,15 @@ async function stableBox(page: Page, locator: ReturnType<Page['locator']>) {
   return prev!;
 }
 
+/** スマホでは絞り込みが初期折りたたみのため、チップ操作前に展開する */
+async function openFilters(page: Page) {
+  const chip = page.getByTestId('chip-tohoku');
+  if (!(await chip.isVisible().catch(() => false))) {
+    await page.getByTestId('filters-toggle').click();
+    await expect(chip).toBeVisible();
+  }
+}
+
 /** 初回自動展開される凡例・ホーム画面追加バナーがマーカーに重ならないよう閉じる */
 async function closeLegend(page: Page) {
   const banner = page.getByTestId('a2hs-banner');
@@ -71,6 +80,7 @@ test.describe('地図と詳細カード @smoke', () => {
 
   test('地域・表示フィルターがグループ分けされている @smoke', async ({ page }) => {
     await page.goto('/');
+    await openFilters(page);
     await expect(page.getByRole('toolbar', { name: '地域で絞り込み' })).toBeVisible();
     await expect(page.getByRole('toolbar', { name: '表示状態で絞り込み' })).toBeVisible();
     await expect(page.locator('.fg-label').nth(0)).toHaveText('地域');
@@ -356,8 +366,8 @@ test.describe('詳細カードの操作', () => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeLegend(page);
-    // 画面上部の海側（マーカーなし領域）をタップ
-    await page.getByTestId('map-root').click({ position: { x: 30, y: 40 } });
+    // 上部のボタン（⛶全画面・凡例）を避けた空き領域をタップ
+    await page.getByTestId('map-root').click({ position: { x: 200, y: 70 } });
     await expect(page.getByTestId('station-sheet')).toBeHidden();
   });
 
@@ -372,6 +382,7 @@ test.describe('詳細カードの操作', () => {
 test.describe('フィルターと達成率', () => {
   test('県別絞り込みと状態フィルターが動作する', async ({ page }) => {
     await page.goto('/');
+    await openFilters(page);
     await page.getByTestId('chip-宮城県').click();
     await expect(page.getByTestId('chip-宮城県')).toHaveClass(/active/);
     // 東北全体へ戻す
@@ -388,6 +399,7 @@ test.describe('フィルターと達成率', () => {
     await page.getByTestId('btn-visited').click(); // 詳細から訪問済みへ
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
+    await openFilters(page);
     // 訪問済み一覧に出る / 未訪問一覧から消える
     await page.getByTestId('filter-visited').click();
     await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
@@ -729,24 +741,38 @@ test.describe('スマホUI', () => {
     await closeLegend(page);
     await expect(page.getByTestId('tab-route')).toContainText('コース');
     await expect(page.getByTestId('tab-records')).toContainText('保存');
-    for (const id of ['tab-map', 'tab-route', 'tab-records', 'make-course-btn', 'locate-btn']) {
+    for (const id of ['tab-map', 'tab-route', 'tab-records', 'make-course-btn', 'locate-btn', 'fullscreen-btn']) {
       const box = await page.getByTestId(id).boundingBox();
       expect(box, id).not.toBeNull();
       expect(box!.height, id).toBeGreaterThanOrEqual(44);
+    }
+    // スマホ縦画面では達成状況が1行に圧縮される
+    const vw = await page.evaluate(() => window.innerWidth);
+    if (vw <= 700) {
+      const h = await page.evaluate(
+        () => document.querySelector('.stats-header')!.getBoundingClientRect().height,
+      );
+      expect(h).toBeLessThanOrEqual(46);
     }
     // 横スクロールなし
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test('絞り込みの折りたたみで地図を広くできる', async ({ page }) => {
+  test('スマホでは絞り込みが初期折りたたみで、選択内容の1行サマリーが出る', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
+    // 初期は閉じており、サマリー1行表示（例: 絞り込み：東北全体・すべて）
+    await expect(page.getByTestId('chip-tohoku')).toBeHidden();
+    await expect(page.getByTestId('filters-toggle')).toContainText('絞り込み：東北全体・すべて');
+    // 展開→操作→たたむ
+    await page.getByTestId('filters-toggle').click();
     await expect(page.getByTestId('chip-tohoku')).toBeVisible();
+    await page.getByTestId('chip-宮城県').click();
+    await page.getByTestId('filter-visited').click();
     await page.getByTestId('filters-toggle').click();
     await expect(page.getByTestId('chip-tohoku')).toBeHidden();
-    await page.getByTestId('filters-toggle').click();
-    await expect(page.getByTestId('chip-tohoku')).toBeVisible();
+    await expect(page.getByTestId('filters-toggle')).toContainText('絞り込み：宮城県・訪問済み');
   });
 
   test('ホーム画面追加の案内: 初回表示→閉じたら再表示しない→保存タブから再表示 @smoke', async ({ page }, testInfo) => {
@@ -768,6 +794,134 @@ test.describe('スマホUI', () => {
     await page.getByTestId('tab-records').click();
     await page.getByTestId('show-a2hs').click();
     await expect(page.getByTestId('a2hs-banner')).toBeVisible();
+  });
+});
+
+test.describe('地図全画面モード', () => {
+  const DAY = new Date('2026-09-04T01:00:00Z'); // JST 金曜10:00（営業バッジを安定させる）
+
+  test('⛶全画面: ボタン表示→UI非表示→地図90%以上→中心維持→解除で復帰 @smoke', async ({ page }) => {
+    await page.clock.install({ time: DAY });
+    await page.goto('/');
+    await closeLegend(page);
+    const fsBtn = page.getByTestId('fullscreen-btn');
+    await expect(fsBtn).toBeVisible();
+    const btnBox = await fsBtn.boundingBox();
+    expect(btnBox!.height).toBeGreaterThanOrEqual(44);
+    expect(btnBox!.width).toBeGreaterThanOrEqual(44);
+
+    type MS = { lat: number; lng: number; zoom: number };
+    const before = (await page.evaluate(() =>
+      (window as unknown as { __getMapState: () => unknown }).__getMapState(),
+    )) as MS;
+
+    await fsBtn.click();
+    // ヘッダー・達成状況・絞り込み・下部ナビが消える
+    await expect(page.getByTestId('stats-toggle')).toBeHidden();
+    await expect(page.getByTestId('filters-toggle')).toBeHidden();
+    await expect(page.getByTestId('tab-map')).toBeHidden();
+    // 解除ボタンが常に見える
+    const exitBtn = page.getByTestId('fullscreen-exit');
+    await expect(exitBtn).toBeVisible();
+    expect((await exitBtn.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    // 地図が画面高の90%以上
+    await page.waitForTimeout(300);
+    const ratio = await page.evaluate(() => {
+      const r = document.querySelector('[data-testid="map-root"]')!.getBoundingClientRect();
+      return r.height / window.innerHeight;
+    });
+    expect(ratio).toBeGreaterThanOrEqual(0.9);
+    // 中心座標・ズームが維持される
+    const after = (await page.evaluate(() =>
+      (window as unknown as { __getMapState: () => unknown }).__getMapState(),
+    )) as MS;
+    expect(after.zoom).toBe(before.zoom);
+    // 1px未満の丸めは許容（広域ズームでは0.005°程度になる）
+    expect(Math.abs(after.lat - before.lat)).toBeLessThan(0.02);
+    expect(Math.abs(after.lng - before.lng)).toBeLessThan(0.02);
+    // タイルが描画されている（灰色のみでない）
+    await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 15000 });
+    // 横スクロールなし
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    // コース作成はコンパクトピルで残る
+    await expect(page.getByTestId('make-course-btn')).toBeVisible();
+    // 現在地・凡例も残る
+    await expect(page.getByTestId('locate-btn')).toBeVisible();
+    await expect(page.getByTestId('legend-toggle')).toBeVisible();
+
+    // 解除 → 全UIが元に戻る
+    await exitBtn.click();
+    await expect(page.getByTestId('stats-toggle')).toBeVisible();
+    await expect(page.getByTestId('tab-map')).toBeVisible();
+    const after2 = (await page.evaluate(() =>
+      (window as unknown as { __getMapState: () => unknown }).__getMapState(),
+    )) as MS;
+    expect(after2.zoom).toBe(before.zoom);
+  });
+
+  test('全画面中もマーカー操作・営業バッジ・色循環・シートが使える', async ({ page }) => {
+    await page.clock.install({ time: DAY });
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    await page.getByTestId('fullscreen-btn').click();
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    await expect(marker).toBeVisible();
+    await expect(marker.locator('.hrs-dot.hrs-open')).toBeVisible(); // 営業バッジ
+    // タップで色循環（未訪問→訪問済み・赤）
+    await marker.click();
+    await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
+    // トーストの詳細→ボトムシート開閉
+    await page.getByTestId('tap-toast-detail').click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
+    // 全画面のままであること
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    // コース作成ピルからコース画面へ移動できる（全画面は解除される）
+    const toastClose = page.getByTestId('tap-toast-close');
+    if (await toastClose.isVisible().catch(() => false)) await toastClose.click();
+    await expect(page.getByTestId('make-course-btn')).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('make-course-btn').click();
+    await expect(page.getByTestId('plan-submit')).toBeVisible();
+  });
+
+  test('Escで解除（シート表示中はまずシートを閉じる）', async ({ page }) => {
+    await page.clock.install({ time: DAY });
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeLegend(page);
+    await page.getByTestId('fullscreen-btn').click();
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    // 1回目のEsc: シートだけ閉じる
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    // 2回目のEsc: 全画面解除
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('stats-toggle')).toBeVisible();
+  });
+
+  test('画面回転（横向き）でも全画面地図が操作できる', async ({ page }) => {
+    await page.clock.install({ time: DAY });
+    await page.goto('/');
+    await closeLegend(page);
+    await page.getByTestId('fullscreen-btn').click();
+    await page.setViewportSize({ width: 844, height: 390 }); // 横向き相当
+    await page.waitForTimeout(400);
+    const ratio = await page.evaluate(() => {
+      const r = document.querySelector('[data-testid="map-root"]')!.getBoundingClientRect();
+      return r.height / window.innerHeight;
+    });
+    expect(ratio).toBeGreaterThanOrEqual(0.9);
+    await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    await page.getByTestId('fullscreen-exit').click();
+    await expect(page.getByTestId('tab-map')).toBeVisible();
   });
 });
 

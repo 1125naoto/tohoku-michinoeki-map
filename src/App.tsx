@@ -15,6 +15,7 @@ import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { navToPointUrl, navToStationUrl } from './lib/gmaps';
+import { filterSummary } from './lib/ui';
 import type { LatLng } from './lib/geo';
 import type { Station } from './types';
 import {
@@ -71,7 +72,35 @@ export default function App() {
   const [routeStops, setRouteStops] = useState<{ lat: number; lng: number; order: number }[] | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  // スマホでは絞り込みを初期状態で閉じ、地図を広く使う
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => !window.matchMedia('(max-width: 700px)').matches,
+  );
+  // 地図全画面モード（CSSのみで実現。Fullscreen APIには依存しない。再読み込みで通常表示に戻る）
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const mapFsRef = useRef(false);
+  mapFsRef.current = mapFullscreen;
+  const fsHistoryRef = useRef(false); // 履歴にpush済みか
+  const enterMapFullscreen = useCallback(() => {
+    setMapFullscreen(true);
+    try {
+      history.pushState({ mapFs: true }, '');
+      fsHistoryRef.current = true;
+    } catch {
+      /* noop */
+    }
+  }, []);
+  const exitMapFullscreen = useCallback(() => {
+    setMapFullscreen(false);
+    if (fsHistoryRef.current) {
+      fsHistoryRef.current = false;
+      try {
+        if (history.state?.mapFs) history.back();
+      } catch {
+        /* noop */
+      }
+    }
+  }, []);
   // 営業状態表示の基準時刻（1分ごとに更新。テストはclock固定で制御可能）
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
@@ -113,10 +142,36 @@ export default function App() {
     window.addEventListener('offline', off);
     const onHash = () => setSelectedId(hashStationId());
     window.addEventListener('hashchange', onHash);
+    // PCのEscで全画面解除（シート表示中はまずシートを閉じる）
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !mapFsRef.current) return;
+      setSelectedId((cur) => {
+        if (cur != null) return null; // 1回目: シートを閉じる
+        setMapFullscreen(false); // 2回目: 全画面解除
+        fsHistoryRef.current = false;
+        return cur;
+      });
+    };
+    window.addEventListener('keydown', onKey);
+    // Android等の戻る操作: シート→全画面の順で閉じる（履歴を壊さない）。
+    // ハッシュ遷移（駅シートの開閉）でも同種イベントが発火し得るため、
+    // 「全画面エントリより手前へ戻ったときだけ」解除する。
+    const onPop = (e: PopStateEvent) => {
+      if (!mapFsRef.current) return;
+      // 駅シートを開く前進ナビ等は無視（戻るでシートが閉じるのはhashchange側が処理）
+      if (location.hash.startsWith('#station=')) return;
+      // まだ全画面エントリ上（シートを閉じてfsエントリへ戻った状態）なら維持
+      if ((e.state as { mapFs?: boolean } | null)?.mapFs) return;
+      setMapFullscreen(false);
+      fsHistoryRef.current = false;
+    };
+    window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
       window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('popstate', onPop);
     };
   }, []);
 
@@ -366,22 +421,29 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app">
-      {!online && (
+    <div className={`app${mapFullscreen ? ' map-fs' : ''}`}>
+      {!online && !mapFullscreen && (
         <div className="offline-banner" data-testid="offline-banner">
           オフラインです。訪問記録・保存ルートは閲覧/更新できます。地図タイル・外部リンクは利用できません。
         </div>
       )}
-      <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
-      <button
-        className="filters-toggle"
-        onClick={() => setFiltersOpen(!filtersOpen)}
-        aria-expanded={filtersOpen}
-        data-testid="filters-toggle"
+      {!mapFullscreen && (
+        <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
+      )}
+      {!mapFullscreen && (
+        <button
+          className="filters-toggle"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          data-testid="filters-toggle"
+        >
+          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter)}`}
+        </button>
+      )}
+      <div
+        className="filter-groups"
+        style={filtersOpen && !mapFullscreen ? undefined : { display: 'none' }}
       >
-        {filtersOpen ? '▲ 絞り込みをたたむ' : '▼ 絞り込み（地域・表示）'}
-      </button>
-      <div className="filter-groups" style={filtersOpen ? undefined : { display: 'none' }}>
         <div className="filter-row" role="toolbar" aria-label="地域で絞り込み">
           <span className="fg-label">地域</span>
           <button
@@ -438,7 +500,19 @@ export default function App() {
             focusStationId={tab === 'map' ? selectedId : null}
             sheetOpen={selectedId != null}
             now={now}
+            fullscreen={mapFullscreen}
           />
+          {/* 全画面の切替（CSSのみで確実に動作。左上・44px以上・safe-area対応） */}
+          {tab === 'map' &&
+            (mapFullscreen ? (
+              <button className="fs-btn" onClick={exitMapFullscreen} data-testid="fullscreen-exit">
+                ✕ 全画面を終了
+              </button>
+            ) : (
+              <button className="fs-btn" onClick={enterMapFullscreen} data-testid="fullscreen-btn">
+                ⛶ 全画面
+              </button>
+            ))}
           {routeLine && routeLineApprox && tab === 'map' && (
             <div className="map-hint" style={{ top: 56 }} data-testid="route-approx-note">
               ルート線は概略表示です（実道路の形ではありません）
@@ -446,9 +520,13 @@ export default function App() {
           )}
           {tab === 'map' && !trip && !toast && (
             <button
-              className="trip-banner"
-              style={{ background: 'var(--select)', textAlign: 'center' }}
-              onClick={() => setTab('route')}
+              className={mapFullscreen ? 'course-pill' : 'trip-banner'}
+              style={mapFullscreen ? undefined : { background: 'var(--select)', textAlign: 'center' }}
+              onClick={() => {
+                setMapFullscreen(false);
+                fsHistoryRef.current = false;
+                setTab('route');
+              }}
               data-testid="make-course-btn"
             >
               🚗 コースを作る
@@ -599,6 +677,7 @@ export default function App() {
         )}
       </main>
 
+      {mapFullscreen ? null : (
       <nav className="tabbar" aria-label="メインナビゲーション">
         <button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')} data-testid="tab-map">
           <span className="icon">🗾</span>地図
@@ -619,6 +698,7 @@ export default function App() {
           <span className="icon">📖</span>保存
         </button>
       </nav>
+      )}
     </div>
   );
 }

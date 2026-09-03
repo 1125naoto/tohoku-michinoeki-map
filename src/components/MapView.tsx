@@ -30,6 +30,8 @@ interface Props {
   sheetOpen: boolean;
   /** 営業状態判定の基準時刻（1分ごとに更新される。テストではclockで固定可能） */
   now: Date;
+  /** 地図全画面モード（切替時にサイズ再計算し、中心・ズームを維持する） */
+  fullscreen: boolean;
 }
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
@@ -250,6 +252,7 @@ export default function MapView({
   focusStationId,
   sheetOpen,
   now,
+  fullscreen,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -312,12 +315,54 @@ export default function MapView({
     });
     mapRef.current = map;
     clusterRef.current = cluster;
+    // E2E検証用: 中心・ズームの取得フック
+    (window as unknown as { __getMapState?: () => unknown }).__getMapState = () => ({
+      lat: map.getCenter().lat,
+      lng: map.getCenter().lng,
+      zoom: map.getZoom(),
+    });
+    // 画面回転・visualViewport変化でもタイル欠け・ずれを起こさない
+    const onResize = () => {
+      const c = map.getCenter();
+      const z = map.getZoom();
+      requestAnimationFrame(() => {
+        map.invalidateSize({ animate: false });
+        map.setView(c, z, { animate: false });
+      });
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    window.visualViewport?.addEventListener('resize', onResize);
     return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
     };
   }, []);
+
+  // 全画面切替の直後にLeafletへサイズ変更を通知（中心・ズームは維持）。
+  // マウント時は実行しない（初期フォーカス処理を上書きしないため）
+  const fsMountRef = useRef(true);
+  useEffect(() => {
+    if (fsMountRef.current) {
+      fsMountRef.current = false;
+      return;
+    }
+    const map = mapRef.current;
+    if (!map) return;
+    const c = map.getCenter();
+    const z = map.getZoom();
+    // レイアウト確定後に2フレーム待ってから再計算（タイル欠け・灰色領域防止）
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        map.invalidateSize({ animate: false });
+        map.setView(c, z, { animate: false });
+      }),
+    );
+  }, [fullscreen]);
 
   // マーカー更新
   useEffect(() => {

@@ -34,6 +34,9 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
   await shot(page, '01b-map', p);
 
   // 2. ピン密集地域（拡大: 仙台近郊）+ 地図拡大縮小
+  if (!(await page.getByTestId('chip-宮城県').isVisible().catch(() => false))) {
+    await page.getByTestId('filters-toggle').click();
+  }
   await page.getByTestId('chip-宮城県').click();
   await page.waitForTimeout(1200);
   await shot(page, '02-cluster-miyagi', p);
@@ -132,4 +135,18 @@ test('営業状態のスクリーンショット（時刻固定） @smoke', asyn
   await page.goto('/#station=mne-22686');
   await expect(page.getByTestId('hours-status')).toContainText('要確認');
   await shot(page, '15-hours-unknown', p);
+
+  // 地図全画面モード
+  await page.goto('/');
+  await page.getByTestId('fullscreen-btn').click();
+  await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+  await page.waitForTimeout(800);
+  await shot(page, '16-map-fullscreen', p);
+  // 全画面＋詳細ボトムシート
+  await page.goto('/#station=mne-18900');
+  await expect(page.getByTestId('station-sheet')).toBeVisible();
+  await page.waitForTimeout(400);
+  await shot(page, '17-fullscreen-sheet', p);
+  await page.getByTestId('sheet-x').click();
+  await page.getByTestId('fullscreen-exit').click();
 });

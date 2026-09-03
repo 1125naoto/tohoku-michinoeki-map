@@ -985,6 +985,88 @@ a {
   flex: 1;
 }
 
+/* ===== 地図全画面モード（CSSのみ・Fullscreen API非依存） ===== */
+.app.map-fs .app-main {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Safariのアドレスバー伸縮に追従 */
+  z-index: 1500;
+  background: var(--bg);
+}
+/* 全画面中はsafe-area分だけ上部ボタンを下げる */
+.fs-btn {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 10px;
+  z-index: 960;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  font-weight: 800;
+}
+.app.map-fs .legend-wrap {
+  top: calc(10px + env(safe-area-inset-top, 0px));
+}
+.app.map-fs .locate-btn {
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+/* 全画面時の「コースを作る」: 地図を隠さないコンパクトなフローティングピル */
+.course-pill {
+  position: absolute;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  min-height: 48px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--select);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.app.map-fs .trip-banner {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.app.map-fs .sheet {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ===== スマホ縦画面の省スペース化 ===== */
+@media (max-width: 700px) {
+  .stats-header {
+    padding: 4px 10px 3px;
+  }
+  .stats-main {
+    gap: 10px;
+  }
+  .stat-block {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .stat-block .lbl {
+    font-size: 11px;
+  }
+  .stat-block .val {
+    font-size: 15px;
+  }
+  /* 絞り込み展開時も地図を隠しすぎない（内部スクロール） */
+  .filter-groups {
+    max-height: 132px;
+    overflow-y: auto;
+  }
+}
+
 /* PC/タブレットでは中央寄せで幅を絞る */
 @media (min-width: 900px) {
   .pane {
