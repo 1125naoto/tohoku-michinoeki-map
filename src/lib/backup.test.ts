@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BACKUP_SCHEMA_VERSION, applyBackup, buildBackup, parseBackup } from './backup';
 import { KEYS, loadRoutes, loadTrip, loadVisits, saveRoutes, saveTrip, saveVisits } from './storage';
+import { DEFAULT_ROUTE_DRAFT, loadRouteDraft, saveRouteDraft } from './routeDraft';
 import type { SavedRoute, TripState, VisitMap } from '../types';
 
 class MemoryStorage implements Storage {
@@ -148,5 +149,67 @@ describe('復元の適用', () => {
     applyBackup(r.data, 'overwrite');
     expect(localStorage.getItem('tohoku-me:map-settings:v1')).toContain('cluster');
     expect(localStorage.getItem(KEYS.visits)).toContain('mne-00001');
+  });
+});
+
+describe('地図から選ぶ下書き（schemaVersion 2）との互換性', () => {
+  it('旧schemaVersion 1（下書きフィールドなし）は今も復元でき、下書きはnullになる', () => {
+    const r = parseBackup(
+      JSON.stringify({ schemaVersion: 1, visits: sampleVisits, routes: [], trip: null }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.manualDraft).toBeNull();
+  });
+
+  it('書き出し→パースで下書きも往復する', () => {
+    saveRouteDraft({ ...DEFAULT_ROUTE_DRAFT, selectedIds: ['mne-00001', 'mne-00002'], inProgress: true });
+    const b = buildBackup();
+    expect(b.schemaVersion).toBe(2);
+    const r = parseBackup(JSON.stringify(b));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.manualDraft?.selectedIds).toEqual(['mne-00001', 'mne-00002']);
+  });
+
+  it('壊れたmanualDraftはバックアップ全体を拒否せず、下書きなし扱いにする', () => {
+    const r = parseBackup(
+      JSON.stringify({
+        schemaVersion: 2,
+        visits: sampleVisits,
+        routes: [],
+        trip: null,
+        manualDraft: { selectedIds: 'not-an-array' },
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.manualDraft).toBeNull();
+      expect(r.data.visits).toEqual(sampleVisits); // 他フィールドは正常に読める
+    }
+  });
+
+  it('上書き復元: バックアップに下書きが無ければ既存の下書きも消える', () => {
+    saveRouteDraft({ ...DEFAULT_ROUTE_DRAFT, selectedIds: ['old'], inProgress: true });
+    const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: {}, routes: [], trip: null }));
+    if (!r.ok) throw new Error('parse失敗');
+    applyBackup(r.data, 'overwrite');
+    expect(loadRouteDraft()).toBeNull();
+  });
+
+  it('統合復元: バックアップに下書きが無ければ既存の下書きを残す', () => {
+    saveRouteDraft({ ...DEFAULT_ROUTE_DRAFT, selectedIds: ['kept'], inProgress: true });
+    const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: {}, routes: [], trip: null }));
+    if (!r.ok) throw new Error('parse失敗');
+    applyBackup(r.data, 'merge');
+    expect(loadRouteDraft()?.selectedIds).toEqual(['kept']);
+  });
+
+  it('復元後、選択途中のルートを再開できる（下書きがそのまま読める）', () => {
+    saveRouteDraft({ ...DEFAULT_ROUTE_DRAFT, selectedIds: ['a', 'b', 'c'], inProgress: true, orderMode: 'optimized' });
+    const b = buildBackup();
+    const r = parseBackup(JSON.stringify(b));
+    if (!r.ok) throw new Error('parse失敗');
+    const applied = applyBackup(r.data, 'overwrite');
+    expect(applied.manualDraft?.selectedIds).toEqual(['a', 'b', 'c']);
+    expect(loadRouteDraft()?.selectedIds).toEqual(['a', 'b', 'c']);
   });
 });

@@ -11,10 +11,11 @@
  * 貪欲挿入法（優先条件による重み付き）→ 2-opt改善。コースは最大3案
  * （制覇数優先 / バランス / ゆったり）を生成する。
  */
-import type { PlanParams, PlannedRoute, RouteLeg, RouteStop, Station, VisitMap } from '../types';
+import type { PlanParams, PlannedRoute, RoadPref, RouteLeg, RouteStop, Station, VisitMap } from '../types';
 import { estimateLegMin, formatMin, haversineKm, roadDistanceKm, type LatLng } from './geo';
 import { osrmProvider, type RouteMatrix, type RoutingProvider } from './routing';
 import { statusAtArrival, type ArrivalHours } from './hours';
+import { evaluateOrder, twoOptOrder } from './routeOrder';
 
 /** ルート対象になり得る駅か（開業前(upcoming)・休止は常に除外） */
 export function isRoutable(st: Station): boolean {
@@ -38,7 +39,12 @@ interface Candidate {
   hoursDirect: ArrivalHours;
 }
 
-const MAX_MATRIX_STATIONS = 22;
+/**
+ * 実道路時間行列に含める最大駅数（出発地点を除く）。OSRM公開デモは
+ * 「常識的な軽負荷利用」前提のため負荷試験は行わず、本番実績のあるこの値を
+ * 「地図から選ぶ」ルート作成（manualRoute.ts）の上限決定でも基準にしている。
+ */
+export const MAX_MATRIX_STATIONS = 22;
 
 function nearestPref(stations: Station[], origin: LatLng): string {
   let best = Number.POSITIVE_INFINITY;
@@ -82,8 +88,8 @@ function buildCandidates(stations: Station[], visits: VisitMap, p: PlanParams): 
   return list.slice(0, MAX_MATRIX_STATIONS);
 }
 
-/** 概算モデルで行列を作る（フォールバック） */
-function estimateMatrix(points: LatLng[], p: PlanParams): RouteMatrix {
+/** 概算モデルで行列を作る（フォールバック）。自動コース作成・手動ルート作成の両方から使う */
+export function estimateMatrix(points: LatLng[], p: { roadPref: RoadPref; departAt: string }): RouteMatrix {
   const departAt = new Date(p.departAt);
   const highway = p.roadPref === 'highway_ok';
   const n = points.length;
@@ -142,31 +148,13 @@ const COURSE_SPECS: CourseSpec[] = [
   },
 ];
 
-/** 訪問順に対する 移動+滞在 の合計（分・区間ごとに切り上げで丸め超過を防止） */
+/** 訪問順に対する 移動+滞在 の合計（分）。共通ロジックは routeOrder.ts に切り出し済み */
 function evaluate(
   order: Candidate[],
   matrix: RouteMatrix,
   p: PlanParams,
 ): { totalMin: number; driveMin: number; totalKm: number } | null {
-  let drive = 0;
-  let km = 0;
-  let cur = 0; // 行列index（0=出発地点）
-  for (const c of order) {
-    const t = matrix.durationsMin[cur][c.mi];
-    const d = matrix.distancesKm[cur][c.mi];
-    if (!Number.isFinite(t)) return null;
-    drive += Math.ceil(t);
-    km += d;
-    cur = c.mi;
-  }
-  if (p.returnToStart && order.length > 0) {
-    const t = matrix.durationsMin[cur][0];
-    if (!Number.isFinite(t)) return null;
-    drive += Math.ceil(t);
-    km += matrix.distancesKm[cur][0];
-  }
-  const totalMin = drive + order.length * p.stayMin;
-  return { totalMin, driveMin: drive, totalKm: km };
+  return evaluateOrder(order, matrix, p.stayMin, p.returnToStart);
 }
 
 function greedyInsert(
@@ -207,28 +195,9 @@ function greedyInsert(
   return order;
 }
 
-/** 2-opt: 過度な往復（順序の交差）を解消 */
+/** 2-opt: 過度な往復（順序の交差）を解消。共通ロジックは routeOrder.ts に切り出し済み */
 function twoOpt(order: Candidate[], matrix: RouteMatrix, p: PlanParams): Candidate[] {
-  if (order.length < 3) return order;
-  let best = order;
-  let bestEv = evaluate(best, matrix, p);
-  if (!bestEv) return order;
-  let improved = true;
-  while (improved) {
-    improved = false;
-    for (let i = 0; i < best.length - 1; i++) {
-      for (let j = i + 1; j < best.length; j++) {
-        const trial = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)];
-        const ev = evaluate(trial, matrix, p);
-        if (ev && bestEv && ev.totalMin < bestEv.totalMin) {
-          best = trial;
-          bestEv = ev;
-          improved = true;
-        }
-      }
-    }
-  }
-  return best;
+  return twoOptOrder(order, matrix, p.stayMin, p.returnToStart);
 }
 
 function buildRoute(

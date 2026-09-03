@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { PlanParams, PlanPriority, Prefecture, RoadPref, Station } from '../types';
 import { PREFECTURES } from '../types';
-import { geocode } from '../lib/geocode';
 import type { LatLng } from '../lib/geo';
+import OriginPicker from './OriginPicker';
 
 export interface OriginValue extends LatLng {
   label: string;
@@ -33,12 +33,6 @@ const BUDGETS = [
 const STAYS = [15, 30, 45, 60];
 
 export default function PlannerForm({ stations, origin, onRequestMapPick, onOriginChange, onSubmit, planning }: Props) {
-  const [originMode, setOriginMode] = useState<'geo' | 'search' | 'map' | 'station'>('geo');
-  const [searchText, setSearchText] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
-
   const [budgetMin, setBudgetMin] = useState(240);
   const [customBudget, setCustomBudget] = useState('');
   const [stayMin, setStayMin] = useState(30);
@@ -59,37 +53,6 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
   const [preferOpenHours, setPreferOpenHours] = useState(true);
   const [includeClosedHours, setIncludeClosedHours] = useState(true);
   const [includeUnknownHours, setIncludeUnknownHours] = useState(true);
-
-  const useGeolocation = () => {
-    setGeoError(null);
-    if (!('geolocation' in navigator)) {
-      setGeoError('この端末では位置情報を使えません。住所か地図、道の駅からも選べます。');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => onOriginChange({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }),
-      () => setGeoError('現在地がわかりませんでした。住所か地図、道の駅からも選べます。'),
-      { timeout: 10000 },
-    );
-  };
-
-  const doSearch = async () => {
-    setSearching(true);
-    setSearchError(null);
-    try {
-      const results = await geocode(searchText);
-      if (results.length === 0) {
-        setSearchError('見つかりませんでした。「地図で選ぶ」や「道の駅から」もお試しください。');
-      } else {
-        const r = results[0];
-        onOriginChange({ lat: r.lat, lng: r.lng, label: r.label });
-      }
-    } catch {
-      setSearchError('検索がうまくいきませんでした。「地図で選ぶ」や「道の駅から」もお試しください。');
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const submit = () => {
     if (!origin || planning) return;
@@ -127,81 +90,12 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
     <div>
       <div className="card">
         <h3>1. どこから出発？</h3>
-        <div className="seg" style={{ marginBottom: 10 }}>
-          <button className={originMode === 'geo' ? 'active' : ''} onClick={() => setOriginMode('geo')}>
-            現在地
-          </button>
-          <button className={originMode === 'search' ? 'active' : ''} onClick={() => setOriginMode('search')}>
-            住所・地名
-          </button>
-          <button className={originMode === 'map' ? 'active' : ''} onClick={() => setOriginMode('map')}>
-            地図で選ぶ
-          </button>
-          <button className={originMode === 'station' ? 'active' : ''} onClick={() => setOriginMode('station')}>
-            道の駅から
-          </button>
-        </div>
-        {originMode === 'geo' && (
-          <>
-            <button className="btn-primary" style={{ width: '100%' }} onClick={useGeolocation}>
-              📍 現在地を使う
-            </button>
-            {geoError && <div className="msg warn">{geoError}</div>}
-          </>
-        )}
-        {originMode === 'search' && (
-          <>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                style={{ flex: 1, minWidth: 0 }}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="例: 郡山市、盛岡駅"
-                aria-label="住所・地名"
-              />
-              <button className="btn-primary" onClick={doSearch} disabled={searching || !searchText.trim()}>
-                {searching ? '検索中…' : '検索'}
-              </button>
-            </div>
-            {searchError && <div className="msg warn">{searchError}</div>}
-          </>
-        )}
-        {originMode === 'map' && (
-          <button className="btn-primary" style={{ width: '100%' }} onClick={onRequestMapPick}>
-            🗺️ 地図を開いてタップで選ぶ
-          </button>
-        )}
-        {originMode === 'station' && (
-          <select
-            style={{ width: '100%' }}
-            aria-label="出発する道の駅"
-            value=""
-            onChange={(e) => {
-              const st = stations.find((s) => s.id === e.target.value);
-              if (st) onOriginChange({ lat: st.lat, lng: st.lng, label: `道の駅${st.name}` });
-            }}
-          >
-            <option value="">道の駅を選択…</option>
-            {PREFECTURES.map((p) => (
-              <optgroup key={p} label={p}>
-                {stations
-                  .filter((s) => s.pref === p && s.status === 'open')
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}（{s.city}）
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-        )}
-        {origin ? (
-          <div className="origin-label" data-testid="origin-label">
-            出発地点: <b>{origin.label}</b>
-          </div>
-        ) : (
-          <div className="msg info">出発地点を選んでください</div>
-        )}
+        <OriginPicker
+          stations={stations}
+          origin={origin}
+          onOriginChange={onOriginChange}
+          onRequestMapPick={onRequestMapPick}
+        />
       </div>
 
       <div className="card">

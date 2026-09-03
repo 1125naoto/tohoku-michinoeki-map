@@ -1186,3 +1186,202 @@ a {
 .leaflet-control-attribution {
   font-size: 10px;
 }
+
+/* ===== 地図から選ぶ: ルート選択マーカー（訪問状態の色は変えず、外周リング+番号バッジで表す） ===== */
+.rs-hit.picked .rs-marker {
+  box-shadow: 0 0 0 3px #ffb300, 0 1px 3px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+}
+.rs-route-num {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 9px;
+  background: #ffb300;
+  color: #3d2c00;
+  border: 1.5px solid #fff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  z-index: 4;
+}
+
+/* 選択モード中の上部案内（ボタン行の下・legend/fs-btnと重ならない位置）。
+   純粋な案内表示でボタンを持たないため、下のマーカーへのタップを奪わないよう
+   pointer-events:none にする（選択バーの操作は下部のrouute-select-barで行う） */
+.route-select-banner {
+  position: absolute;
+  top: 56px;
+  left: 10px;
+  right: 10px;
+  z-index: 900;
+  pointer-events: none;
+  background: var(--surface);
+  border: 1px solid #ffb300;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 13px;
+}
+.route-select-banner .route-select-note {
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+/* 下部固定の選択バー（E仕様）: 全画面解除・現在地・凡例・ズーム・帰属・safe-areaと重ならない */
+.route-select-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 850;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+}
+.route-select-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.route-select-bar-row b {
+  font-size: 15px;
+}
+.route-select-bar-sub {
+  display: flex;
+  gap: 6px;
+}
+.route-select-bar-sub button {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.app.map-fs .route-select-bar {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.app.map-fs .route-select-banner {
+  top: calc(56px + env(safe-area-inset-top, 0px));
+}
+
+/* 選択駅一覧のボトムシート（.sheet を流用し、リスト部分だけ追加） */
+.route-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.route-select-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.route-select-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffb300;
+  color: #3d2c00;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.route-select-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.route-select-info b {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.route-select-meta {
+  font-size: 12px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+}
+.route-select-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.route-select-actions button {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* ===== コース作り方の選択カード（B仕様） ===== */
+.mode-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 84px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.mode-card.last-used {
+  border-color: var(--select);
+  border-width: 2px;
+}
+.mode-card-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+}
+.mode-card-body h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+.mode-card-body p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+.mode-card-last {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--select);
+}
+
+/* 凡例内の折りたたみ説明（Q仕様） */
+.legend-details {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.legend-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+.legend-details .legend-hint {
+  margin-top: 4px;
+}

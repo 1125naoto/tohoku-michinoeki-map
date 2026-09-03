@@ -31,6 +31,15 @@ import {
   saveTrip,
   saveVisits,
 } from './lib/storage';
+import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
+import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
+import {
+  DEFAULT_ROUTE_DRAFT,
+  clearRouteDraft,
+  loadRouteDraft,
+  saveRouteDraft,
+  type RouteDraft,
+} from './lib/routeDraft';
 import MapView from './components/MapView';
 import StatsHeader from './components/StatsHeader';
 import StationSheet from './components/StationSheet';
@@ -38,6 +47,11 @@ import PlannerForm, { type OriginValue } from './components/PlannerForm';
 import RouteResults, { routePoints } from './components/RouteResults';
 import TripView from './components/TripView';
 import SavedRoutesView from './components/SavedRoutesView';
+import CourseModePicker, { type CourseMode } from './components/CourseModePicker';
+import ManualRouteBuilder from './components/ManualRouteBuilder';
+import RouteSelectBar from './components/RouteSelectBar';
+import RouteSelectionSheet from './components/RouteSelectionSheet';
+import ConfirmDialog from './components/ConfirmDialog';
 
 type Tab = 'map' | 'route' | 'records';
 type RouteStage = 'form' | 'results';
@@ -108,6 +122,153 @@ export default function App() {
   const changeMapSettings = useCallback((s: MapSettings) => {
     setMapSettings(s);
     saveMapSettings(s);
+  }, []);
+
+  // ---- コース作成方式（おすすめコース/地図から選ぶ）----
+  const COURSE_MODE_KEY = 'tohoku-me:course-mode-last:v1';
+  const [lastCourseMode, setLastCourseMode] = useState<CourseMode | null>(() => {
+    try {
+      const v = localStorage.getItem(COURSE_MODE_KEY);
+      return v === 'auto' || v === 'manual' ? v : null;
+    } catch {
+      return null;
+    }
+  });
+  // タブを開くたびに常にこの画面を経由させる（初めて使う人にも違いがすぐ分かるように）
+  const [courseMode, setCourseMode] = useState<CourseMode | 'choose'>('choose');
+  // 地図から選ぶ: 選択モード・選択済み駅ID（選んだ順）・下書き
+  const [routeSelectMode, setRouteSelectMode] = useState(false);
+  const [routeSelectedIds, setRouteSelectedIds] = useState<string[]>([]);
+  const [showSelectionSheet, setShowSelectionSheet] = useState(false);
+  const [selectMsg, setSelectMsg] = useState<string | null>(null);
+  const [manualDraftSnapshot, setManualDraftSnapshot] = useState<RouteDraft>(
+    () => loadRouteDraft() ?? DEFAULT_ROUTE_DRAFT,
+  );
+  // 前回の選択が残っていれば起動時に再開を確認する（訪問記録キーとは別データ）
+  const [pendingDraft, setPendingDraft] = useState<RouteDraft | null>(() => {
+    const d = loadRouteDraft();
+    return d && d.inProgress && d.selectedIds.length > 0 ? d : null;
+  });
+
+  const persistDraft = useCallback((patch: Partial<RouteDraft>) => {
+    setManualDraftSnapshot((cur) => {
+      const next = { ...cur, ...patch, inProgress: true };
+      saveRouteDraft(next);
+      return next;
+    });
+  }, []);
+
+  const chooseCourseMode = useCallback((m: CourseMode) => {
+    setLastCourseMode(m);
+    try {
+      localStorage.setItem(COURSE_MODE_KEY, m);
+    } catch {
+      /* noop */
+    }
+    setCourseMode(m);
+    if (m === 'manual') {
+      // カードから新規に始めるときは常にまっさらな選択から（続きは下書き再開ダイアログの役目）
+      setRouteSelectedIds([]);
+      clearRouteDraft();
+      setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+      setResults(null);
+      setRouteStage('form');
+      setRouteSelectMode(true);
+      setTab('map');
+    }
+  }, []);
+
+  const backToMapSelect = useCallback(() => {
+    setRouteSelectMode(true);
+    setTab('map');
+  }, []);
+
+  const proceedFromSelection = useCallback(() => {
+    setRouteSelectMode(false);
+    setShowSelectionSheet(false);
+    setTab('route');
+  }, []);
+
+  const cancelManualSelection = useCallback(() => {
+    setRouteSelectMode(false);
+    setShowSelectionSheet(false);
+    setRouteSelectedIds([]);
+    setCourseMode('choose');
+    clearRouteDraft();
+    setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+  }, []);
+
+  const toggleRouteSelect = useCallback(
+    (id: string) => {
+      const { ids, result } = toggleSelection(routeSelectedIds, id, MAX_MANUAL_STATIONS);
+      if (result === 'max-reached') {
+        setSelectMsg(`一度に選べるのは最大${MAX_MANUAL_STATIONS}駅です`);
+        setTimeout(() => setSelectMsg(null), 3000);
+        return;
+      }
+      setRouteSelectedIds(ids);
+      persistDraft({ selectedIds: ids });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [routeSelectedIds, persistDraft],
+  );
+  const removeFromSelection = useCallback(
+    (id: string) => {
+      const ids = removeSelection(routeSelectedIds, id);
+      setRouteSelectedIds(ids);
+      persistDraft({ selectedIds: ids });
+    },
+    [routeSelectedIds, persistDraft],
+  );
+  const clearAllSelection = useCallback(() => {
+    setRouteSelectedIds([]);
+    persistDraft({ selectedIds: [] });
+  }, [persistDraft]);
+  const moveSelectionItem = useCallback(
+    (index: number, dir: -1 | 1) => {
+      const ids = moveSelection(routeSelectedIds, index, dir);
+      setRouteSelectedIds(ids);
+      persistDraft({ selectedIds: ids });
+    },
+    [routeSelectedIds, persistDraft],
+  );
+
+  const handleManualOriginChange = useCallback(
+    (o: OriginValue | null) => {
+      setOrigin(o);
+      persistDraft({ origin: o });
+    },
+    [persistDraft],
+  );
+
+  const handleManualDone = useCallback((route: PlannedRoute) => {
+    setResults([route]);
+    setRouteStage('results');
+    // 選択はあえて残す: 結果画面の「← コース一覧に戻る」で選択・設定を調整し直せるようにする
+    clearRouteDraft();
+    setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+  }, []);
+
+  const resumeDraft = useCallback(() => {
+    if (!pendingDraft) return;
+    setRouteSelectedIds(pendingDraft.selectedIds);
+    if (pendingDraft.origin) setOrigin(pendingDraft.origin);
+    setManualDraftSnapshot(pendingDraft);
+    setLastCourseMode('manual');
+    try {
+      localStorage.setItem(COURSE_MODE_KEY, 'manual');
+    } catch {
+      /* noop */
+    }
+    setCourseMode('manual');
+    setPendingDraft(null);
+    setTab('route');
+  }, [pendingDraft]);
+
+  const discardDraft = useCallback(() => {
+    clearRouteDraft();
+    setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+    setPendingDraft(null);
   }, []);
 
   // 営業状態表示の基準時刻（1分ごとに更新。テストはclock固定で制御可能）
@@ -332,12 +493,17 @@ export default function App() {
 
   const resetAll = useCallback(() => {
     clearAllUserData();
+    clearRouteDraft();
     setVisits({});
     setSavedRoutes([]);
     setTrip(null);
     setResults(null);
     setRouteStage('form');
     setRouteLine(null);
+    setRouteSelectedIds([]);
+    setRouteSelectMode(false);
+    setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+    setCourseMode('choose');
   }, []);
 
   // 記録のバックアップ書き出し（この端末のlocalStorageのみのため、機種変更・別ブラウザ移行用にJSONで保存）
@@ -362,13 +528,16 @@ export default function App() {
     return parseBackup(text);
   }, []);
 
-  // 復元を適用し、画面の状態（訪問記録・保存ルート・旅行中・地図設定）にも即時反映する
+  // 復元を適用し、画面の状態（訪問記録・保存ルート・旅行中・地図設定・選択下書き）にも即時反映する
   const applyRestore = useCallback((data: BackupFile, mode: RestoreMode) => {
     const applied = applyBackup(data, mode);
     setVisits(applied.visits);
     setSavedRoutes(applied.routes);
     setTrip(applied.trip);
     setMapSettings(applied.mapSettings);
+    const d = applied.manualDraft;
+    setManualDraftSnapshot(d ?? DEFAULT_ROUTE_DRAFT);
+    setPendingDraft(d && d.inProgress && d.selectedIds.length > 0 ? d : null);
   }, []);
 
   // 最新の訪問記録をコールバックから参照するためのref
@@ -467,6 +636,15 @@ export default function App() {
           オフラインです。訪問記録・保存ルートは閲覧/更新できます。地図タイル・外部リンクは利用できません。
         </div>
       )}
+      {pendingDraft && (
+        <ConfirmDialog
+          title="前回の続きがあります"
+          message={`「地図から選ぶ」で選んでいた道の駅（${pendingDraft.selectedIds.length}駅）の続きがあります。続けますか？`}
+          confirmLabel="続ける"
+          onConfirm={resumeDraft}
+          onCancel={discardDraft}
+        />
+      )}
       {!mapFullscreen && (
         <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
       )}
@@ -544,6 +722,9 @@ export default function App() {
             selectedId={selectedId}
             settings={mapSettings}
             onChangeSettings={changeMapSettings}
+            routeSelectMode={routeSelectMode}
+            routeSelectedIds={routeSelectedIds}
+            onToggleRouteSelect={toggleRouteSelect}
           />
           {/* 全画面の切替（CSSのみで確実に動作。左上・44px以上・safe-area対応） */}
           {tab === 'map' &&
@@ -561,7 +742,7 @@ export default function App() {
               ルート線は概略表示です（実道路の形ではありません）
             </div>
           )}
-          {tab === 'map' && !trip && !toast && (
+          {tab === 'map' && !trip && !toast && !routeSelectMode && (
             <button
               className={mapFullscreen ? 'course-pill' : 'trip-banner'}
               style={mapFullscreen ? undefined : { background: 'var(--select)', textAlign: 'center' }}
@@ -575,7 +756,33 @@ export default function App() {
               🚗 コースを作る
             </button>
           )}
-          {tab === 'map' && showA2hs && !selectedId && !pickMode && (
+          {tab === 'map' && routeSelectMode && !showSelectionSheet && (
+            <RouteSelectBar
+              count={routeSelectedIds.length}
+              onShowList={() => setShowSelectionSheet(true)}
+              onCreate={proceedFromSelection}
+              onClearAll={clearAllSelection}
+              onExit={cancelManualSelection}
+            />
+          )}
+          {tab === 'map' && routeSelectMode && showSelectionSheet && (
+            <RouteSelectionSheet
+              selectedIds={routeSelectedIds}
+              getStation={getStation}
+              now={now}
+              onRemove={removeFromSelection}
+              onMove={moveSelectionItem}
+              onClearAll={clearAllSelection}
+              onClose={() => setShowSelectionSheet(false)}
+              onProceed={proceedFromSelection}
+            />
+          )}
+          {tab === 'map' && selectMsg && (
+            <div className="map-hint" data-testid="route-select-msg">
+              {selectMsg}
+            </div>
+          )}
+          {tab === 'map' && showA2hs && !selectedId && !pickMode && !routeSelectMode && (
             <div className="a2hs-banner" data-testid="a2hs-banner">
               <b>📲 ホーム画面に追加すると、アプリのように使えます</b>
               <br />
@@ -663,6 +870,42 @@ export default function App() {
                 onPreviewOnMap={previewOnMap}
                 onBack={() => setRouteStage('form')}
               />
+            ) : courseMode === 'choose' ? (
+              <CourseModePicker lastUsed={lastCourseMode} onChoose={chooseCourseMode} />
+            ) : courseMode === 'manual' ? (
+              routeSelectMode ? (
+                <div className="empty" data-testid="manual-select-hint">
+                  地図で道の駅を選んでください。
+                  <br />
+                  <button style={{ marginTop: 8 }} onClick={() => setTab('map')} data-testid="manual-go-to-map">
+                    地図へ戻る
+                  </button>
+                </div>
+              ) : (
+                <ManualRouteBuilder
+                  stations={STATIONS}
+                  getStation={getStation}
+                  selectedIds={routeSelectedIds}
+                  origin={origin}
+                  onOriginChange={handleManualOriginChange}
+                  onRequestMapPick={() => {
+                    setPickMode(true);
+                    setTab('map');
+                  }}
+                  onBackToMapSelect={backToMapSelect}
+                  onRemoveFromSelection={removeFromSelection}
+                  onDone={handleManualDone}
+                  onCancel={cancelManualSelection}
+                  initialSettings={{
+                    returnToStart: manualDraftSnapshot.returnToStart,
+                    orderMode: manualDraftSnapshot.orderMode,
+                    budgetMin: manualDraftSnapshot.budgetMin,
+                    stayMin: manualDraftSnapshot.stayMin,
+                    roadPref: manualDraftSnapshot.roadPref,
+                  }}
+                  onSettingsChange={persistDraft}
+                />
+              )
             ) : (
               <PlannerForm
                 stations={STATIONS}

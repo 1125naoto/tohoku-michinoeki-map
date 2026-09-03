@@ -83,7 +83,8 @@ export default function SavedRoutesView({
               再表示
             </button>
             <button onClick={() => onDuplicate(sr)}>複製</button>
-            <button onClick={() => onRecalc(sr)}>再計算</button>
+            {/* 「地図から選ぶ」で作ったコースは自動選定の対象外のため、自動コース作成の再計算はできない */}
+            {sr.route.key !== 'manual' && <button onClick={() => onRecalc(sr)}>再計算</button>}
             <button className="btn-danger-ghost" onClick={() => setDeleting(sr)} data-testid="saved-delete">
               削除
             </button>

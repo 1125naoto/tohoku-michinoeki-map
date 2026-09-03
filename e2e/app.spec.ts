@@ -51,6 +51,19 @@ async function closeLegend(page: Page) {
   }
 }
 
+/**
+ * 「コース」タブへ入り、自動コース作成（おすすめコース）の画面まで進める。
+ * タブを開くと毎回まず作成方式の選択画面（おすすめコース/地図から選ぶ）が出るため、
+ * 従来どおりPlannerFormへ直接アクセスしたい既存テストはこのヘルパーを経由する。
+ */
+async function goToAutoPlanner(page: Page) {
+  await page.getByTestId('tab-route').click();
+  const picker = page.getByTestId('course-mode-auto');
+  if (await picker.isVisible().catch(() => false)) {
+    await picker.click();
+  }
+}
+
 /** 凡例パネルを開く（閉じていれば開く。バナーが被らないよう先に閉じる） */
 async function openLegendPanel(page: Page) {
   const banner = page.getByTestId('a2hs-banner');
@@ -521,7 +534,7 @@ test.describe('堅牢性', () => {
   test('住所検索サービス失敗時もエラーメッセージ表示で継続できる', async ({ page }) => {
     await page.route('**/msearch.gsi.go.jp/**', (route) => route.abort());
     await page.goto('/');
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await page.getByRole('button', { name: '住所・地名' }).click();
     await page.getByLabel('住所・地名').fill('郡山市');
     await page.getByRole('button', { name: '検索', exact: true }).click();
@@ -535,7 +548,7 @@ test.describe('堅牢性', () => {
 test.describe('ルート提案から旅行中まで', () => {
   async function planFromStation(page: Page) {
     await page.goto('/');
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
     await expect(page.getByTestId('origin-label')).toContainText('しちのへ');
@@ -575,6 +588,7 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(page.getByTestId('make-course-btn')).toBeVisible();
     await page.getByTestId('make-course-btn').click();
     await expect(page.getByTestId('route-pane')).toBeVisible();
+    await page.getByTestId('course-mode-auto').click();
     await expect(page.getByTestId('plan-submit')).toBeVisible();
   });
 
@@ -669,7 +683,7 @@ test.describe('ルート提案から旅行中まで', () => {
       );
     });
     await page.goto('/');
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
     await page.getByRole('button', { name: '6時間' }).click();
@@ -763,7 +777,7 @@ test.describe('営業時間の表示（時刻固定・Asia/Tokyo基準）', () =
     await page.clock.install({ time: DAY });
     await page.goto('/');
     await closeLegend(page);
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await expect(page.getByTestId('prefer-open-hours')).toContainText('ON'); // 初期値ON
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
@@ -929,6 +943,7 @@ test.describe('地図全画面モード', () => {
     if (await toastClose.isVisible().catch(() => false)) await toastClose.click();
     await expect(page.getByTestId('make-course-btn')).toBeVisible({ timeout: 10000 });
     await page.getByTestId('make-course-btn').click();
+    await page.getByTestId('course-mode-auto').click();
     await expect(page.getByTestId('plan-submit')).toBeVisible();
   });
 
@@ -973,7 +988,7 @@ test.describe('シナリオC: ルーティング障害時の概算フォール�
   test('OSRM不通でも概算で提案でき、注意表示とナビは使える', async ({ page }) => {
     await page.route('**router.project-osrm.org/**', (route) => route.abort());
     await page.goto('/');
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
     await page.getByTestId('plan-submit').click();
@@ -1007,7 +1022,7 @@ test.describe('シナリオC: ルーティング障害時の概算フォール�
       ['tohoku-me:visits:v2', ids] as const,
     );
     // 再読み込みしない
-    await page.getByTestId('tab-route').click();
+    await goToAutoPlanner(page);
     await page.getByRole('button', { name: '道の駅から' }).click();
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
     await page.getByTestId('plan-submit').click();
@@ -1129,7 +1144,7 @@ test.describe('記録のバックアップ・復元', () => {
       stream!.on('error', reject);
     });
     const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-    expect(data.schemaVersion).toBe(1);
+    expect(data.schemaVersion).toBe(2); // 2: 「地図から選ぶ」の選択下書き(manualDraft)を追加
     expect(data.visits[STATION_ID].state).toBe('visited');
     expect(Array.isArray(data.routes)).toBe(true);
     expect(data.settings.map.markerMode).toBe('all');

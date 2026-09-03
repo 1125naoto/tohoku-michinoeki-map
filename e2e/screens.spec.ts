@@ -53,11 +53,15 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
   await shot(page, '04-long-name', p);
   await noHorizontalScroll(page);
 
-  // 5. ルート条件入力
+  // 5. コース作成方式の選択（おすすめコース／地図から選ぶ）
   await page.goto('/');
   await page.getByTestId('tab-route').click();
-  await shot(page, '05-planner-form', p);
+  await shot(page, '05-course-mode-picker', p);
   await noHorizontalScroll(page);
+
+  // 5b. ルート条件入力（おすすめコース）
+  await page.getByTestId('course-mode-auto').click();
+  await shot(page, '05b-planner-form', p);
 
   // 6. ルート結果
   await page.getByRole('button', { name: '道の駅から' }).click();
@@ -70,7 +74,54 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
   await shot(page, '07-route-detail', p);
   await noHorizontalScroll(page);
 
+  // 6b. 地図から選ぶ: 選択モード→番号バッジ→選択一覧（このブロックではルート計算まで進めないためOSRM通信は発生しない）
+  await page.goto('/');
+  if (await page.getByTestId('a2hs-banner').isVisible().catch(() => false)) {
+    await page.getByTestId('a2hs-close').click();
+  }
+  if (await page.getByTestId('legend-panel').isVisible().catch(() => false)) {
+    await page.getByTestId('legend-toggle').click();
+  }
+  await page.getByTestId('tab-route').click();
+  await page.getByTestId('course-mode-manual').click();
+  await expect(page.getByTestId('route-select-bar')).toBeVisible();
+  await shot(page, '06b-manual-select-mode', p);
+  const manualStations: [string, number, number][] = [
+    ['mne-19038', 37.2436603, 140.2447857],
+    ['mne-19029', 37.2228324, 140.4181372],
+    ['mne-19033', 37.2505454, 140.5600321],
+  ];
+  for (const [id, lat, lng] of manualStations) {
+    await page.evaluate(
+      ([la, ln]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(la as number, ln as number, 12),
+      [lat, lng],
+    );
+    await page.waitForTimeout(250);
+    await page.locator(`[data-sid="${id}"]`).click();
+  }
+  await expect(page.getByTestId('route-select-count')).toContainText('3駅選択中');
+  await shot(page, '06c-manual-select-numbered', p);
+  await page.getByTestId('route-select-show-list').click();
+  await expect(page.getByTestId('route-select-sheet')).toBeVisible();
+  await shot(page, '06d-manual-select-list', p);
+  await page.getByTestId('route-select-sheet-close').click();
+  await page.getByTestId('route-select-create').click();
+  await page.getByRole('button', { name: '道の駅から', exact: true }).click();
+  await page.getByLabel('出発する道の駅').selectOption('mne-19038');
+  await shot(page, '06e-manual-settings', p);
+  // 選択途中のまま離れると次回起動時に再開確認ダイアログが出るため、明示的にやめておく
+  await page.getByTestId('manual-cancel').click();
+
   // 7. 旅行中画面
+  await page.goto('/'); // コース作成方式の選択状態をリセットして「おすすめコース」へ戻る
+  await page.getByTestId('tab-route').click();
+  await page.getByTestId('course-mode-auto').click();
+  await page.getByRole('button', { name: '道の駅から' }).click();
+  await page.getByLabel('出発する道の駅').selectOption('mne-18900');
+  await page.getByTestId('plan-submit').click();
+  await expect(page.getByTestId('route-card-max')).toBeVisible({ timeout: 20000 });
+  await page.getByTestId('route-card-max').click();
+  await expect(page.getByTestId('route-detail')).toBeVisible();
   await page.getByTestId('trip-start').click();
   await expect(page.getByTestId('trip-view')).toBeVisible();
   await shot(page, '08-trip', p);

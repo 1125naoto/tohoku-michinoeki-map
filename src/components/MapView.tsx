@@ -38,6 +38,14 @@ interface Props {
   /** 地図表示設定（マーカー表示/駅名表示） */
   settings: MapSettings;
   onChangeSettings: (s: MapSettings) => void;
+  /**
+   * 「地図から選ぶ」ルート選択モード。trueの間はマーカータップが訪問状態を
+   * 一切変更せず、onToggleRouteSelectでルート候補への追加/解除だけを行う。
+   */
+  routeSelectMode: boolean;
+  /** ルートに選択済みの駅ID（選んだ順。番号バッジは配列内の位置から決まる） */
+  routeSelectedIds: string[];
+  onToggleRouteSelect: (id: string) => void;
 }
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
@@ -141,6 +149,8 @@ export function markerHtml(
   hoursKind?: HoursKind,
   name?: string,
   selected?: boolean,
+  /** ルート選択中の番号（1始まり）。訪問状態色は変えず、別の外周リング+番号バッジで表す */
+  routeSelectNumber?: number,
 ): string {
   const badge = state === 'none' ? '' : `<span class="rs-badge">${BADGE_SYMBOL[state]}</span>`;
   const dotSpec = hoursKind ? HOURS_DOT[hoursKind] : null;
@@ -148,10 +158,14 @@ export function markerHtml(
   // 駅名ラベル: stations.json由来の名前をマーカー中央下へ（pointer-events:none・タップを奪わない）
   // 表示上は共通の「道の駅」を省略。表示/非表示はズーム連動のCSSクラスで制御
   const label = name ? `<span class="rs-label" aria-hidden="true">${escapeHtml(name)}</span>` : '';
+  const picked = routeSelectNumber != null;
+  const numBadge = picked
+    ? `<span class="rs-route-num" data-testid="route-select-num" aria-hidden="true">${routeSelectNumber}</span>`
+    : '';
   // .rs-hit = 44×44の透明タップ領域。見た目の縮小はCSS transformで行い、タップ領域は維持する
   return (
-    `<div class="rs-hit${selected ? ' sel' : ''}">` +
-    `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}</div>` +
+    `<div class="rs-hit${selected ? ' sel' : ''}${picked ? ' picked' : ''}">` +
+    `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}${numBadge}</div>` +
     `${label}</div>`
   );
 }
@@ -305,6 +319,20 @@ function Legend({
               </>
             )}
           </div>
+          <details className="legend-details">
+            <summary>「地図から選ぶ」の使い方</summary>
+            <div className="legend-hint">
+              コース作成で「地図から選ぶ」を選ぶと、地図上で道の駅を選べるようになります。
+              <br />
+              ルート選択中は、道の駅マークを押すとコースへ追加されます。
+              <br />
+              もう一度押すと選択を解除します。
+              <br />
+              選択中は訪問記録の色は変わりません。
+              <br />
+              選んだ順番のまま、または回りやすい順に自動調整できます。
+            </div>
+          </details>
         </div>
       )}
     </div>
@@ -329,6 +357,9 @@ export default function MapView({
   selectedId,
   settings,
   onChangeSettings,
+  routeSelectMode,
+  routeSelectedIds,
+  onToggleRouteSelect,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -340,10 +371,14 @@ export default function MapView({
   const onPickRef = useRef(onPick);
   const onTapRef = useRef(onTapStation);
   const onMapTapRef = useRef(onMapTap);
+  const routeSelectModeRef = useRef(routeSelectMode);
+  const onToggleRouteSelectRef = useRef(onToggleRouteSelect);
   pickRef.current = pickMode;
   onPickRef.current = onPick;
   onTapRef.current = onTapStation;
   onMapTapRef.current = onMapTap;
+  routeSelectModeRef.current = routeSelectMode;
+  onToggleRouteSelectRef.current = onToggleRouteSelect;
 
   // 1回の物理タップから touchend と click が二重発火しても「1タップ=1段階」を守るための
   // デデュープ（80ms未満の同一ID再入は同じ物理タップとみなす）。
@@ -354,6 +389,11 @@ export default function MapView({
     const lastTap = lastTapRef.current;
     lastTapRef.current = { id, at: now };
     if (lastTap && lastTap.id === id && now - lastTap.at < 80) return;
+    // ルート選択モード中は訪問状態への分岐を一切経由せず、選択の追加/解除だけを行う
+    if (routeSelectModeRef.current) {
+      onToggleRouteSelectRef.current(id);
+      return;
+    }
     // タップ間隔に関係なく、押した瞬間に状態を1段階だけ進める（保留・時間差判定なし）
     onTapRef.current(id);
   };
@@ -465,7 +505,9 @@ export default function MapView({
     // 切替時の二重表示・残骸防止: 両方を一旦クリアし、対象だけを地図へ載せる
     cluster.clearLayers();
     allLayer.clearLayers();
-    const useCluster = settings.markerMode === 'cluster';
+    // ルート選択モード中は駅を選びやすいよう、まとめ表示中でも一時的に全駅個別表示へ切り替える。
+    // 永続設定(settings.markerMode)自体は変更しないため、選択モード終了で自動的に元へ戻る。
+    const useCluster = settings.markerMode === 'cluster' && !routeSelectMode;
     if (useCluster) {
       if (map.hasLayer(allLayer)) map.removeLayer(allLayer);
       if (!map.hasLayer(cluster)) map.addLayer(cluster);
@@ -481,9 +523,11 @@ export default function MapView({
       const state = visitState(st, visits);
       const hs = getStatus(st.id, now);
       const selected = st.id === selectedId;
+      const routeIdx = routeSelectMode ? routeSelectedIds.indexOf(st.id) : -1;
+      const routeSelectNumber = routeIdx >= 0 ? routeIdx + 1 : undefined;
       const marker = L.marker([st.lat, st.lng], {
         icon: L.divIcon({
-          html: markerHtml(state, st.id, hs.kind, st.name, selected),
+          html: markerHtml(state, st.id, hs.kind, st.name, selected, routeSelectNumber),
           className: '',
           // 44×44の透明タップ領域（見た目の縮小はCSSで行う）
           iconSize: [44, 44],
@@ -492,8 +536,8 @@ export default function MapView({
         }),
         alt: `道の駅${st.name}`,
         keyboard: true,
-        // 選択中の駅を最前面へ
-        zIndexOffset: selected ? 2000 : 0,
+        // 選択中の駅・ルート選択済みの駅を最前面へ
+        zIndexOffset: selected ? 2000 : routeSelectNumber != null ? 1500 : 0,
       });
       // PC: ホバーで駅名+営業状態+今日の営業時間
       const hoursLine =
@@ -511,7 +555,17 @@ export default function MapView({
       });
       target.addLayer(marker);
     }
-  }, [stations, visits, prefFilter, statusFilter, now, selectedId, settings.markerMode]);
+  }, [
+    stations,
+    visits,
+    prefFilter,
+    statusFilter,
+    now,
+    selectedId,
+    settings.markerMode,
+    routeSelectMode,
+    routeSelectedIds,
+  ]);
 
   // 駅名表示モードのCSSクラス（自動/常に表示/非表示）
   useEffect(() => {
@@ -630,6 +684,13 @@ export default function MapView({
 
   return (
     <div className="map-root" ref={rootRef} data-testid="map-root">
+      {routeSelectMode && (
+        <div className="route-select-banner" data-testid="route-select-banner">
+          <b>回りたい道の駅を選んでください</b>
+          <br />
+          <span className="route-select-note">選択中は訪問記録の色は変わりません</span>
+        </div>
+      )}
       {pickMode && <div className="map-hint">地図をタップして出発地点を指定</div>}
       {locMsg && <div className="map-hint">{locMsg}</div>}
       <button

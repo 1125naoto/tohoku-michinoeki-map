@@ -278,7 +278,9 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
             💾 このコースを保存
           </button>
         )}
-        <button onClick={() => setOpenKey(null)}>← コース一覧に戻る</button>
+        <button onClick={() => setOpenKey(null)} data-testid="route-detail-back">
+          ← コース一覧に戻る
+        </button>
       </div>
     </div>
   );

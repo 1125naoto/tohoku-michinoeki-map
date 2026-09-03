@@ -17,8 +17,14 @@ import {
   saveVisits,
 } from './storage';
 import { MAP_SETTINGS_KEY, loadMapSettings, saveMapSettings, type MapSettings } from './mapSettings';
+import { ROUTE_DRAFT_KEY, isRouteDraft, loadRouteDraft, saveRouteDraft, clearRouteDraft, type RouteDraft } from './routeDraft';
 
-export const BACKUP_SCHEMA_VERSION = 1;
+/**
+ * 2: 「地図から選ぶ」の選択下書き(manualDraft)を追加。
+ * schemaVersion 1（下書きフィールドなし）のバックアップも復元時はそのまま読める
+ * （manualDraftをnull扱いにするだけで、visits/routes/tripの互換性はそのまま）。
+ */
+export const BACKUP_SCHEMA_VERSION = 2;
 export const APP_VERSION = '1.0.0';
 
 export interface BackupFile {
@@ -31,6 +37,8 @@ export interface BackupFile {
   settings: {
     map: MapSettings;
   };
+  /** 「地図から選ぶ」の選択途中（schemaVersion 1にはなかった項目。未保存時はnull） */
+  manualDraft: RouteDraft | null;
 }
 
 /** 現在の記録・設定からバックアップJSONを組み立てる */
@@ -43,6 +51,7 @@ export function buildBackup(): BackupFile {
     routes: loadRoutes(),
     trip: loadTrip(),
     settings: { map: loadMapSettings() },
+    manualDraft: loadRouteDraft(),
   };
 }
 
@@ -78,6 +87,10 @@ export function parseBackup(text: string): ParseResult {
               : 'auto',
         }
       : { markerMode: 'all', labelMode: 'auto' };
+  // manualDraft: 壊れている/存在しない(旧schemaVersion 1)場合は「下書きなし」として
+  // 扱うだけにとどめ、バックアップ全体は拒否しない（他フィールドはすべて有効なため）
+  const rawDraft = o.manualDraft;
+  const manualDraft = isRouteDraft(rawDraft) ? rawDraft : null;
   return {
     ok: true,
     data: {
@@ -88,6 +101,7 @@ export function parseBackup(text: string): ParseResult {
       routes,
       trip,
       settings: { map: mapSettings },
+      manualDraft,
     },
   };
 }
@@ -115,8 +129,21 @@ export function applyBackup(data: BackupFile, mode: RestoreMode) {
   saveRoutes(routes);
   saveTrip(trip);
   saveMapSettings(data.settings.map);
-  return { visits, routes, trip, mapSettings: data.settings.map };
+  // 下書きは1件しか持てないためマージ対象にはならない: バックアップにあれば採用し、
+  // 上書きモードでバックアップに無ければ削除する。統合モードでバックアップに無い場合は
+  // 今の下書き（あれば）をそのまま残す。
+  let manualDraft: RouteDraft | null;
+  if (data.manualDraft) {
+    saveRouteDraft(data.manualDraft);
+    manualDraft = data.manualDraft;
+  } else if (mode === 'overwrite') {
+    clearRouteDraft();
+    manualDraft = null;
+  } else {
+    manualDraft = loadRouteDraft();
+  }
+  return { visits, routes, trip, mapSettings: data.settings.map, manualDraft };
 }
 
 /** バックアップの保存対象キー一覧（参考） */
-export const BACKUP_KEYS = [...Object.values(KEYS), MAP_SETTINGS_KEY];
+export const BACKUP_KEYS = [...Object.values(KEYS), MAP_SETTINGS_KEY, ROUTE_DRAFT_KEY];
