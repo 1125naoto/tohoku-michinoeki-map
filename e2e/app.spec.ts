@@ -10,6 +10,21 @@ async function gotoStation(page: Page, id = STATION_ID) {
   await expect(page.getByTestId('station-sheet')).toBeVisible();
 }
 
+/**
+ * 地図整定待ち: ディープリンク直後は地図が数百ms遅れて最終位置に落ち着くため、
+ * 固定座標で実クリックする前にマーカー位置が安定するのを待つ。
+ */
+async function stableBox(page: Page, locator: ReturnType<Page['locator']>) {
+  let prev = await locator.boundingBox();
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(350);
+    const cur = await locator.boundingBox();
+    if (prev && cur && Math.abs(cur.x - prev.x) < 1 && Math.abs(cur.y - prev.y) < 1) return cur;
+    prev = cur;
+  }
+  return prev!;
+}
+
 /** 初回自動展開される凡例がマーカーに重ならないよう閉じる */
 async function closeLegend(page: Page) {
   const panel = page.getByTestId('legend-panel');
@@ -216,6 +231,76 @@ test.describe('詳細カードの操作', () => {
     await page.waitForTimeout(600);
     expect(popups).toBe(0); // ダブルタップ扱いにならない
     await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // 両方とも訪問切替
+  });
+
+  test('実ポインター操作: 1タップ切替(赤#d83a34)と2タップ公式HP直行 @smoke', async ({ page, context }, testInfo) => {
+    const isTouch = testInfo.project.name !== 'desktop';
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click();
+    await closeLegend(page);
+    const marker = page.locator(`[data-sid="${STATION_ID}"]`);
+    await expect(marker).toBeVisible();
+    const box = await stableBox(page, marker); // 地図の整定を待ってから実座標を確定
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    // 実デバイス相当の入力（座標指定）: スマホ=touchscreen.tap / PC=mouse.click
+    const tap = async () => (isTouch ? page.touchscreen.tap(cx, cy) : page.mouse.click(cx, cy));
+
+    // --- 1タップ → 赤 #d83a34 ---
+    await tap();
+    await page.waitForTimeout(700); // 判定時間400ms + 描画余裕
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    const fill = await page.evaluate((sid) => {
+      const rect = document.querySelector(`.rs-marker[data-sid="${sid}"] svg rect:nth-of-type(2)`);
+      return rect ? { attr: rect.getAttribute('fill'), computed: getComputedStyle(rect).fill } : null;
+    }, STATION_ID);
+    expect(fill?.attr).toBe('#d83a34'); // SVG属性
+    expect(fill?.computed).toBe('rgb(216, 58, 52)'); // 実表示色（computed style）
+    // --- もう1タップ → 青へ戻す ---
+    await tap();
+    await page.waitForTimeout(700);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+
+    // --- 2タップ（実座標・実時間差150ms）→ 公式HP直行・状態不変・点滅なし ---
+    const lsBefore = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v1'));
+    await page.evaluate((sid) => {
+      (window as unknown as { __classLog: string[] }).__classLog = [];
+      const obs = new MutationObserver(() => {
+        const m = document.querySelector(`.rs-marker[data-sid="${sid}"]`);
+        if (m) (window as unknown as { __classLog: string[] }).__classLog.push(m.className);
+      });
+      obs.observe(document.querySelector('.map-root')!, { subtree: true, childList: true, attributes: true });
+    }, STATION_ID);
+    const popupPromise = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
+    await tap();
+    await page.waitForTimeout(150);
+    await tap();
+    const popup = await popupPromise;
+    let landedUrl = '';
+    if (popup) {
+      await popup.waitForURL(/https?:\/\//, { timeout: 15000 }).catch(() => {});
+      landedUrl = popup.url();
+      await popup.close();
+    } else {
+      // ポップアップ不可の環境では現在のタブで直接遷移する仕様
+      await page.waitForURL(/michi-no-eki\.jp|mlit\.go\.jp/, { timeout: 15000 });
+      landedUrl = page.url();
+      await page.goBack();
+    }
+    expect(landedUrl).toMatch(/michi-no-eki\.jp|mlit\.go\.jp|https?:\/\//);
+    await page.waitForTimeout(700);
+    // 訪問状態・記録が一切変わっていない（青→赤→青の点滅もない）
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    const lsAfter = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v1'));
+    expect(lsAfter).toBe(lsBefore);
+    const classLog = await page.evaluate(
+      () => (window as unknown as { __classLog: string[] }).__classLog ?? [],
+    );
+    expect(classLog.some((c) => c.includes('visited'))).toBe(false);
+    // 中間画面（詳細シート・トースト）も開いていない
+    await expect(page.getByTestId('station-sheet')).toBeHidden();
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
   });
 
   test('1タップ後のポップアップの「詳細」から既存の詳細カードを開ける', async ({ page }) => {

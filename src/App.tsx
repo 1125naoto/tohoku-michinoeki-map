@@ -213,7 +213,21 @@ export default function App() {
     const st = getStation(id);
     if (!st) return;
     // 公式URLがない施設は登録済み情報ページ（全国道の駅連絡会/国交省）へフォールバック
-    window.open(st.officialUrl ?? st.infoUrl, '_blank', 'noopener,noreferrer');
+    const url = st.officialUrl ?? st.infoUrl;
+    // 新しいタブで開く。注意: features に 'noopener' を渡すと成功時も null が返り
+    // ブロック判定できないため、開いた後に opener を切る方式にする。
+    // 本当にポップアップブロックされた場合（null）のみ、中間画面を挟まず現在のタブで直接遷移する
+    // （訪問記録はlocalStorage保存済みのため、ブラウザの「戻る」で復帰しても保持される）
+    const w = window.open(url, '_blank');
+    if (w) {
+      try {
+        w.opener = null;
+      } catch {
+        /* cross-origin等で触れない場合は無視 */
+      }
+    } else {
+      location.assign(url);
+    }
   }, []);
 
   /** 1タップ確定: 未訪問⇔訪問済みを直接切り替え（スタンプ済み・開業前は変更しない） */

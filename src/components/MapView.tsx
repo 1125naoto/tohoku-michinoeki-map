@@ -240,8 +240,11 @@ export default function MapView({
   onOfficialRef.current = onOpenOfficial;
   onMapTapRef.current = onMapTap;
 
-  // シングル/ダブルタップ判定（個別マーカーのみ対象。クラスタには適用しない）
+  // シングル/ダブルタップ判定（個別マーカーのみ対象。クラスタには適用しない）。
+  // タップ履歴（最後のタップID/時刻・保留中single・公式HPを開いた時刻）は
+  // マーカー再構築やReact再描画の影響を受けないコンポーネントレベルのrefで保持する。
   const pendingTapRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const lastTapRef = useRef<{ id: string; at: number } | null>(null);
   // click×2 と dblclick の両方から呼ばれても公式HPを二重に開かないためのガード
   const lastOfficialRef = useRef<{ id: string; at: number } | null>(null);
   const openOfficialOnce = (id: string) => {
@@ -251,12 +254,27 @@ export default function MapView({
     lastOfficialRef.current = { id, at: now };
     onOfficialRef.current(id);
   };
+  const tapLog = (ev: string, id: string) => {
+    const w = window as unknown as { __tapLog?: { t: number; ev: string; id: string }[] };
+    (w.__tapLog ??= []).push({ t: Date.now(), ev, id });
+  };
   const handleMarkerTap = (id: string) => {
+    tapLog('click', id);
+    // 同一の物理タップからtouch系とclickが二重発火した場合の防御
+    // （80ms未満の同一ID再入は同じ1タップとみなして無視する）
+    const now = Date.now();
+    const lastTap = lastTapRef.current;
+    lastTapRef.current = { id, at: now };
+    if (lastTap && lastTap.id === id && now - lastTap.at < 80) {
+      tapLog('dedupe-skip', id);
+      return;
+    }
     const pending = pendingTapRef.current;
     if (pending && pending.id === id) {
       // 同じマーカーへの2回目 → シングルタップをキャンセルして公式HP（状態変更なし）
       clearTimeout(pending.timer);
       pendingTapRef.current = null;
+      tapLog('double->official', id);
       openOfficialOnce(id);
       return;
     }
@@ -264,12 +282,14 @@ export default function MapView({
       // 別のマーカー → 保留中のシングルタップを即時確定（ダブルタップ扱いにしない）
       clearTimeout(pending.timer);
       pendingTapRef.current = null;
+      tapLog('flush-single', pending.id);
       onTapRef.current(pending.id);
     }
     pendingTapRef.current = {
       id,
       timer: setTimeout(() => {
         pendingTapRef.current = null;
+        tapLog('single-exec', id);
         onTapRef.current(id);
       }, TAP_DECIDE_MS),
     };
@@ -348,6 +368,7 @@ export default function MapView({
       // dblclickもダブルタップ=公式HPとして扱う（地図ズームへの伝播は止める）
       marker.on('dblclick', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e.originalEvent);
+        tapLog('dblclick', st.id);
         const pending = pendingTapRef.current;
         if (pending && pending.id === st.id) {
           clearTimeout(pending.timer);

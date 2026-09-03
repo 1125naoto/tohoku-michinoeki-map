@@ -60,7 +60,16 @@ if ('serviceWorker' in navigator) {
       .register(`${import.meta.env.BASE_URL}sw.js`)
       .then((reg) => {
         // 表示のたびに更新確認（ブラウザ任せにせず明示的にチェック）
-        reg.update().catch(() => {});
+        const check = () => reg.update().catch(() => {});
+        check();
+        // 開きっぱなしのタブにも新ビルドが届くよう、定期+復帰時にも更新確認する。
+        // 新SWは skipWaiting+clientsClaim で即時有効化され、controllerchange で
+        // このページが1回だけ自動再読み込みされる（手動のキャッシュ削除は不要）。
+        setInterval(check, 60 * 1000);
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') check();
+        });
       })
       .catch(() => {
         /* SW未生成(dev)や未対応環境では黙ってスキップ */
