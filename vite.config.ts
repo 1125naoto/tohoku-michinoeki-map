@@ -2,7 +2,13 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages（プロジェクトページ）ではサブパス配信になるため、ビルド時の環境変数で切り替える。
+// ローカルのプレビュー/開発サーバーでは未設定=ルート('/')のまま。
+const DEPLOY_BASE = process.env.DEPLOY_BASE ?? '/';
+const iconPath = (p: string) => `${DEPLOY_BASE}${p}`.replace(/\/{2,}/g, '/');
+
 export default defineConfig({
+  base: DEPLOY_BASE,
   test: {
     // E2E (Playwright) は vitest の対象外
     include: ['src/**/*.test.ts'],
@@ -19,14 +25,15 @@ export default defineConfig({
         short_name: '道の駅マップ',
         description: '東北6県の道の駅を地図で管理。訪問記録・スタンプ・達成率・週末周遊ルート提案。',
         lang: 'ja',
-        start_url: '/',
+        start_url: DEPLOY_BASE,
+        scope: DEPLOY_BASE,
         display: 'standalone',
         background_color: '#f7f8f5',
         theme_color: '#2e7d32',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: iconPath('icons/icon-192.png'), sizes: '192x192', type: 'image/png' },
+          { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png' },
+          { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
@@ -37,7 +44,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         // アプリ本体+道の駅データ(JSにバンドル)をプリキャッシュ → オフラインで一覧閲覧可
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
-        navigateFallback: '/index.html',
+        navigateFallback: iconPath('index.html'),
         runtimeCaching: [
           {
             // OSMタイル: 直近に見た範囲だけキャッシュ（オフラインでは表示不可の旨をUIで案内）
