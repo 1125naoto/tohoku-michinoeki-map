@@ -5,6 +5,7 @@ import type { Prefecture, Station, StatusFilter, VisitMap } from '../types';
 import { TOHOKU_BOUNDS } from '../data';
 import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
+import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 
 interface Props {
   stations: Station[];
@@ -32,6 +33,11 @@ interface Props {
   now: Date;
   /** 地図全画面モード（切替時にサイズ再計算し、中心・ズームを維持する） */
   fullscreen: boolean;
+  /** 選択中の駅（最前面表示+駅名ラベルを常時表示） */
+  selectedId: string | null;
+  /** 地図表示設定（マーカー表示/駅名表示） */
+  settings: MapSettings;
+  onChangeSettings: (s: MapSettings) => void;
 }
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
@@ -126,13 +132,28 @@ const HOURS_DOT: Record<HoursKind, { cls: string; glyph: string } | null> = {
   upcoming: null, // 開業前は既存の「準」バッジのみ
 };
 
-export function markerHtml(state: MarkerState, stationId: string, hoursKind?: HoursKind): string {
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+export function markerHtml(
+  state: MarkerState,
+  stationId: string,
+  hoursKind?: HoursKind,
+  name?: string,
+  selected?: boolean,
+): string {
   const badge = state === 'none' ? '' : `<span class="rs-badge">${BADGE_SYMBOL[state]}</span>`;
   const dotSpec = hoursKind ? HOURS_DOT[hoursKind] : null;
   const dot = dotSpec ? `<span class="hrs-dot ${dotSpec.cls}" aria-hidden="true">${dotSpec.glyph}</span>` : '';
-  // マーク全体を訪問状態色で塗り分け（色+バッジの二重符号化）。白い図形は常に白。
-  // 営業状態は左下の小さなドットで別表示する
-  return `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}</div>`;
+  // 駅名ラベル: stations.json由来の名前をマーカー中央下へ（pointer-events:none・タップを奪わない）
+  // 表示上は共通の「道の駅」を省略。表示/非表示はズーム連動のCSSクラスで制御
+  const label = name ? `<span class="rs-label" aria-hidden="true">${escapeHtml(name)}</span>` : '';
+  // .rs-hit = 44×44の透明タップ領域。見た目の縮小はCSS transformで行い、タップ領域は維持する
+  return (
+    `<div class="rs-hit${selected ? ' sel' : ''}">` +
+    `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}</div>` +
+    `${label}</div>`
+  );
 }
 
 const LEGEND_SEEN_KEY = 'tohoku-me:legend-seen:v1';
@@ -144,7 +165,13 @@ function LegendSample({ state }: { state: MarkerState }) {
   );
 }
 
-function Legend() {
+function Legend({
+  settings,
+  onChangeSettings,
+}: {
+  settings: MapSettings;
+  onChangeSettings: (s: MapSettings) => void;
+}) {
   const wrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // 凡例操作を地図クリック（シートを閉じる/出発地点指定）に伝播させない
@@ -215,9 +242,55 @@ function Legend() {
             <span className="hrs-dot hrs-unknown legend-dot">?</span>
             <span>要確認</span>
           </div>
-          <div className="legend-item">
-            <span className="cluster-pill">3駅</span>
-            <span>近くにある道の駅の件数</span>
+          {settings.markerMode === 'cluster' && (
+            <div className="legend-item">
+              <span className="cluster-pill">3駅</span>
+              <span>近くにある道の駅の件数</span>
+            </div>
+          )}
+          <h4 style={{ marginTop: 8 }}>マーカー表示</h4>
+          <div className="legend-seg">
+            <button
+              className={settings.markerMode === 'all' ? 'active' : ''}
+              onClick={() => onChangeSettings({ ...settings, markerMode: 'all' })}
+              data-testid="setting-marker-all"
+            >
+              全駅表示（推奨）
+            </button>
+            <button
+              className={settings.markerMode === 'cluster' ? 'active' : ''}
+              onClick={() => onChangeSettings({ ...settings, markerMode: 'cluster' })}
+              data-testid="setting-marker-cluster"
+            >
+              まとめて表示
+            </button>
+          </div>
+          <h4 style={{ marginTop: 8 }}>駅名表示</h4>
+          <div className="legend-seg">
+            <button
+              className={settings.labelMode === 'auto' ? 'active' : ''}
+              onClick={() => onChangeSettings({ ...settings, labelMode: 'auto' })}
+              data-testid="setting-label-auto"
+            >
+              自動
+            </button>
+            <button
+              className={settings.labelMode === 'always' ? 'active' : ''}
+              onClick={() => onChangeSettings({ ...settings, labelMode: 'always' })}
+              data-testid="setting-label-always"
+            >
+              常に表示
+            </button>
+            <button
+              className={settings.labelMode === 'off' ? 'active' : ''}
+              onClick={() => onChangeSettings({ ...settings, labelMode: 'off' })}
+              data-testid="setting-label-off"
+            >
+              非表示
+            </button>
+          </div>
+          <div className="legend-hint" style={{ marginTop: 6 }}>
+            駅名は拡大すると表示されます。
           </div>
           <div className="legend-hint">
             道の駅マークを押すたびに、未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問の順で切り替わります。
@@ -253,10 +326,14 @@ export default function MapView({
   sheetOpen,
   now,
   fullscreen,
+  selectedId,
+  settings,
+  onChangeSettings,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const allLayerRef = useRef<L.LayerGroup | null>(null);
   const lineRef = useRef<L.Polyline | null>(null);
   const orderLayerRef = useRef<L.LayerGroup | null>(null);
   const pickRef = useRef(pickMode);
@@ -308,19 +385,34 @@ export default function MapView({
         });
       },
     });
-    map.addLayer(cluster);
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (pickRef.current) onPickRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
       else onMapTapRef.current();
     });
     mapRef.current = map;
     clusterRef.current = cluster;
-    // E2E検証用: 中心・ズームの取得フック
+    // 全駅個別表示用のレイヤー（クラスタと排他で地図へ載せる）
+    allLayerRef.current = L.layerGroup();
+    // ズームに応じたサイズ/ラベルのCSSクラスをコンテナへ付与（再描画なしで切替）
+    const applyZoomClasses = () => {
+      const el = rootRef.current;
+      if (!el) return;
+      el.classList.remove('mz-wide', 'mz-medium', 'mz-detail', 'lz-hidden', 'lz-partial', 'lz-all');
+      el.classList.add(...zoomClasses(map.getZoom()));
+    };
+    applyZoomClasses();
+    map.on('zoomend', applyZoomClasses);
+    // E2E検証用: 中心・ズームの取得/設定フック
     (window as unknown as { __getMapState?: () => unknown }).__getMapState = () => ({
       lat: map.getCenter().lat,
       lng: map.getCenter().lng,
       zoom: map.getZoom(),
     });
+    (window as unknown as { __setMapView?: (lat: number, lng: number, z: number) => void }).__setMapView = (
+      lat,
+      lng,
+      z,
+    ) => map.setView([lat, lng], z, { animate: false });
     // 画面回転・visualViewport変化でもタイル欠け・ずれを起こさない
     const onResize = () => {
       const c = map.getCenter();
@@ -364,27 +456,44 @@ export default function MapView({
     );
   }, [fullscreen]);
 
-  // マーカー更新
+  // マーカー更新（全駅個別レイヤー or 従来クラスタの排他運用）
   useEffect(() => {
+    const map = mapRef.current;
     const cluster = clusterRef.current;
-    if (!cluster) return;
+    const allLayer = allLayerRef.current;
+    if (!map || !cluster || !allLayer) return;
+    // 切替時の二重表示・残骸防止: 両方を一旦クリアし、対象だけを地図へ載せる
     cluster.clearLayers();
+    allLayer.clearLayers();
+    const useCluster = settings.markerMode === 'cluster';
+    if (useCluster) {
+      if (map.hasLayer(allLayer)) map.removeLayer(allLayer);
+      if (!map.hasLayer(cluster)) map.addLayer(cluster);
+    } else {
+      if (map.hasLayer(cluster)) map.removeLayer(cluster);
+      if (!map.hasLayer(allLayer)) map.addLayer(allLayer);
+    }
+    const target: L.LayerGroup = useCluster ? cluster : allLayer;
     const shown = stations.filter(
       (st) => (!prefFilter || st.pref === prefFilter) && matchesFilter(st, visits, statusFilter),
     );
     for (const st of shown) {
       const state = visitState(st, visits);
       const hs = getStatus(st.id, now);
+      const selected = st.id === selectedId;
       const marker = L.marker([st.lat, st.lng], {
         icon: L.divIcon({
-          html: markerHtml(state, st.id, hs.kind),
+          html: markerHtml(state, st.id, hs.kind, st.name, selected),
           className: '',
-          iconSize: [38, 38],
-          iconAnchor: [19, 19],
-          tooltipAnchor: [0, -24],
+          // 44×44の透明タップ領域（見た目の縮小はCSSで行う）
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
+          tooltipAnchor: [0, -26],
         }),
         alt: `道の駅${st.name}`,
         keyboard: true,
+        // 選択中の駅を最前面へ
+        zIndexOffset: selected ? 2000 : 0,
       });
       // PC: ホバーで駅名+営業状態+今日の営業時間
       const hoursLine =
@@ -400,9 +509,17 @@ export default function MapView({
       marker.on('dblclick', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e.originalEvent);
       });
-      cluster.addLayer(marker);
+      target.addLayer(marker);
     }
-  }, [stations, visits, prefFilter, statusFilter, now]);
+  }, [stations, visits, prefFilter, statusFilter, now, selectedId, settings.markerMode]);
+
+  // 駅名表示モードのCSSクラス（自動/常に表示/非表示）
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    el.classList.remove('lm-auto', 'lm-always', 'lm-off');
+    el.classList.add(`lm-${settings.labelMode}`);
+  }, [settings.labelMode]);
 
   // 県フィルターで表示範囲を調整
   useEffect(() => {
@@ -524,7 +641,7 @@ export default function MapView({
       >
         📍
       </button>
-      <Legend />
+      <Legend settings={settings} onChangeSettings={onChangeSettings} />
     </div>
   );
 }
