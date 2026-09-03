@@ -6,11 +6,12 @@ export default defineConfig({
   retries: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4173',
+    // IPv4を明示（localhostはIPv6(::1)に解決される環境があり接続経路が曖昧になるため）
+    baseURL: 'http://127.0.0.1:4173',
   },
   webServer: {
     command: 'npm run preview',
-    url: 'http://localhost:4173',
+    url: 'http://127.0.0.1:4173',
     reuseExistingServer: true,
     timeout: 60_000,
   },

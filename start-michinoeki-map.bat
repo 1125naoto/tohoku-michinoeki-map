@@ -2,7 +2,7 @@
 rem ============================================================
 rem  東北・道の駅制覇マップ 起動スクリプト (Windows)
 rem  ダブルクリックするだけで起動します。
-rem  停止するには、このウィンドウで Ctrl+C を押すか、ウィンドウを閉じてください。
+rem  終了するには、このウィンドウを閉じてください（サーバーも停止します）。
 rem ============================================================
 cd /d "%~dp0"
 
@@ -44,25 +44,45 @@ if not exist "dist\index.html" (
   if errorlevel 1 (
     echo.
     echo  [エラー] ビルドに失敗しました。
-    echo  このウィンドウのエラーメッセージを確認してください。
     echo.
     pause
     exit /b 1
   )
 )
 
-rem ---- 4. ブラウザを開いてローカルサーバー起動 ----
+rem ---- 4. サーバー起動（IPv4含む全アドレスにバインド） ----
+echo  サーバーを起動しています...
+start "michinoeki-server" /b cmd /c "npm run preview >nul 2>nul"
+
+rem ---- 5. 起動確認ができてからブラウザを開く ----
+rem （確認できない場合はブラウザを開かない = 古いオフラインキャッシュ画面との混同を防ぐ）
+set TRIES=0
+:waitloop
+curl -s -o nul -m 2 http://127.0.0.1:4173/
+if not errorlevel 1 goto ready
+set /a TRIES+=1
+if %TRIES% geq 30 goto fail
+timeout /t 1 /nobreak >nul
+goto waitloop
+
+:ready
 echo.
-echo  ブラウザで http://localhost:4173 を開きます。
-echo  終了するには、このウィンドウで Ctrl+C を押してください。
+echo  サーバーの起動を確認しました: http://127.0.0.1:4173
+echo  ブラウザを開きます。
+start "" "http://127.0.0.1:4173"
 echo.
-start "" "http://localhost:4173"
-call npm run preview
-if errorlevel 1 (
-  echo.
-  echo  [エラー] サーバーの起動に失敗しました。
-  echo  ポート4173が他のアプリで使用されていないか確認してください。
-  echo.
-  pause
-  exit /b 1
-)
+echo  ============================================
+echo   起動完了。このウィンドウは閉じないでください。
+echo   終了するときは、このウィンドウを閉じてください。
+echo  ============================================
+pause >nul
+exit /b 0
+
+:fail
+echo.
+echo  [エラー] サーバーの起動を確認できませんでした。
+echo  古いキャッシュ画面と混同しないよう、ブラウザは開きません。
+echo  ポート4173が他のアプリで使用されていないか確認してください。
+echo.
+pause
+exit /b 1
