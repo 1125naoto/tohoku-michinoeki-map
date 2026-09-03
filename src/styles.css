@@ -345,6 +345,22 @@ a {
   font-weight: 700;
 }
 
+/* 訪問順の番号マーカー */
+.order-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1565c0;
+  color: #fff;
+  border: 2.5px solid #fff;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
 /* ===== クラスタ: 中立の紺色ピル「N駅」（状態色と非衝突） ===== */
 .cluster-pill {
   display: flex;

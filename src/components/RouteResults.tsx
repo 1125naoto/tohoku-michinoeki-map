@@ -22,19 +22,26 @@ export function routePoints(r: PlannedRoute, getStation: (id: string) => Station
   return pts;
 }
 
-export function RouteSummaryCard({ r, onOpen }: { r: PlannedRoute; onOpen: () => void }) {
+/** 実道路/概算のバッジ */
+function RoadDataBadge({ r }: { r: PlannedRoute }) {
+  return r.roadData === 'road' ? (
+    <span className="badge visited" data-testid="road-badge">
+      実道路時間を使用
+    </span>
+  ) : (
+    <span className="badge want" data-testid="road-badge">
+      概算時間を使用
+    </span>
+  );
+}
+
+function RoadDataNote({ r }: { r: PlannedRoute }) {
   return (
-    <button className="route-card" onClick={onOpen} data-testid={`route-card-${r.key}`}>
-      <h3>
-        {r.title}（{r.stops.length}駅）
-      </h3>
-      <div className="route-meta">
-        <span>使用 {formatMin(r.totalMin)}</span>
-        <span>約 {r.totalKm}km</span>
-        <span>新規制覇 {r.newCount}駅</span>
-        <span>帰着 {formatHM(new Date(r.returnAt))}</span>
-      </div>
-    </button>
+    <div className="msg warn" data-testid="road-note">
+      {r.roadData === 'road'
+        ? '実際の道路にもとづく時間ですが、リアルタイムの渋滞は反映していません。出発前にGoogleマップで最新の状況を確認してください。'
+        : '所要時間は目安です。実際の経路・渋滞・通行止めはGoogleマップで確認してください。'}
+    </div>
   );
 }
 
@@ -63,18 +70,14 @@ export function RouteTimeline({
         const leg = r.legs[i];
         const state = progress?.[s.stationId];
         const cls =
-          s.stationId === currentId
-            ? 'current'
-            : state === 'done'
-              ? 'done'
-              : state === 'skipped'
-                ? 'skipped'
-                : '';
+          s.stationId === currentId ? 'current' : state === 'done' ? 'done' : state === 'skipped' ? 'skipped' : '';
         return (
           <li key={s.stationId} className={cls}>
             <span className="time">{formatHM(new Date(s.arriveAt))}</span>
             <span>
-              <b>道の駅 {st?.name ?? s.stationId}</b>
+              <b>
+                {i + 1}. 道の駅 {st?.name ?? s.stationId}
+              </b>
               <br />
               <span className="leg">
                 ← 約{leg.distanceKm}km・{formatMin(leg.driveMin)} ／ 滞在{s.stayMin}分（
@@ -104,24 +107,19 @@ export function RouteTimeline({
 
 export function GmapsButtons({ r, getStation }: { r: PlannedRoute; getStation: (id: string) => Station | undefined }) {
   const [confirming, setConfirming] = useState(false);
-  const urls = directionsUrls(routePoints(r, getStation));
+  const urls = directionsUrls(routePoints(r, getStation), r.params.roadPref);
   if (!confirming) {
     return (
-      <button className="btn-primary" style={{ width: '100%' }} onClick={() => setConfirming(true)} data-testid="gmaps-open">
-        Googleマップでルートを開く
+      <button style={{ width: '100%' }} onClick={() => setConfirming(true)} data-testid="gmaps-open">
+        🗺️ Googleマップで全体を確認
       </button>
     );
   }
   return (
     <div className="card" data-testid="gmaps-confirm">
       <div className="msg warn">
-        ・アプリ内の所要時間は概算です
-        <br />
-        ・最新の経路・渋滞はGoogleマップ側で確認してください
-        <br />
-        ・冬季は積雪・凍結・通行止めに注意してください
-        <br />
-        ・各道の駅の営業時間は公式サイトで確認してください
+        アプリ内の時間は{r.roadData === 'road' ? '渋滞を含まない参考値' : '概算'}です。最新の経路・渋滞はGoogleマップ側で、
+        冬季は積雪・凍結・通行止めに、営業時間は各駅の公式サイトでご確認ください。
       </div>
       {urls.map((u, i) => (
         <a key={u} className="btn-link" style={{ marginTop: 8 }} href={u} target="_blank" rel="noopener noreferrer">
@@ -144,11 +142,21 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
     return (
       <div>
         <div className="empty" data-testid="route-empty">
-          <p>条件に合う候補駅が見つかりませんでした。</p>
-          <p>使用可能時間を増やす、対象県を広げる、「すべて」を対象にする等をお試しください。</p>
+          <p>この条件で回れる道の駅が見つかりませんでした。</p>
+          <p style={{ textAlign: 'left' }}>
+            こうすると見つかりやすくなります：
+            <br />
+            ・お出かけ時間を長くする
+            <br />
+            ・1駅の滞在時間を短くする
+            <br />
+            ・「県境を越えてOK」にする
+            <br />
+            ・行きたい県を増やす
+          </p>
         </div>
         <button style={{ width: '100%' }} onClick={onBack}>
-          ← 条件を変更する
+          ← 条件を変えてみる
         </button>
       </div>
     );
@@ -157,14 +165,33 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
   if (!open) {
     return (
       <div>
-        <p className="msg info">
-          最大3種類のコースを提案します。タップして詳細を確認してください。所要時間は概算です。
-        </p>
         {routes.map((r) => (
-          <RouteSummaryCard key={r.key} r={r} onOpen={() => setOpenKey(r.key)} />
+          <button key={r.key} className="route-card" onClick={() => setOpenKey(r.key)} data-testid={`route-card-${r.key}`}>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>
+              {formatMin(r.params.budgetMin)}で{r.stops.length}駅回れます
+            </div>
+            <h3 style={{ margin: '0 0 4px' }}>
+              {r.title} <RoadDataBadge r={r} />
+            </h3>
+            <p className="addr" style={{ margin: '0 0 6px' }}>
+              {r.reason}
+            </p>
+            <div className="route-meta">
+              <span>新しく{r.newCount}駅</span>
+              {r.wantCount > 0 && <span>★行きたい{r.wantCount}駅</span>}
+              <span>移動{formatMin(r.driveMin)}</span>
+              <span>滞在{formatMin(r.stayTotalMin)}</span>
+              <span>余裕{formatMin(r.marginMin)}</span>
+              <span>約{r.totalKm}km</span>
+              <span>
+                {formatHM(new Date(r.params.departAt))}発 → {formatHM(new Date(r.returnAt))}
+                {r.params.returnToStart ? '帰着' : 'ゴール'}
+              </span>
+            </div>
+          </button>
         ))}
         <button style={{ width: '100%' }} onClick={onBack} data-testid="route-back">
-          ← 条件を変更する
+          ← 条件を変えてみる
         </button>
       </div>
     );
@@ -173,25 +200,40 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
   return (
     <div data-testid="route-detail">
       <div className="card">
-        <h3>
-          {open.title}（{formatMin(open.params.budgetMin)}設定・{open.stops.length}駅）
+        <div style={{ fontSize: 20, fontWeight: 800 }}>
+          {formatMin(open.params.budgetMin)}で{open.stops.length}駅回れます
+        </div>
+        <h3 style={{ margin: '2px 0 4px' }}>
+          {open.title} <RoadDataBadge r={open} />
         </h3>
+        <p className="addr">{open.reason}</p>
         <div className="route-meta" style={{ marginBottom: 6 }}>
           <span>出発 {open.params.origin.label}</span>
           <span>{formatHM(new Date(open.params.departAt))} 発</span>
-          <span>{formatHM(new Date(open.returnAt))} {open.params.returnToStart ? '帰着' : '最終駅発'}</span>
-          <span>使用予定 {formatMin(open.totalMin)}</span>
+          <span>
+            {formatHM(new Date(open.returnAt))} {open.params.returnToStart ? '帰着' : 'ゴール'}
+          </span>
+          <span>新しく{open.newCount}駅</span>
+          {open.wantCount > 0 && <span>★行きたい{open.wantCount}駅</span>}
+          <span>移動 {formatMin(open.driveMin)}</span>
+          <span>滞在 {formatMin(open.stayTotalMin)}</span>
+          <span data-testid="route-margin">安全余裕 {formatMin(open.marginMin)}</span>
+          <span data-testid="route-total">
+            合計 {formatMin(open.totalMin + open.marginMin)}（設定 {formatMin(open.params.budgetMin)} 以内）
+          </span>
           <span>総走行 約{open.totalKm}km</span>
-          <span>新規制覇 {open.newCount}駅</span>
         </div>
         <RouteTimeline r={open} getStation={getStation} />
-        <div className="msg warn">
-          所要時間は目安です。実際の渋滞、積雪、通行止め、道路状況、営業時間はGoogleマップと公式サイトで確認してください。
-        </div>
+        <RoadDataNote r={open} />
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
+        <button className="btn-primary" style={{ minHeight: 52, fontSize: 17 }} onClick={() => onStartTrip(open)} data-testid="trip-start">
+          ▶ このコースで出発
+        </button>
         <GmapsButtons r={open} getStation={getStation} />
-        <button onClick={() => onPreviewOnMap(open)}>🗺️ 地図でルートを見る</button>
+        <button onClick={() => onPreviewOnMap(open)} data-testid="route-preview">
+          🗺️ 地図で順番を見る
+        </button>
         {saved === open.key ? (
           <button disabled data-testid="route-saved">
             ✓ 保存しました
@@ -204,12 +246,9 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
             }}
             data-testid="route-save"
           >
-            💾 このルートを保存
+            💾 このコースを保存
           </button>
         )}
-        <button className="btn-primary" onClick={() => onStartTrip(open)} data-testid="trip-start">
-          ▶ この計画で出発（旅行中画面へ）
-        </button>
         <button onClick={() => setOpenKey(null)}>← コース一覧に戻る</button>
       </div>
     </div>

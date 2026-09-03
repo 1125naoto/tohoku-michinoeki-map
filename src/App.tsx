@@ -12,8 +12,11 @@ import type {
 } from './types';
 import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
-import { planRoutes } from './lib/planner';
+import { planCourses } from './lib/planner';
+import { osrmProvider } from './lib/routing';
+import { navToPointUrl, navToStationUrl } from './lib/gmaps';
 import type { LatLng } from './lib/geo';
+import type { Station } from './types';
 import {
   applyState,
   clearAllUserData,
@@ -61,7 +64,12 @@ export default function App() {
   const [pickMode, setPickMode] = useState(false);
   const [routeStage, setRouteStage] = useState<RouteStage>('form');
   const [results, setResults] = useState<PlannedRoute[] | null>(null);
+  const [planning, setPlanning] = useState(false);
   const [routeLine, setRouteLine] = useState<LatLng[] | null>(null);
+  /** ルート線が実道路形状でない（駅間を直線で結んだ概略表示）とき true */
+  const [routeLineApprox, setRouteLineApprox] = useState(false);
+  const [routeStops, setRouteStops] = useState<{ lat: number; lng: number; order: number }[] | null>(null);
+  const planAbortRef = useRef<AbortController | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
 
   const stats = useMemo(() => computeStats(STATIONS, visits), [visits]);
@@ -92,10 +100,41 @@ export default function App() {
   }, []);
 
   // ---- ルート ----
-  const submitPlan = useCallback((params: PlanParams) => {
-    const rs = planRoutes(STATIONS, loadVisits(), params);
-    setResults(rs);
-    setRouteStage('results');
+  const submitPlan = useCallback(async (params: PlanParams) => {
+    // 連打防止: 前回の計算を中断してから開始
+    planAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    planAbortRef.current = ctrl;
+    setPlanning(true);
+    try {
+      const res = await planCourses(STATIONS, loadVisits(), params, { signal: ctrl.signal });
+      if (ctrl.signal.aborted) return;
+      setResults(res.courses);
+      setRouteStage('results');
+    } catch {
+      if (ctrl.signal.aborted) return;
+      setResults([]);
+      setRouteStage('results');
+    } finally {
+      if (planAbortRef.current === ctrl) {
+        setPlanning(false);
+        planAbortRef.current = null;
+      }
+    }
+  }, []);
+
+  /** 外部URLを新しいタブで直接開く（ブロック時のみ現在タブで遷移） */
+  const openExternal = useCallback((url: string) => {
+    const w = window.open(url, '_blank');
+    if (w) {
+      try {
+        w.opener = null;
+      } catch {
+        /* noop */
+      }
+    } else {
+      location.assign(url);
+    }
   }, []);
 
   const persistRoutes = (rs: SavedRoute[]) => {
@@ -163,6 +202,8 @@ export default function App() {
       setTrip(null);
       saveTrip(null);
       setRouteLine(null);
+      setRouteStops(null);
+      setRouteLineApprox(false);
       setRouteStage('form');
       setResults(null);
     },
@@ -170,8 +211,29 @@ export default function App() {
   );
 
   const previewOnMap = useCallback((r: PlannedRoute) => {
-    setRouteLine(routePoints(r, getStation));
+    const pts = routePoints(r, getStation);
+    // 訪問順の番号マーカー
+    setRouteStops(
+      r.stops
+        .map((s, i) => {
+          const st = getStation(s.stationId);
+          return st ? { lat: st.lat, lng: st.lng, order: i + 1 } : null;
+        })
+        .filter((x): x is { lat: number; lng: number; order: number } => x !== null),
+    );
+    // まず概略（直線）を表示し、実道路形状が取れたら差し替える
+    setRouteLine(pts);
+    setRouteLineApprox(true);
     setTab('map');
+    osrmProvider
+      .route(pts)
+      .then((shape) => {
+        setRouteLine(shape.points.map(([lat, lng]) => ({ lat, lng })));
+        setRouteLineApprox(false);
+      })
+      .catch(() => {
+        /* 概略表示のまま（「概略表示」ラベルを出す） */
+      });
   }, []);
 
   const resetAll = useCallback(() => {
@@ -334,9 +396,25 @@ export default function App() {
               setTab('route');
             }}
             routeLine={routeLine}
+            routeStops={routeStops}
             focusStationId={tab === 'map' ? selectedId : null}
             sheetOpen={selectedId != null}
           />
+          {routeLine && routeLineApprox && tab === 'map' && (
+            <div className="map-hint" style={{ top: 56 }} data-testid="route-approx-note">
+              ルート線は概略表示です（実道路の形ではありません）
+            </div>
+          )}
+          {tab === 'map' && !trip && !toast && (
+            <button
+              className="trip-banner"
+              style={{ background: 'var(--select)', textAlign: 'center' }}
+              onClick={() => setTab('route')}
+              data-testid="make-course-btn"
+            >
+              🚗 コースを作る
+            </button>
+          )}
           {trip && activeSaved && tab === 'map' && (
             <button className="trip-banner" onClick={() => setTab('route')} data-testid="trip-banner">
               ▶ 旅行中: {activeSaved.name}（タップで旅行画面へ）
@@ -387,11 +465,20 @@ export default function App() {
                 visits={visits}
                 getStation={getStation}
                 onProgress={setProgress}
-                onVisit={(id) => setState(id, 'visited')}
+                onArrived={(id) => setState(id, 'visited')}
                 onStamp={(id) => setState(id, 'stamped')}
                 onFinish={finishTrip}
                 onShowMap={() => previewOnMap(activeSaved.route)}
                 onExit={() => setTab('map')}
+                onNavToStation={(st: Station) => openExternal(navToStationUrl(st, activeSaved.route.params.roadPref))}
+                onNavHome={() =>
+                  openExternal(
+                    navToPointUrl(
+                      { lat: activeSaved.route.params.origin.lat, lng: activeSaved.route.params.origin.lng },
+                      activeSaved.route.params.roadPref,
+                    ),
+                  )
+                }
               />
             ) : routeStage === 'results' && results ? (
               <RouteResults
@@ -412,6 +499,7 @@ export default function App() {
                   setTab('map');
                 }}
                 onSubmit={submitPlan}
+                planning={planning}
               />
             )}
           </div>
@@ -440,10 +528,8 @@ export default function App() {
                 ]);
               }}
               onRecalc={(sr) => {
-                const rs = planRoutes(STATIONS, loadVisits(), sr.route.params);
-                setResults(rs);
-                setRouteStage('results');
                 setTab('route');
+                void submitPlan(sr.route.params);
               }}
               onDelete={(id) => persistRoutes(loadRoutes().filter((r) => r.id !== id))}
               onResetAll={resetAll}

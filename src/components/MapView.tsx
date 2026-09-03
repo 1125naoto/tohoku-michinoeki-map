@@ -22,6 +22,8 @@ interface Props {
   onPick: (p: LatLng) => void;
   /** ルート表示（旅行中・結果プレビュー） */
   routeLine: LatLng[] | null;
+  /** 訪問順の番号マーカー */
+  routeStops: { lat: number; lng: number; order: number }[] | null;
   focusStationId: string | null;
   /** 詳細カード表示中か（フォーカス時に上へずらす量の判断用） */
   sheetOpen: boolean;
@@ -210,6 +212,7 @@ export default function MapView({
   pickMode,
   onPick,
   routeLine,
+  routeStops,
   focusStationId,
   sheetOpen,
 }: Props) {
@@ -217,6 +220,7 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const lineRef = useRef<L.Polyline | null>(null);
+  const orderLayerRef = useRef<L.LayerGroup | null>(null);
   const pickRef = useRef(pickMode);
   const onPickRef = useRef(onPick);
   const onTapRef = useRef(onTapStation);
@@ -345,6 +349,34 @@ export default function MapView({
       map.fitBounds(lineRef.current.getBounds(), { padding: [40, 40] });
     }
   }, [routeLine]);
+
+  // 訪問順の番号マーカー
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (orderLayerRef.current) {
+      orderLayerRef.current.remove();
+      orderLayerRef.current = null;
+    }
+    if (routeStops && routeStops.length > 0) {
+      const layer = L.layerGroup(
+        routeStops.map((s) =>
+          L.marker([s.lat, s.lng], {
+            icon: L.divIcon({
+              html: `<div class="order-pin">${s.order}</div>`,
+              className: '',
+              iconSize: [26, 26],
+              iconAnchor: [13, 13],
+            }),
+            interactive: false,
+            zIndexOffset: 1000,
+          }),
+        ),
+      );
+      layer.addTo(map);
+      orderLayerRef.current = layer;
+    }
+  }, [routeStops]);
 
   // 駅フォーカス: 詳細カードに隠れないよう、マーカーを画面上寄りに配置
   useEffect(() => {

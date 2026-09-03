@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PlanParams, Prefecture, Station } from '../types';
+import type { PlanParams, PlanPriority, Prefecture, RoadPref, Station } from '../types';
 import { PREFECTURES } from '../types';
 import { geocode } from '../lib/geocode';
 import type { LatLng } from '../lib/geo';
@@ -14,6 +14,7 @@ interface Props {
   onRequestMapPick: () => void;
   onOriginChange: (o: OriginValue | null) => void;
   onSubmit: (params: PlanParams) => void;
+  planning: boolean;
 }
 
 function defaultDepartAt(): string {
@@ -31,34 +32,40 @@ const BUDGETS = [
 ];
 const STAYS = [15, 30, 45, 60];
 
-export default function PlannerForm({ stations, origin, onRequestMapPick, onOriginChange, onSubmit }: Props) {
+export default function PlannerForm({ stations, origin, onRequestMapPick, onOriginChange, onSubmit, planning }: Props) {
   const [originMode, setOriginMode] = useState<'geo' | 'search' | 'map' | 'station'>('geo');
   const [searchText, setSearchText] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  const [departAt, setDepartAt] = useState(defaultDepartAt());
   const [budgetMin, setBudgetMin] = useState(240);
   const [customBudget, setCustomBudget] = useState('');
   const [stayMin, setStayMin] = useState(30);
+  const [customStay, setCustomStay] = useState('');
+  const [priority, setPriority] = useState<PlanPriority>('unvisited');
   const [returnToStart, setReturnToStart] = useState(true);
-  const [useHighway, setUseHighway] = useState(false);
+
+  // こまかい設定（折りたたみ）
+  const [advanced, setAdvanced] = useState(false);
+  const [departNow, setDepartNow] = useState(true);
+  const [departAt, setDepartAt] = useState(defaultDepartAt());
+  const [roadPref, setRoadPref] = useState<RoadPref>('highway_ok');
   const [maxStops, setMaxStops] = useState(6);
   const [prefs, setPrefs] = useState<Prefecture[]>([]);
   const [crossPref, setCrossPref] = useState(true);
-  const [target, setTarget] = useState<PlanParams['target']>('unvisited');
+  const [includeVisited, setIncludeVisited] = useState(false);
+  const [includeStamped, setIncludeStamped] = useState(false);
 
   const useGeolocation = () => {
     setGeoError(null);
     if (!('geolocation' in navigator)) {
-      setGeoError('この端末では位置情報を利用できません。住所検索・地図指定・道の駅指定をご利用ください。');
+      setGeoError('この端末では位置情報を使えません。住所か地図、道の駅からも選べます。');
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => onOriginChange({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }),
-      () =>
-        setGeoError('位置情報を取得できませんでした（許可は必須ではありません）。住所検索・地図指定・道の駅指定でも設定できます。'),
+      () => setGeoError('現在地がわかりませんでした。住所か地図、道の駅からも選べます。'),
       { timeout: 10000 },
     );
   };
@@ -69,39 +76,51 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
     try {
       const results = await geocode(searchText);
       if (results.length === 0) {
-        setSearchError('見つかりませんでした。表記を変えるか、地図指定・道の駅指定をお試しください。');
+        setSearchError('見つかりませんでした。「地図で選ぶ」や「道の駅から」もお試しください。');
       } else {
         const r = results[0];
         onOriginChange({ lat: r.lat, lng: r.lng, label: r.label });
       }
     } catch {
-      setSearchError('検索サービスに接続できませんでした。地図指定・道の駅指定でも設定できます。');
+      setSearchError('検索がうまくいきませんでした。「地図で選ぶ」や「道の駅から」もお試しください。');
     } finally {
       setSearching(false);
     }
   };
 
   const submit = () => {
-    if (!origin) return;
-    const budget = customBudget !== '' ? Math.max(30, Number(customBudget)) : budgetMin;
+    if (!origin || planning) return;
+    // 任意時間は30分単位・1〜12時間に丸めて不正値を防ぐ
+    let budget = budgetMin;
+    if (customBudget !== '') {
+      const raw = Number(customBudget);
+      if (Number.isFinite(raw)) budget = Math.max(60, Math.min(720, Math.round(raw / 30) * 30));
+    }
+    let stay = stayMin;
+    if (customStay !== '') {
+      const raw = Number(customStay);
+      if (Number.isFinite(raw)) stay = Math.max(5, Math.min(120, Math.round(raw / 5) * 5));
+    }
     onSubmit({
       origin: { lat: origin.lat, lng: origin.lng, label: origin.label },
-      departAt: new Date(departAt).toISOString(),
+      departAt: departNow ? new Date().toISOString() : new Date(departAt).toISOString(),
       budgetMin: budget,
-      stayMin,
+      stayMin: stay,
       returnToStart,
-      useHighway,
+      roadPref,
       maxStops: Math.max(1, Math.min(15, maxStops)),
       prefs,
       crossPref,
-      target,
+      priority,
+      includeVisited,
+      includeStamped,
     });
   };
 
   return (
     <div>
       <div className="card">
-        <h3>1. 出発地点</h3>
+        <h3>1. どこから出発？</h3>
         <div className="seg" style={{ marginBottom: 10 }}>
           <button className={originMode === 'geo' ? 'active' : ''} onClick={() => setOriginMode('geo')}>
             現在地
@@ -110,7 +129,7 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
             住所・地名
           </button>
           <button className={originMode === 'map' ? 'active' : ''} onClick={() => setOriginMode('map')}>
-            地図で指定
+            地図で選ぶ
           </button>
           <button className={originMode === 'station' ? 'active' : ''} onClick={() => setOriginMode('station')}>
             道の駅から
@@ -119,7 +138,7 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
         {originMode === 'geo' && (
           <>
             <button className="btn-primary" style={{ width: '100%' }} onClick={useGeolocation}>
-              📍 現在地を取得する
+              📍 現在地を使う
             </button>
             {geoError && <div className="msg warn">{geoError}</div>}
           </>
@@ -139,12 +158,11 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
               </button>
             </div>
             {searchError && <div className="msg warn">{searchError}</div>}
-            <p className="msg info">検索には国土地理院の住所検索を利用します。</p>
           </>
         )}
         {originMode === 'map' && (
           <button className="btn-primary" style={{ width: '100%' }} onClick={onRequestMapPick}>
-            🗺️ 地図を開いてタップで指定
+            🗺️ 地図を開いてタップで選ぶ
           </button>
         )}
         {originMode === 'station' && (
@@ -176,152 +194,235 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
             出発地点: <b>{origin.label}</b>
           </div>
         ) : (
-          <div className="msg info">出発地点を設定してください</div>
+          <div className="msg info">出発地点を選んでください</div>
         )}
       </div>
 
       <div className="card">
-        <h3>2. 日程・条件</h3>
-        <div className="field">
-          <label htmlFor="departAt">出発予定日時</label>
-          <input
-            id="departAt"
-            type="datetime-local"
-            value={departAt}
-            onChange={(e) => setDepartAt(e.target.value)}
-            style={{ width: '100%' }}
-          />
+        <h3>2. 何時間のお出かけ？</h3>
+        <div className="seg">
+          {BUDGETS.map((b) => (
+            <button
+              key={b.min}
+              className={customBudget === '' && budgetMin === b.min ? 'active' : ''}
+              onClick={() => {
+                setBudgetMin(b.min);
+                setCustomBudget('');
+              }}
+            >
+              {b.label}
+            </button>
+          ))}
         </div>
-        <div className="field">
-          <label>使用可能時間（移動＋滞在＋帰路すべて込み）</label>
-          <div className="seg">
-            {BUDGETS.map((b) => (
-              <button
-                key={b.min}
-                className={customBudget === '' && budgetMin === b.min ? 'active' : ''}
-                onClick={() => {
-                  setBudgetMin(b.min);
-                  setCustomBudget('');
-                }}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={30}
-            step={30}
-            placeholder="任意入力（分）"
-            aria-label="使用可能時間を分で入力"
-            value={customBudget}
-            onChange={(e) => setCustomBudget(e.target.value)}
-            style={{ width: '100%', marginTop: 6 }}
-          />
+        <input
+          type="number"
+          inputMode="numeric"
+          min={60}
+          max={720}
+          step={30}
+          placeholder="自分で設定（分・30分きざみ）"
+          aria-label="お出かけ時間を分で入力"
+          value={customBudget}
+          onChange={(e) => setCustomBudget(e.target.value)}
+          style={{ width: '100%', marginTop: 6 }}
+        />
+        <p className="msg info" style={{ marginBottom: 0 }}>
+          この時間の中に、移動・各駅での滞在・帰りの時間・安全余裕がぜんぶ入ります。
+        </p>
+      </div>
+
+      <div className="card">
+        <h3>3. 1駅に何分いる？</h3>
+        <div className="seg">
+          {STAYS.map((s) => (
+            <button
+              key={s}
+              className={customStay === '' && stayMin === s ? 'active' : ''}
+              onClick={() => {
+                setStayMin(s);
+                setCustomStay('');
+              }}
+            >
+              {s}分
+            </button>
+          ))}
         </div>
-        <div className="field">
-          <label>1駅あたりの滞在時間</label>
-          <div className="seg">
-            {STAYS.map((s) => (
-              <button key={s} className={stayMin === s ? 'active' : ''} onClick={() => setStayMin(s)}>
-                {s}分
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="row2">
-          <div className="field">
-            <label>出発地点へ戻る</label>
-            <div className="seg">
-              <button className={returnToStart ? 'active' : ''} onClick={() => setReturnToStart(true)}>
-                戻る
-              </button>
-              <button className={!returnToStart ? 'active' : ''} onClick={() => setReturnToStart(false)}>
-                戻らない
-              </button>
-            </div>
-          </div>
-          <div className="field">
-            <label>高速道路</label>
-            <div className="seg">
-              <button className={useHighway ? 'active' : ''} onClick={() => setUseHighway(true)}>
-                使う
-              </button>
-              <button className={!useHighway ? 'active' : ''} onClick={() => setUseHighway(false)}>
-                使わない
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="row2">
-          <div className="field">
-            <label htmlFor="maxStops">最大立ち寄り駅数</label>
-            <input
-              id="maxStops"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={15}
-              value={maxStops}
-              onChange={(e) => setMaxStops(Number(e.target.value))}
-              style={{ width: '100%' }}
-            />
-          </div>
-          <div className="field">
-            <label>県境</label>
-            <div className="seg">
-              <button className={crossPref ? 'active' : ''} onClick={() => setCrossPref(true)}>
-                越えてよい
-              </button>
-              <button className={!crossPref ? 'active' : ''} onClick={() => setCrossPref(false)}>
-                同一県内
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="field">
-          <label>対象県（未選択＝東北6県すべて）</label>
-          <div className="seg">
-            {PREFECTURES.map((p) => (
-              <button
-                key={p}
-                className={prefs.includes(p) ? 'active' : ''}
-                onClick={() => setPrefs(prefs.includes(p) ? prefs.filter((x) => x !== p) : [...prefs, p])}
-              >
-                {p.replace('県', '')}
-              </button>
-            ))}
-          </div>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={5}
+          max={120}
+          step={5}
+          placeholder="自分で設定（分）"
+          aria-label="滞在時間を分で入力"
+          value={customStay}
+          onChange={(e) => setCustomStay(e.target.value)}
+          style={{ width: '100%', marginTop: 6 }}
+        />
+      </div>
+
+      <div className="card">
+        <h3>4. 何を優先する？</h3>
+        <div className="seg">
+          <button
+            className={priority === 'unvisited' ? 'active' : ''}
+            onClick={() => setPriority('unvisited')}
+            data-testid="priority-unvisited"
+          >
+            未訪問を優先
+          </button>
+          <button
+            className={priority === 'wishlist' ? 'active' : ''}
+            onClick={() => setPriority('wishlist')}
+            data-testid="priority-wishlist"
+          >
+            行きたいを優先
+          </button>
+          <button
+            className={priority === 'nearest' ? 'active' : ''}
+            onClick={() => setPriority('nearest')}
+            data-testid="priority-nearest"
+          >
+            近い順で回る
+          </button>
         </div>
       </div>
 
       <div className="card">
-        <h3>3. 対象駅</h3>
+        <h3>5. 出発地点へ戻る？</h3>
         <div className="seg">
-          <button className={target === 'unvisited' ? 'active' : ''} onClick={() => setTarget('unvisited')}>
-            未訪問のみ
+          <button className={returnToStart ? 'active' : ''} onClick={() => setReturnToStart(true)}>
+            戻る
           </button>
-          <button className={target === 'want_priority' ? 'active' : ''} onClick={() => setTarget('want_priority')}>
-            行きたい駅を優先
-          </button>
-          <button className={target === 'all' ? 'active' : ''} onClick={() => setTarget('all')}>
-            すべて
+          <button className={!returnToStart ? 'active' : ''} onClick={() => setReturnToStart(false)}>
+            最後の道の駅で終了
           </button>
         </div>
+      </div>
+
+      <div className="card">
+        <button
+          style={{ width: '100%', textAlign: 'left', background: 'none', padding: 0, minHeight: 32 }}
+          onClick={() => setAdvanced(!advanced)}
+          aria-expanded={advanced}
+        >
+          <h3 style={{ margin: 0 }}>{advanced ? '▲' : '▼'} こまかい設定（出発日時・道路・県など）</h3>
+        </button>
+        {advanced && (
+          <div style={{ marginTop: 10 }}>
+            <div className="field">
+              <label>出発日時</label>
+              <div className="seg">
+                <button className={departNow ? 'active' : ''} onClick={() => setDepartNow(true)}>
+                  今から出発
+                </button>
+                <button className={!departNow ? 'active' : ''} onClick={() => setDepartNow(false)}>
+                  日時を指定
+                </button>
+              </div>
+              {!departNow && (
+                <input
+                  type="datetime-local"
+                  value={departAt}
+                  onChange={(e) => setDepartAt(e.target.value)}
+                  style={{ width: '100%', marginTop: 6 }}
+                  aria-label="出発日時"
+                />
+              )}
+            </div>
+            <div className="field">
+              <label>道路</label>
+              <div className="seg">
+                <button className={roadPref === 'highway_ok' ? 'active' : ''} onClick={() => setRoadPref('highway_ok')}>
+                  高速道路OK
+                </button>
+                <button className={roadPref === 'no_highway' ? 'active' : ''} onClick={() => setRoadPref('no_highway')}>
+                  高速を避ける
+                </button>
+                <button className={roadPref === 'no_tolls' ? 'active' : ''} onClick={() => setRoadPref('no_tolls')}>
+                  有料を避ける
+                </button>
+              </div>
+              {roadPref !== 'highway_ok' && (
+                <p className="msg info" style={{ marginBottom: 0 }}>
+                  回避の条件は、Googleマップを開くときに反映されます（コース計算の時間には反映されません）。
+                </p>
+              )}
+            </div>
+            <div className="row2">
+              <div className="field">
+                <label htmlFor="maxStops">最大立ち寄り駅数</label>
+                <input
+                  id="maxStops"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={15}
+                  value={maxStops}
+                  onChange={(e) => setMaxStops(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div className="field">
+                <label>県境</label>
+                <div className="seg">
+                  <button className={crossPref ? 'active' : ''} onClick={() => setCrossPref(true)}>
+                    越えてOK
+                  </button>
+                  <button className={!crossPref ? 'active' : ''} onClick={() => setCrossPref(false)}>
+                    同じ県だけ
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="field">
+              <label>行きたい県（未選択＝東北ぜんぶ）</label>
+              <div className="seg">
+                {PREFECTURES.map((p) => (
+                  <button
+                    key={p}
+                    className={prefs.includes(p) ? 'active' : ''}
+                    onClick={() => setPrefs(prefs.includes(p) ? prefs.filter((x) => x !== p) : [...prefs, p])}
+                  >
+                    {p.replace('県', '')}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <label>もう行った駅も候補に入れる？（ふだんはOFF）</label>
+              <div className="seg">
+                <button
+                  className={includeVisited ? 'active' : ''}
+                  onClick={() => setIncludeVisited(!includeVisited)}
+                  data-testid="include-visited"
+                >
+                  訪問済みも入れる{includeVisited ? ' ✓' : ''}
+                </button>
+                <button
+                  className={includeStamped ? 'active' : ''}
+                  onClick={() => setIncludeStamped(!includeStamped)}
+                  data-testid="include-stamped"
+                >
+                  スタンプ済みも入れる{includeStamped ? ' ✓' : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <button
         className="btn-primary"
         style={{ width: '100%', minHeight: 52, fontSize: 17 }}
-        disabled={!origin}
+        disabled={!origin || planning}
         onClick={submit}
         data-testid="plan-submit"
       >
-        🚗 週末ルートを作る
+        {planning ? '⏳ コースを計算中…' : '🚗 コースを作る'}
       </button>
       <p className="msg info" style={{ marginTop: 10 }}>
-        所要時間は目安です。実際の渋滞、積雪、通行止め、道路状況、営業時間はGoogleマップと公式サイトで確認してください。
+        所要時間は目安です。実際の経路・渋滞・通行止めはGoogleマップで確認してください。
       </p>
     </div>
   );

@@ -1,50 +1,44 @@
 /**
- * 週末周遊ルートの提案アルゴリズム。
- * 使用可能時間 = 移動 + 各駅の滞在 + （帰着ありなら）帰路 をすべて含む。
- * 距離・時間は概算モデル（geo.ts）。実測ではないことをUIで必ず明示する。
+ * 周遊コースの自動作成。
  *
- * アルゴリズム: 候補絞り込み → 貪欲挿入法（時間予算内・優先度重み付き）→ 2-opt改善。
+ * お出かけ時間には「出発地点→最初の駅」「駅間の移動」「各駅の滞在」「帰路（帰着ON時）」
+ * 「安全余裕」をすべて含め、超過するコースは絶対に返さない。
+ *
+ * 所要時間は RoutingProvider（OSRM実道路時間）を優先し、取得できない場合は
+ * 概算モデル（geo.ts）へフォールバックする。どちらを使ったかは roadData で返す。
+ *
+ * アルゴリズム: 直線距離で候補を最大22駅へ絞り込み → 所要時間行列を1回取得 →
+ * 貪欲挿入法（優先条件による重み付き）→ 2-opt改善。コースは最大3案
+ * （制覇数優先 / バランス / ゆったり）を生成する。
  */
 import type { PlanParams, PlannedRoute, RouteLeg, RouteStop, Station, VisitMap } from '../types';
-import { estimateLegMin, haversineKm, roadDistanceKm, type LatLng } from './geo';
+import { estimateLegMin, formatMin, haversineKm, roadDistanceKm, type LatLng } from './geo';
+import { osrmProvider, type RouteMatrix, type RoutingProvider } from './routing';
 
-interface Candidate {
-  st: Station;
-  want: boolean;
-  visited: boolean;
-}
-
-/** ルート対象になり得る駅か（開業前・休止は常に除外） */
+/** ルート対象になり得る駅か（開業前(upcoming)・休止は常に除外） */
 export function isRoutable(st: Station): boolean {
   return st.status === 'open';
 }
 
-function buildCandidates(stations: Station[], visits: VisitMap, p: PlanParams): Candidate[] {
-  const originPref = nearestPref(stations, p.origin);
-  return stations
-    .filter(isRoutable)
-    // 出発地点そのもの（出発地に指定した道の駅）は候補から除外
-    .filter((st) => haversineKm(p.origin, st) > 0.05)
-    .filter((st) => (p.prefs.length === 0 ? true : p.prefs.includes(st.pref)))
-    .filter((st) => (p.crossPref ? true : st.pref === (p.prefs.length === 1 ? p.prefs[0] : originPref)))
-    .map((st) => {
-      const state = visits[st.id]?.state ?? 'unvisited';
-      return {
-        st,
-        // wishlist は候補に含め、行きたい優先コースで加点される
-        want: state === 'wishlist',
-        // visited / stamped は未訪問ルート候補から除外
-        visited: state === 'visited' || state === 'stamped',
-      };
-    })
-    .filter((c) => {
-      if (p.target === 'all') return true;
-      return !c.visited; // unvisited / want_priority は訪問済み(スタンプ含む)を除外
-    });
+export interface PlanResult {
+  courses: PlannedRoute[];
+  roadData: 'road' | 'approx';
 }
 
+interface Candidate {
+  st: Station;
+  /** 行きたい(wishlist) */
+  want: boolean;
+  /** 既に訪問済み/スタンプ済みか（newCount計算用） */
+  visitedAlready: boolean;
+  /** 行列内のインデックス（0=出発地点） */
+  mi: number;
+}
+
+const MAX_MATRIX_STATIONS = 22;
+
 function nearestPref(stations: Station[], origin: LatLng): string {
-  let best = Infinity;
+  let best = Number.POSITIVE_INFINITY;
   let pref = '';
   for (const st of stations) {
     const d = haversineKm(origin, st);
@@ -56,50 +50,143 @@ function nearestPref(stations: Station[], origin: LatLng): string {
   return pref;
 }
 
-interface BuiltRoute {
-  order: Candidate[];
-  totalMin: number;
-  totalKm: number;
+function buildCandidates(stations: Station[], visits: VisitMap, p: PlanParams): Candidate[] {
+  const originPref = nearestPref(stations, p.origin);
+  const targetPref = p.crossPref ? null : p.prefs.length === 1 ? p.prefs[0] : originPref;
+  const list = stations
+    .filter(isRoutable)
+    .filter((st) => haversineKm(p.origin, st) > 0.05) // 出発地点と同位置の駅は除外
+    .filter((st) => (p.prefs.length === 0 ? true : p.prefs.includes(st.pref)))
+    .filter((st) => (targetPref ? st.pref === targetPref : true))
+    .map((st) => {
+      const state = visits[st.id]?.state ?? 'unvisited';
+      return { st, state };
+    })
+    .filter(({ state }) => {
+      if (state === 'visited') return p.includeVisited;
+      if (state === 'stamped') return p.includeStamped;
+      return true; // unvisited / wishlist は常に候補
+    })
+    .map(({ st, state }) => ({
+      st,
+      want: state === 'wishlist',
+      visitedAlready: state === 'visited' || state === 'stamped',
+      mi: -1,
+    }));
+  // 直線距離で近い順に絞る（実道路リクエストを最小化）
+  list.sort((a, b) => haversineKm(p.origin, a.st) - haversineKm(p.origin, b.st));
+  return list.slice(0, MAX_MATRIX_STATIONS);
 }
 
-/** 訪問順 order に対する総所要時間・距離を計算 */
-function evaluate(order: Candidate[], p: PlanParams, departAt: Date): BuiltRoute | null {
-  let totalMin = 0;
-  let totalKm = 0;
-  let cur: LatLng = p.origin;
+/** 概算モデルで行列を作る（フォールバック） */
+function estimateMatrix(points: LatLng[], p: PlanParams): RouteMatrix {
+  const departAt = new Date(p.departAt);
+  const highway = p.roadPref === 'highway_ok';
+  const n = points.length;
+  const durationsMin: number[][] = [];
+  const distancesKm: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    durationsMin.push([]);
+    distancesKm.push([]);
+    for (let j = 0; j < n; j++) {
+      if (i === j) {
+        durationsMin[i].push(0);
+        distancesKm[i].push(0);
+      } else {
+        durationsMin[i].push(estimateLegMin(points[i], points[j], highway, departAt));
+        distancesKm[i].push(roadDistanceKm(points[i], points[j]));
+      }
+    }
+  }
+  return { durationsMin, distancesKm };
+}
+
+interface CourseSpec {
+  key: string;
+  title: string;
+  /** 安全余裕: max(floorMin, budget*pct) */
+  marginPct: number;
+  marginFloor: number;
+  capStops: (maxStops: number, bestCount: number) => number;
+  wantWeight: (p: PlanParams) => number;
+}
+
+const COURSE_SPECS: CourseSpec[] = [
+  {
+    key: 'max',
+    title: '制覇数優先コース',
+    marginPct: 0.06,
+    marginFloor: 8,
+    capStops: (max) => max,
+    wantWeight: (p) => (p.priority === 'wishlist' ? 6 : p.priority === 'nearest' ? 1 : 1.3),
+  },
+  {
+    key: 'balance',
+    title: 'バランスコース',
+    marginPct: 0.1,
+    marginFloor: 10,
+    capStops: (max, best) => Math.max(1, Math.min(max, Math.ceil(best * 0.8))),
+    wantWeight: (p) => (p.priority === 'wishlist' ? 6 : 1.2),
+  },
+  {
+    key: 'relax',
+    title: 'ゆったりコース',
+    marginPct: 0.18,
+    marginFloor: 15,
+    capStops: (max, best) => Math.max(1, Math.min(max, 4, best - 1 || 1)),
+    wantWeight: (p) => (p.priority === 'wishlist' ? 6 : 1.2),
+  },
+];
+
+/** 訪問順に対する 移動+滞在 の合計（分・区間ごとに切り上げで丸め超過を防止） */
+function evaluate(
+  order: Candidate[],
+  matrix: RouteMatrix,
+  p: PlanParams,
+): { totalMin: number; driveMin: number; totalKm: number } | null {
+  let drive = 0;
+  let km = 0;
+  let cur = 0; // 行列index（0=出発地点）
   for (const c of order) {
-    totalMin += estimateLegMin(cur, c.st, p.useHighway, departAt) + p.stayMin;
-    totalKm += roadDistanceKm(cur, c.st);
-    cur = c.st;
+    const t = matrix.durationsMin[cur][c.mi];
+    const d = matrix.distancesKm[cur][c.mi];
+    if (!Number.isFinite(t)) return null;
+    drive += Math.ceil(t);
+    km += d;
+    cur = c.mi;
   }
   if (p.returnToStart && order.length > 0) {
-    totalMin += estimateLegMin(cur, p.origin, p.useHighway, departAt);
-    totalKm += roadDistanceKm(cur, p.origin);
+    const t = matrix.durationsMin[cur][0];
+    if (!Number.isFinite(t)) return null;
+    drive += Math.ceil(t);
+    km += matrix.distancesKm[cur][0];
   }
-  if (totalMin > p.budgetMin) return null;
-  return { order, totalMin, totalKm };
+  const totalMin = drive + order.length * p.stayMin;
+  return { totalMin, driveMin: drive, totalKm: km };
 }
 
-/** 貪欲挿入法: 予算内に収まる限り、重み付き追加コスト最小の駅を挿入 */
-function greedyInsert(cands: Candidate[], p: PlanParams, departAt: Date, wantWeight: number, maxStops: number): Candidate[] {
-  // 到達可能圏で粗く絞る（往復を想定して予算の半分で行ける範囲 + 余裕1.2倍）
-  const reachableKm = ((p.budgetMin / 60) * 60 * 1.2) / 2;
-  let pool = cands.filter((c) => haversineKm(p.origin, c.st) < reachableKm);
+function greedyInsert(
+  cands: Candidate[],
+  matrix: RouteMatrix,
+  p: PlanParams,
+  effectiveBudget: number,
+  wantWeight: number,
+  maxStops: number,
+): Candidate[] {
+  let pool = [...cands];
   let order: Candidate[] = [];
-
   while (order.length < maxStops) {
-    let bestScore = Infinity;
+    let bestScore = Number.POSITIVE_INFINITY;
     let bestOrder: Candidate[] | null = null;
     let bestCand: Candidate | null = null;
+    const prevEv = evaluate(order, matrix, p);
     for (const c of pool) {
       for (let i = 0; i <= order.length; i++) {
         const trial = [...order.slice(0, i), c, ...order.slice(i)];
-        const ev = evaluate(trial, p, departAt);
-        if (!ev) continue;
-        const prev = evaluate(order, p, departAt);
-        const added = ev.totalMin - (prev?.totalMin ?? 0);
-        const weight = c.want ? wantWeight : 1;
-        const score = added / weight;
+        const ev = evaluate(trial, matrix, p);
+        if (!ev || ev.totalMin > effectiveBudget) continue;
+        const added = ev.totalMin - (prevEv?.totalMin ?? 0);
+        const score = added / (c.want ? wantWeight : 1);
         if (score < bestScore) {
           bestScore = score;
           bestOrder = trial;
@@ -114,11 +201,11 @@ function greedyInsert(cands: Candidate[], p: PlanParams, departAt: Date, wantWei
   return order;
 }
 
-/** 2-opt: 訪問順の交差を解消して総時間を縮める（過度な往復の抑制） */
-function twoOpt(order: Candidate[], p: PlanParams, departAt: Date): Candidate[] {
+/** 2-opt: 過度な往復（順序の交差）を解消 */
+function twoOpt(order: Candidate[], matrix: RouteMatrix, p: PlanParams): Candidate[] {
   if (order.length < 3) return order;
   let best = order;
-  let bestEv = evaluate(best, p, departAt);
+  let bestEv = evaluate(best, matrix, p);
   if (!bestEv) return order;
   let improved = true;
   while (improved) {
@@ -126,7 +213,7 @@ function twoOpt(order: Candidate[], p: PlanParams, departAt: Date): Candidate[] 
     for (let i = 0; i < best.length - 1; i++) {
       for (let j = i + 1; j < best.length; j++) {
         const trial = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)];
-        const ev = evaluate(trial, p, departAt);
+        const ev = evaluate(trial, matrix, p);
         if (ev && bestEv && ev.totalMin < bestEv.totalMin) {
           best = trial;
           bestEv = ev;
@@ -138,81 +225,149 @@ function twoOpt(order: Candidate[], p: PlanParams, departAt: Date): Candidate[] 
   return best;
 }
 
-function toPlanned(key: string, title: string, order: Candidate[], p: PlanParams): PlannedRoute | null {
+function buildRoute(
+  spec: CourseSpec,
+  order: Candidate[],
+  matrix: RouteMatrix,
+  p: PlanParams,
+  marginMin: number,
+  roadData: 'road' | 'approx',
+): PlannedRoute | null {
+  if (order.length === 0) return null;
+  const ev = evaluate(order, matrix, p);
+  if (!ev) return null;
   const departAt = new Date(p.departAt);
-  const ev = evaluate(order, p, departAt);
-  if (!ev || order.length === 0) return null;
   const stops: RouteStop[] = [];
   const legs: RouteLeg[] = [];
   let t = new Date(departAt);
-  let cur: LatLng = p.origin;
+  let cur = 0;
   let curId: string | null = null;
   for (const c of order) {
-    const driveMin = estimateLegMin(cur, c.st, p.useHighway, departAt);
-    const distanceKm = roadDistanceKm(cur, c.st);
-    legs.push({ fromId: curId, toId: c.st.id, distanceKm: Math.round(distanceKm * 10) / 10, driveMin });
+    const driveMin = Math.ceil(matrix.durationsMin[cur][c.mi]);
+    legs.push({
+      fromId: curId,
+      toId: c.st.id,
+      distanceKm: Math.round(matrix.distancesKm[cur][c.mi] * 10) / 10,
+      driveMin,
+    });
     t = new Date(t.getTime() + driveMin * 60000);
     const arriveAt = t.toISOString();
     t = new Date(t.getTime() + p.stayMin * 60000);
     stops.push({ stationId: c.st.id, arriveAt, departAt: t.toISOString(), stayMin: p.stayMin });
-    cur = c.st;
+    cur = c.mi;
     curId = c.st.id;
   }
   if (p.returnToStart) {
-    const driveMin = estimateLegMin(cur, p.origin, p.useHighway, departAt);
-    legs.push({ fromId: curId, toId: null, distanceKm: Math.round(roadDistanceKm(cur, p.origin) * 10) / 10, driveMin });
+    const driveMin = Math.ceil(matrix.durationsMin[cur][0]);
+    legs.push({
+      fromId: curId,
+      toId: null,
+      distanceKm: Math.round(matrix.distancesKm[cur][0] * 10) / 10,
+      driveMin,
+    });
     t = new Date(t.getTime() + driveMin * 60000);
   }
-  const newCount = order.filter((c) => !c.visited).length;
+  const newCount = order.filter((c) => !c.visitedAlready).length;
+  const wantCount = order.filter((c) => c.want).length;
+
+  let reason: string;
+  if (p.priority === 'wishlist' && wantCount > 0) {
+    reason = `行きたいに登録した${wantCount}駅を優先しました`;
+  } else if (spec.key === 'relax') {
+    reason = `移動を抑え、${formatMin(marginMin)}の余裕を持たせたゆったりコースです`;
+  } else if (spec.key === 'balance') {
+    reason = '移動時間と立ち寄り数のバランスを取ったコースです';
+  } else if (p.priority === 'nearest') {
+    reason = '近い駅から順に効率よく回るコースです';
+  } else {
+    reason = `${formatMin(p.budgetMin)}以内で未訪問${newCount}駅を回れるコースです`;
+  }
+
   return {
-    key,
-    title,
+    key: spec.key,
+    title: spec.title,
+    reason,
     params: p,
     stops,
     legs,
     totalMin: ev.totalMin,
+    driveMin: ev.driveMin,
+    stayTotalMin: order.length * p.stayMin,
+    marginMin,
     totalKm: Math.round(ev.totalKm * 10) / 10,
     newCount,
+    wantCount,
     returnAt: t.toISOString(),
+    roadData,
   };
 }
 
-/** ルート候補を最大3種類生成する */
-export function planRoutes(stations: Station[], visits: VisitMap, p: PlanParams): PlannedRoute[] {
-  const departAt = new Date(p.departAt);
+export interface PlanOptions {
+  provider?: RoutingProvider;
+  signal?: AbortSignal;
+}
+
+/** コースを最大3案作成する */
+export async function planCourses(
+  stations: Station[],
+  visits: VisitMap,
+  p: PlanParams,
+  opts: PlanOptions = {},
+): Promise<PlanResult> {
   const cands = buildCandidates(stations, visits, p);
-  if (cands.length === 0) return [];
+  if (cands.length === 0) return { courses: [], roadData: 'approx' };
+
+  const points: LatLng[] = [p.origin, ...cands.map((c) => c.st)];
+  cands.forEach((c, i) => (c.mi = i + 1));
+
+  // 実道路時間（OSRM）→ 失敗時は概算へフォールバック
+  let matrix: RouteMatrix;
+  let roadData: 'road' | 'approx';
+  const provider = opts.provider ?? osrmProvider;
+  try {
+    matrix = await provider.table(points, opts.signal);
+    roadData = 'road';
+    // 到達不能セルは概算で補完
+    const est = estimateMatrix(points, p);
+    for (let i = 0; i < points.length; i++) {
+      for (let j = 0; j < points.length; j++) {
+        if (!Number.isFinite(matrix.durationsMin[i][j])) {
+          matrix.durationsMin[i][j] = est.durationsMin[i][j];
+          matrix.distancesKm[i][j] = est.distancesKm[i][j];
+        }
+      }
+    }
+  } catch (e) {
+    if (opts.signal?.aborted) throw e;
+    matrix = estimateMatrix(points, p);
+    roadData = 'approx';
+  }
 
   const results: PlannedRoute[] = [];
   const seen = new Set<string>();
-  const push = (r: PlannedRoute | null) => {
-    if (!r) return;
-    // 駅順が同じでも滞在時間が異なれば別コースとして提示する
-    const sig = `${r.stops.map((s) => s.stationId).join('>')}::${r.params.stayMin}`;
-    if (r.stops.length > 0 && !seen.has(sig)) {
-      seen.add(sig);
-      results.push(r);
-    }
-  };
-
-  // 1. 最多制覇コース
-  const maxOrder = twoOpt(greedyInsert(cands, p, departAt, 1.5, p.maxStops), p, departAt);
-  push(toPlanned('max', '最多制覇コース', maxOrder, p));
-
-  // 2. ゆったりコース（滞在+15分・立ち寄りは最大3駅）
-  const relaxedParams: PlanParams = { ...p, stayMin: p.stayMin + 15, maxStops: Math.min(3, p.maxStops) };
-  const relaxedOrder = twoOpt(
-    greedyInsert(cands, relaxedParams, departAt, 1.5, relaxedParams.maxStops),
-    relaxedParams,
-    departAt,
-  );
-  push(toPlanned('relaxed', 'ゆったりコース', relaxedOrder, relaxedParams));
-
-  // 3. 行きたい優先コース（行きたい駅がある場合のみ）
-  if (cands.some((c) => c.want)) {
-    const wantOrder = twoOpt(greedyInsert(cands, p, departAt, 6, p.maxStops), p, departAt);
-    push(toPlanned('want', '行きたい優先コース', wantOrder, p));
+  let bestCount = 0;
+  for (const spec of COURSE_SPECS) {
+    const marginMin = Math.max(spec.marginFloor, Math.round(p.budgetMin * spec.marginPct));
+    const effectiveBudget = p.budgetMin - marginMin;
+    if (effectiveBudget <= p.stayMin) continue; // 設定時間が短すぎる
+    const cap = spec.capStops(p.maxStops, bestCount || p.maxStops);
+    const order = twoOpt(
+      greedyInsert(cands, matrix, p, effectiveBudget, spec.wantWeight(p), cap),
+      matrix,
+      p,
+    );
+    const route = buildRoute(spec, order, matrix, p, marginMin, roadData);
+    if (!route) continue;
+    if (spec.key === 'max') bestCount = route.stops.length;
+    const sig = route.stops.map((s) => s.stationId).join('>');
+    if (seen.has(sig)) continue; // 同一結果は無理に複数表示しない
+    seen.add(sig);
+    results.push(route);
   }
 
-  return results;
+  // 行きたい優先モードでは、行きたい駅を含むコースを最上位へ
+  if (p.priority === 'wishlist') {
+    results.sort((a, b) => b.wantCount - a.wantCount);
+  }
+  return { courses: results, roadData };
 }

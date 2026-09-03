@@ -467,8 +467,9 @@ test.describe('堅牢性', () => {
     await page.getByRole('button', { name: '住所・地名' }).click();
     await page.getByLabel('住所・地名').fill('郡山市');
     await page.getByRole('button', { name: '検索', exact: true }).click();
-    await expect(page.locator('.msg.warn')).toContainText('接続できませんでした');
-    // 画面は落ちていない
+    await expect(page.locator('.msg.warn')).toContainText('うまくいきませんでした');
+    // 画面は落ちておらず、地図指定・道の駅指定への誘導がある
+    await expect(page.locator('.msg.warn')).toContainText('地図で選ぶ');
     await expect(page.getByTestId('plan-submit')).toBeVisible();
   });
 });
@@ -481,23 +482,42 @@ test.describe('ルート提案から旅行中まで', () => {
     await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
     await expect(page.getByTestId('origin-label')).toContainText('しちのへ');
     await page.getByTestId('plan-submit').click();
-    await expect(page.getByTestId('route-card-max')).toBeVisible({ timeout: 20000 });
+    // 実道路時間の取得（OSRM）を含むため長めに待つ。障害時は概算へ自動フォールバックする
+    await expect(page.getByTestId('route-card-max')).toBeVisible({ timeout: 40000 });
   }
 
-  test('条件入力→3コース提案→概算注意→詳細表示 @smoke', async ({ page }) => {
+  test('条件入力→コース提案→時間内・注意表示→詳細表示 @smoke', async ({ page }) => {
     await planFromStation(page);
-    await page.getByTestId('route-card-max').click();
+    // カード: 大きな見出し・理由・実道路/概算バッジ
+    const card = page.getByTestId('route-card-max');
+    await expect(card).toContainText('4時間で');
+    await expect(card).toContainText('駅回れます');
+    await expect(card.getByTestId('road-badge')).toContainText(/実道路時間|概算時間/);
+    await card.click();
     const detail = page.getByTestId('route-detail');
     await expect(detail).toBeVisible();
-    await expect(detail).toContainText('所要時間は目安です');
+    // 実道路/概算に応じた注意が必ず表示される
+    await expect(detail.getByTestId('road-note')).toContainText(/Googleマップ/);
+    await expect(detail.getByTestId('route-margin')).toContainText('安全余裕');
+    await expect(detail.getByTestId('route-total')).toContainText('設定 4時間 以内');
     await expect(detail.getByTestId('route-timeline')).toContainText('を出発');
     await expect(detail.getByTestId('route-timeline')).toContainText('へ帰着');
-    // Googleマップ連携: 注意表示→URL
+    await expect(detail.getByTestId('route-timeline')).toContainText('1. 道の駅'); // 訪問順の番号
+    // Googleマップ全体確認: 注意→URL（経由順・avoidなしのデフォルト）
     await page.getByTestId('gmaps-open').click();
     const confirmBox = page.getByTestId('gmaps-confirm');
-    await expect(confirmBox).toContainText('概算');
+    await expect(confirmBox).toContainText('Googleマップ');
     const link = confirmBox.locator('a').first();
     await expect(link).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&origin=/);
+  });
+
+  test('地図の「コースを作る」ボタンから設定画面へ入れる @smoke', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await expect(page.getByTestId('make-course-btn')).toBeVisible();
+    await page.getByTestId('make-course-btn').click();
+    await expect(page.getByTestId('route-pane')).toBeVisible();
+    await expect(page.getByTestId('plan-submit')).toBeVisible();
   });
 
   test('保存→再読み込み後も残る→削除確認', async ({ page }) => {
@@ -515,34 +535,119 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(page.getByTestId('saved-empty')).toBeVisible();
   });
 
-  test('旅行中: 到着・訪問完了・スキップ・一括反映（自動訪問なし）', async ({ page }) => {
+  test('シナリオA: 旅行中の1駅ナビ・到着=赤・スタンプ=紫・スキップ不変・帰路表示', async ({ page, context }) => {
     await planFromStation(page);
     await page.getByTestId('route-card-max').click();
     await page.getByTestId('trip-start').click();
     await expect(page.getByTestId('trip-view')).toBeVisible();
     // ルートに含まれただけでは訪問済みにならない
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    await expect(page.getByTestId('trip-remaining-stops')).toBeVisible();
-    // 到着→訪問完了
+    await expect(page.getByTestId('trip-progress')).toContainText('0／');
+    await expect(page.getByTestId('trip-remaining-time')).toBeVisible();
+    // 安全案内
+    await expect(page.getByTestId('trip-view')).toContainText('安全な場所に停車して操作してください');
+
+    // 「Googleマップで次の駅へ」→ 中間画面なしでナビURLを直接開く（状態は変わらない）
+    const currentName = (await page.getByTestId('trip-current').textContent()) ?? '';
+    const popupPromise = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
+    await page.getByTestId('trip-nav').click();
+    const popup = await popupPromise;
+    expect(popup).not.toBeNull();
+    await popup!.waitForURL(/google\.com\/maps\/dir/, { timeout: 15000 }).catch(() => {});
+    const navUrl = decodeURIComponent(popup!.url());
+    expect(navUrl).toContain('google.com/maps/dir');
+    expect(navUrl).toContain('dir_action=navigate');
+    expect(navUrl).toContain(currentName.replace('道の駅 ', '')); // 次の駅名がdestinationに入っている
+    await popup!.close();
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+
+    // 到着した → visited(赤) + 次の駅へ
     await page.getByTestId('trip-arrived').click();
-    await page.getByTestId('trip-visited').click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
-    // 次の駅をスキップ（残っていれば）
-    const skip = page.getByTestId('trip-skip');
-    if (await skip.isVisible().catch(() => false)) {
-      await skip.click();
+    await expect(page.getByTestId('trip-progress')).toContainText('1／');
+
+    // 2駅目: スタンプ取得 → stamped(紫)
+    if (await page.getByTestId('trip-stamp').isVisible().catch(() => false)) {
+      await page.getByTestId('trip-stamp').click();
+      await expect(page.getByTestId('stats-visited')).toContainText('2／182駅');
+      await expect(page.getByTestId('stats-stamped')).toContainText('1');
     }
-    // 終了して一括反映画面へ
-    const finishBtn = page.getByTestId('trip-finish-btn');
-    if (await finishBtn.isVisible().catch(() => false)) {
-      await finishBtn.click();
+
+    // 残りはスキップ（状態は変えない）→ 最後に帰路が表示される
+    for (let i = 0; i < 8; i++) {
+      if (await page.getByTestId('trip-return').isVisible().catch(() => false)) break;
+      const skip = page.getByTestId('trip-skip');
+      if (await skip.isVisible().catch(() => false)) {
+        await skip.click();
+        await page.waitForTimeout(200);
+      } else break;
     }
+    await expect(page.getByTestId('trip-return')).toBeVisible();
+    await expect(page.getByTestId('trip-nav-home')).toBeVisible(); // 出発地点へ戻るナビ
+    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // スキップで状態不変
+
+    // 中断→再開: 進行状況が保持される
+    await page.getByTestId('trip-suspend').click();
+    await page.reload();
+    await page.getByTestId('tab-route').click();
+    await expect(page.getByTestId('trip-return')).toBeVisible();
+
+    // 終了 → 記録確認 → 反映
+    await page.getByTestId('trip-finish-btn').click();
     await expect(page.getByTestId('trip-finish')).toBeVisible();
     await page.getByTestId('trip-apply').click();
-    // 旅行終了後もルートタブは正常
     await expect(page.getByTestId('route-pane')).toBeVisible();
-    // 訪問記録は残っている
-    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅');
+  });
+
+  test('シナリオB: 行きたい優先でwishlist駅が優先される', async ({ page }) => {
+    // みさわ・おがわら湖を「行きたい」にしておく
+    await page.addInitScript(() => {
+      const now = new Date().toISOString();
+      const rec = { state: 'wishlist', visitedAt: null, wishlistAt: now, stampAt: null, updatedAt: now };
+      localStorage.setItem(
+        'tohoku-me:visits:v2',
+        JSON.stringify({ 'mne-18920': rec, 'mne-18924': rec }),
+      );
+    });
+    await page.goto('/');
+    await page.getByTestId('tab-route').click();
+    await page.getByRole('button', { name: '道の駅から' }).click();
+    await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
+    await page.getByRole('button', { name: '6時間' }).click();
+    await page.getByTestId('priority-wishlist').click();
+    await page.getByTestId('plan-submit').click();
+    const firstCard = page.locator('[data-testid^="route-card-"]').first();
+    await expect(firstCard).toBeVisible({ timeout: 30000 });
+    // 最上位コースが行きたい駅を含む
+    await expect(firstCard).toContainText('★行きたい');
+    await firstCard.click();
+    const timeline = page.getByTestId('route-timeline');
+    await expect(timeline).toContainText(/みさわ|おがわら湖/);
+  });
+});
+
+test.describe('シナリオC: ルーティング障害時の概算フォールバック', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('OSRM不通でも概算で提案でき、注意表示とナビは使える', async ({ page }) => {
+    await page.route('**router.project-osrm.org/**', (route) => route.abort());
+    await page.goto('/');
+    await page.getByTestId('tab-route').click();
+    await page.getByRole('button', { name: '道の駅から' }).click();
+    await page.getByLabel('出発する道の駅').selectOption(STATION_ID);
+    await page.getByTestId('plan-submit').click();
+    const card = page.getByTestId('route-card-max');
+    await expect(card).toBeVisible({ timeout: 30000 });
+    // 概算バッジ + 注意文言
+    await expect(card.getByTestId('road-badge')).toContainText('概算時間を使用');
+    await card.click();
+    await expect(page.getByTestId('road-note')).toContainText('所要時間は目安です');
+    await expect(page.getByTestId('road-note')).toContainText('Googleマップで確認');
+    // アプリは落ちておらず、旅行開始→ナビボタンも使える
+    await page.getByTestId('trip-start').click();
+    await expect(page.getByTestId('trip-view')).toBeVisible();
+    await expect(page.getByTestId('trip-nav')).toBeVisible();
   });
 
   test('候補0件時の表示（状態変更は再読み込みなしでルート候補へ反映される）', async ({ page }) => {

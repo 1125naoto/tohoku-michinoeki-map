@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { directionsUrls, MAX_WAYPOINTS, stationSearchUrl } from './gmaps';
+import { avoidParam, directionsUrls, MAX_WAYPOINTS, navToPointUrl, navToStationUrl, stationSearchUrl } from './gmaps';
 import { STATIONS } from '../data';
 import { computeStats } from './stats';
 import type { VisitMap } from '../types';
@@ -52,6 +52,42 @@ describe('Googleマップ連携', () => {
   it('地点が1つ以下ならURLを生成しない', () => {
     expect(directionsUrls([])).toEqual([]);
     expect(directionsUrls([{ lat: 37, lng: 140 }])).toEqual([]);
+  });
+
+  it('次の駅へのナビURLは現在地→施設名+住所で、ナビ直行パラメータを含む', () => {
+    const st = STATIONS[0];
+    const url = navToStationUrl(st);
+    const dec = decodeURIComponent(url);
+    expect(url).toContain('https://www.google.com/maps/dir/?api=1');
+    expect(url).not.toContain('origin='); // origin省略=現在地から
+    expect(dec).toContain(`道の駅${st.name}`);
+    expect(dec).toContain(st.address);
+    expect(url).toContain('travelmode=driving');
+    expect(url).toContain('dir_action=navigate');
+  });
+
+  it('道路条件はGoogleマップURLのavoidに反映される', () => {
+    expect(avoidParam('highway_ok')).toBeNull();
+    expect(avoidParam('no_highway')).toBe('highways');
+    expect(avoidParam('no_tolls')).toBe('tolls');
+    expect(navToStationUrl(STATIONS[0], 'no_highway')).toContain('avoid=highways');
+    expect(navToStationUrl(STATIONS[0], 'no_tolls')).toContain('avoid=tolls');
+    expect(navToStationUrl(STATIONS[0], 'highway_ok')).not.toContain('avoid=');
+    const dirs = directionsUrls(
+      [
+        { lat: 37, lng: 140 },
+        { lat: 37.1, lng: 140.1 },
+      ],
+      'no_highway',
+    );
+    expect(dirs[0]).toContain('avoid=highways');
+  });
+
+  it('帰路ナビURLは現在地→出発地点座標', () => {
+    const url = navToPointUrl({ lat: 37.4004, lng: 140.3597 }, 'no_tolls');
+    expect(url).toContain('destination=37.400400,140.359700');
+    expect(url).toContain('dir_action=navigate');
+    expect(url).toContain('avoid=tolls');
   });
 });
 

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { SavedRoute, Station, StopProgress, TripState, VisitMap } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
-import { stationSearchUrl } from '../lib/gmaps';
 import { RouteTimeline } from './RouteResults';
 
 interface Props {
@@ -10,11 +9,17 @@ interface Props {
   visits: VisitMap;
   getStation: (id: string) => Station | undefined;
   onProgress: (stationId: string, p: StopProgress) => void;
-  onVisit: (stationId: string) => void;
+  /** 到着した: visited(赤)にして次へ */
+  onArrived: (stationId: string) => void;
+  /** スタンプ取得: stamped(紫)にして次へ */
   onStamp: (stationId: string) => void;
   onFinish: (visitedIds: string[], stampIds: string[]) => void;
   onShowMap: () => void;
   onExit: () => void;
+  /** Googleマップで次の駅へ（中間画面なしで直接開く） */
+  onNavToStation: (st: Station) => void;
+  /** 帰路ナビ（出発地点へ） */
+  onNavHome: () => void;
 }
 
 export default function TripView({
@@ -23,51 +28,54 @@ export default function TripView({
   visits,
   getStation,
   onProgress,
-  onVisit,
+  onArrived,
   onStamp,
   onFinish,
   onShowMap,
   onExit,
+  onNavToStation,
+  onNavHome,
 }: Props) {
   const r = saved.route;
   const [finishing, setFinishing] = useState(false);
   const [checkedVisit, setCheckedVisit] = useState<Record<string, boolean>>({});
   const [checkedStamp, setCheckedStamp] = useState<Record<string, boolean>>({});
 
+  const doneCount = r.stops.filter((s) => {
+    const p = trip.progress[s.stationId];
+    return p === 'done' || p === 'skipped';
+  }).length;
   const currentStop = useMemo(
-    () => r.stops.find((s) => {
-      const p = trip.progress[s.stationId];
-      return p !== 'done' && p !== 'skipped';
-    }) ?? null,
+    () =>
+      r.stops.find((s) => {
+        const p = trip.progress[s.stationId];
+        return p !== 'done' && p !== 'skipped';
+      }) ?? null,
     [r.stops, trip.progress],
   );
-  const remaining = r.stops.filter((s) => {
-    const p = trip.progress[s.stationId];
-    return p !== 'done' && p !== 'skipped';
-  }).length;
-  const nextStop = currentStop
-    ? r.stops[r.stops.indexOf(currentStop) + 1] ?? null
-    : null;
+  const currentIdx = currentStop ? r.stops.indexOf(currentStop) : -1;
   const remainMin = Math.max(0, Math.round((new Date(r.returnAt).getTime() - Date.now()) / 60000));
   const cur = currentStop ? getStation(currentStop.stationId) : null;
-  const curProgress = currentStop ? trip.progress[currentStop.stationId] : null;
+  const curLeg = currentIdx >= 0 ? r.legs[currentIdx] : null;
+  const allDone = currentStop === null;
 
-  if (finishing || (!currentStop && !finishing)) {
-    // ルート終了: 実際に訪問できた駅を選択して一括反映
+  if (finishing || (allDone && !r.params.returnToStart)) {
+    // 終了: 実際に訪問できた駅を確認して一括反映
     return (
       <div data-testid="trip-finish">
         <div className="card">
-          <h3>おつかれさまでした！訪問できた駅を反映</h3>
-          <p className="msg info">
-            チェックした駅を「訪問済み」「スタンプ取得」として一括記録します（ルートに含まれただけでは自動記録されません）。
-          </p>
+          <h3>おつかれさまでした！記録を確認</h3>
+          <p className="msg info">チェックした駅を「訪問済み」（印は「スタンプ取得済み」）として記録します。</p>
           {r.stops.map((s) => {
             const st = getStation(s.stationId);
             const done = trip.progress[s.stationId] === 'done';
             const stState = visits[s.stationId]?.state;
             const already = stState === 'visited' || stState === 'stamped';
             return (
-              <div key={s.stationId} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed var(--border)' }}>
+              <div
+                key={s.stationId}
+                style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed var(--border)' }}
+              >
                 <label style={{ flex: 1, display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     type="checkbox"
@@ -112,10 +120,10 @@ export default function TripView({
               onFinish(visitIds, stampIds);
             }}
           >
-            一括反映してルートを終了
+            記録してコースを終了
           </button>
           <button style={{ width: '100%', marginTop: 8 }} onClick={onExit}>
-            反映せずに閉じる
+            記録せずに閉じる
           </button>
         </div>
       </div>
@@ -124,63 +132,55 @@ export default function TripView({
 
   return (
     <div data-testid="trip-view">
-      <div className="trip-stats">
-        <span>
-          残り時間
-          <br />
-          <b data-testid="trip-remaining-time">{formatMin(remainMin)}</b>
-        </span>
-        <span>
-          残り立ち寄り
-          <br />
-          <b data-testid="trip-remaining-stops">{remaining}駅</b>
-        </span>
-        <span>
-          帰着予定
-          <br />
-          <b>{formatHM(new Date(r.returnAt))}</b>
-        </span>
+      <div className="card" style={{ paddingBottom: 8 }}>
+        <h3 style={{ marginBottom: 6 }}>{saved.name}</h3>
+        <div className="trip-stats">
+          <span>
+            進行
+            <br />
+            <b data-testid="trip-progress">
+              {doneCount}／{r.stops.length}駅
+            </b>
+          </span>
+          <span>
+            残り時間
+            <br />
+            <b data-testid="trip-remaining-time">{formatMin(remainMin)}</b>
+          </span>
+          <span>
+            帰着予定
+            <br />
+            <b>{formatHM(new Date(r.returnAt))}</b>
+          </span>
+        </div>
       </div>
 
-      {cur && currentStop && (
+      {cur && currentStop && curLeg && (
         <div className="trip-next">
-          <div className="label">現在の目的地（{formatHM(new Date(currentStop.arriveAt))} 着予定）</div>
+          <div className="label">次の道の駅（{currentIdx + 1}／{r.stops.length}）</div>
           <h3 data-testid="trip-current">道の駅 {cur.name}</h3>
           <p className="addr">
-            {cur.pref} {cur.city}・滞在予定 {currentStop.stayMin}分
+            約{curLeg.distanceKm}km・{formatMin(curLeg.driveMin)} ／ {formatHM(new Date(currentStop.arriveAt))}
+            ごろ到着予定 ／ 滞在{currentStop.stayMin}分
           </p>
-          {nextStop && (
-            <p className="addr">
-              次の道の駅: {getStation(nextStop.stationId)?.name ?? '—'}（{formatHM(new Date(nextStop.arriveAt))} 着予定）
-            </p>
-          )}
           <div className="btn-grid">
-            <a
-              className="btn-link btn-primary wide"
-              href={stationSearchUrl(cur)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              className="btn-primary wide"
+              style={{ minHeight: 56, fontSize: 17 }}
+              onClick={() => onNavToStation(cur)}
+              data-testid="trip-nav"
             >
-              🧭 Googleマップでナビ ↗
-            </a>
-            {curProgress !== 'arrived' ? (
-              <button className="wide" onClick={() => onProgress(cur.id, 'arrived')} data-testid="trip-arrived">
-                📍 到着した
-              </button>
-            ) : (
-              <div className="msg info wide" style={{ margin: 0, textAlign: 'center' }}>
-                到着済み
-              </div>
-            )}
+              🧭 Googleマップで次の駅へ
+            </button>
             <button
               className="btn-primary"
               onClick={() => {
-                onVisit(cur.id);
+                onArrived(cur.id);
                 onProgress(cur.id, 'done');
               }}
-              data-testid="trip-visited"
+              data-testid="trip-arrived"
             >
-              ✓ 訪問完了
+              ✓ 到着した
             </button>
             <button
               onClick={() => {
@@ -192,7 +192,31 @@ export default function TripView({
               印 スタンプ取得
             </button>
             <button className="wide" onClick={() => onProgress(cur.id, 'skipped')} data-testid="trip-skip">
-              この駅をスキップ
+              この駅をスキップ（記録は変えない）
+            </button>
+          </div>
+          <p className="msg info" style={{ marginBottom: 0 }}>
+            🚗 安全な場所に停車して操作してください。
+          </p>
+        </div>
+      )}
+
+      {allDone && r.params.returnToStart && (
+        <div className="trip-next" data-testid="trip-return">
+          <div className="label">全駅まわりました！</div>
+          <h3>出発地点（{r.params.origin.label}）へ帰りましょう</h3>
+          <p className="addr">帰着予定 {formatHM(new Date(r.returnAt))}ごろ</p>
+          <div className="btn-grid">
+            <button
+              className="btn-primary wide"
+              style={{ minHeight: 56, fontSize: 17 }}
+              onClick={onNavHome}
+              data-testid="trip-nav-home"
+            >
+              🧭 Googleマップで出発地点へ戻る
+            </button>
+            <button className="wide" onClick={() => setFinishing(true)} data-testid="trip-finish-btn">
+              🏁 コースを終了する
             </button>
           </div>
         </div>
@@ -204,10 +228,14 @@ export default function TripView({
       </div>
       <div style={{ display: 'grid', gap: 8 }}>
         <button onClick={onShowMap}>🗺️ 地図でルートを見る</button>
-        <button onClick={() => setFinishing(true)} data-testid="trip-finish-btn">
-          🏁 ルートを終了する（訪問を一括反映）
+        {!allDone && (
+          <button onClick={() => setFinishing(true)} data-testid="trip-finish-btn">
+            🏁 コースを終了する（記録を確認）
+          </button>
+        )}
+        <button onClick={onExit} data-testid="trip-suspend">
+          ⏸ コースを中断（あとで再開できます）
         </button>
-        <button onClick={onExit}>いったん閉じる（後で再開できます）</button>
       </div>
     </div>
   );

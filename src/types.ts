@@ -70,24 +70,34 @@ export type VisitMap = Record<string, VisitRecord>;
 /** 地図の状態フィルター */
 export type StatusFilter = 'all' | 'none' | 'want' | 'visited' | 'stamp';
 
+/** 道路条件（OSRM側で厳密反映できないものはGoogleマップURLへ渡す） */
+export type RoadPref = 'highway_ok' | 'no_highway' | 'no_tolls';
+
+/** 優先条件 */
+export type PlanPriority = 'unvisited' | 'wishlist' | 'nearest';
+
 /** ルート計画の入力条件 */
 export interface PlanParams {
   origin: { lat: number; lng: number; label: string };
   /** 出発予定 (ISO文字列) */
   departAt: string;
-  /** 使用可能時間（分）: 移動+滞在+帰路すべて込み */
+  /** お出かけ時間（分）: 移動+滞在+帰路+安全余裕すべて込み */
   budgetMin: number;
   /** 1駅あたり滞在時間（分） */
   stayMin: number;
   returnToStart: boolean;
-  useHighway: boolean;
+  roadPref: RoadPref;
   maxStops: number;
   /** 対象県（空=東北6県すべて） */
   prefs: Prefecture[];
   /** 県境を越えてよいか */
   crossPref: boolean;
-  /** 対象駅: 未訪問のみ / 行きたい優先 / すべて */
-  target: 'unvisited' | 'want_priority' | 'all';
+  /** 優先条件: 未訪問優先 / 行きたい優先 / 近い順 */
+  priority: PlanPriority;
+  /** 訪問済みも候補に含める（初期OFF） */
+  includeVisited: boolean;
+  /** スタンプ済みも候補に含める（初期OFF） */
+  includeStamped: boolean;
 }
 
 export interface RouteLeg {
@@ -108,14 +118,27 @@ export interface RouteStop {
 export interface PlannedRoute {
   key: string;
   title: string;
+  /** なぜこの提案になったかの短い説明 */
+  reason: string;
   params: PlanParams;
   stops: RouteStop[];
   legs: RouteLeg[];
+  /** 移動+滞在の合計（分）。安全余裕は含まない */
   totalMin: number;
+  /** 総移動時間（分） */
+  driveMin: number;
+  /** 総滞在時間（分） */
+  stayTotalMin: number;
+  /** 安全余裕（分）。totalMin + marginMin <= budgetMin を保証 */
+  marginMin: number;
   totalKm: number;
   /** 新しく制覇できる駅数（未訪問→訪問見込み） */
   newCount: number;
+  /** 行きたい(wishlist)の駅数 */
+  wantCount: number;
   returnAt: string;
+  /** 'road'=実道路時間(OSRM) / 'approx'=概算 */
+  roadData: 'road' | 'approx';
 }
 
 /** 保存済みルート */
