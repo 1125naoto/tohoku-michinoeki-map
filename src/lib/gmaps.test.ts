@@ -66,11 +66,11 @@ describe('Googleマップ連携', () => {
     expect(url).toContain('dir_action=navigate');
   });
 
-  it('道路条件はGoogleマップURLのavoidに反映される', () => {
-    expect(avoidParam('highway_ok')).toBeNull();
-    expect(avoidParam('no_highway')).toBe('highways');
-    expect(avoidParam('no_tolls')).toBe('tolls');
-    expect(navToStationUrl(STATIONS[0], 'no_highway')).toContain('avoid=highways');
+  it('道路の希望はGoogleマップURLのavoidに反映される（一般道を優先は高速+有料の両方を回避）', () => {
+    expect(avoidParam('highway_ok')).toBeNull(); // おまかせ・早いルート
+    expect(avoidParam('no_tolls')).toBe('tolls'); // 有料道路を使わない
+    expect(avoidParam('no_highway')).toBe('highways,tolls'); // 一般道を優先
+    expect(navToStationUrl(STATIONS[0], 'no_highway')).toContain('avoid=highways,tolls');
     expect(navToStationUrl(STATIONS[0], 'no_tolls')).toContain('avoid=tolls');
     expect(navToStationUrl(STATIONS[0], 'highway_ok')).not.toContain('avoid=');
     const dirs = directionsUrls(
@@ -80,7 +80,7 @@ describe('Googleマップ連携', () => {
       ],
       'no_highway',
     );
-    expect(dirs[0]).toContain('avoid=highways');
+    expect(decodeURIComponent(dirs[0])).toContain('avoid=highways,tolls');
   });
 
   it('帰路ナビURLは現在地→出発地点座標', () => {

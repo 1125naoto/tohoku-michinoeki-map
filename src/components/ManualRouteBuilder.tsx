@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import type { PlannedRoute, RoadPref, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { statusAtArrival } from '../lib/hours';
+import { poiDisplayName, type Poi } from '../lib/poi';
 import OriginPicker, { type ExtraOriginMode } from './OriginPicker';
+import RoadPrefPicker from './RoadPrefPicker';
 import type { OriginValue } from './PlannerForm';
 import {
   MAX_MANUAL_STATIONS,
   MIN_MANUAL_STATIONS,
   buildManualMatrix,
   buildManualRoute,
+  computeMarginMin,
   evaluateManual,
   fitToBudget,
   orderManual,
@@ -30,6 +33,10 @@ interface Props {
   stations: Station[];
   getStation: (id: string) => Station | undefined;
   selectedIds: string[];
+  /** 選択済みの周辺スポット（キー: Poi.id）。地図選択モードで追加されたもの */
+  selectedPois: Record<string, Poi>;
+  /** 地点ごとの滞在時間の上書き（キー: 駅ID or Poi.id） */
+  stayOverrides: Record<string, number>;
   origin: OriginValue | null;
   onOriginChange: (o: OriginValue | null) => void;
   onRequestMapPick: () => void;
@@ -63,6 +70,8 @@ export default function ManualRouteBuilder({
   stations,
   getStation,
   selectedIds,
+  selectedPois,
+  stayOverrides,
   origin,
   onOriginChange,
   onRequestMapPick,
@@ -80,7 +89,16 @@ export default function ManualRouteBuilder({
   const [customStay, setCustomStay] = useState('');
   const [returnToStart, setReturnToStart] = useState(initialSettings?.returnToStart ?? true);
   const [orderMode, setOrderMode] = useState<ManualOrderMode>(initialSettings?.orderMode ?? 'optimized');
-  const [roadPref] = useState<RoadPref>(initialSettings?.roadPref ?? 'highway_ok');
+  const [roadPref, setRoadPref] = useState<RoadPref>(initialSettings?.roadPref ?? 'highway_ok');
+
+  /** 駅・周辺スポットの両方に対応した表示名解決（道の駅→周辺スポット→不明時はIDのまま） */
+  const resolveName = (id: string): string => {
+    const st = getStation(id);
+    if (st) return st.name;
+    const poi = selectedPois[id];
+    if (poi) return poiDisplayName(poi);
+    return id;
+  };
 
   useEffect(() => {
     onSettingsChange?.({ returnToStart, orderMode, budgetMin: budgetLimited ? resolvedBudget() : null, stayMin: resolvedStay(), roadPref });
@@ -144,6 +162,7 @@ export default function ManualRouteBuilder({
     roadPref,
     budgetMin: budgetLimited ? resolvedBudget() : null,
     orderMode: mode,
+    stayOverrides,
   });
 
   const start = async () => {
@@ -152,7 +171,7 @@ export default function ManualRouteBuilder({
     setErrorMsg(null);
     try {
       const p = buildParams(orderMode);
-      const { matrix, roadData, candidates } = await buildManualMatrix(stations, selectedIds, p);
+      const { matrix, roadData, candidates } = await buildManualMatrix(stations, selectedPois, selectedIds, p);
       setCache({ matrix, roadData, candidates, params: p });
       const selOrder = orderManual(candidates, matrix, { ...p, orderMode: 'selected' });
       const optOrder = orderManual(candidates, matrix, { ...p, orderMode: 'optimized' });
@@ -191,11 +210,15 @@ export default function ManualRouteBuilder({
     order: ManualCandidateLike[],
   ) => {
     const ev = evaluateManual(order, matrix, p);
-    if (p.budgetMin != null && ev && ev.totalMin > p.budgetMin) {
-      setOverMin(ev.totalMin - p.budgetMin);
-      setActiveOrder(order);
-      setPhase('over-budget');
-      return;
+    if (p.budgetMin != null && ev) {
+      const margin = computeMarginMin(ev.totalMin);
+      const withMargin = ev.totalMin + margin;
+      if (withMargin > p.budgetMin) {
+        setOverMin(withMargin - p.budgetMin);
+        setActiveOrder(order);
+        setPhase('over-budget');
+        return;
+      }
     }
     finalize(p, matrix, roadData, order);
   };
@@ -215,7 +238,9 @@ export default function ManualRouteBuilder({
       setPhase('settings');
       return;
     }
+    // 営業時間の確認は道の駅のみが対象（周辺スポットはhours.jsonにデータが無く対象外）
     const flagged = built.stops.filter((s) => {
+      if ((s.stopType ?? 'station') !== 'station') return false;
       const st = statusAtArrival(s.stationId, new Date(s.arriveAt));
       return (st === 'closed' || st === 'unknown') && !confirmedHours.has(s.stationId);
     });
@@ -231,8 +256,8 @@ export default function ManualRouteBuilder({
     return (
       <div>
         <div className="card" data-testid="manual-selection-summary">
-          <h3>選んだ{selectedIds.length}駅</h3>
-          <p className="addr">{selectedIds.map((id) => getStation(id)?.name ?? id).join(' → ')}</p>
+          <h3>選んだ{selectedIds.length}件</h3>
+          <p className="addr">{selectedIds.map(resolveName).join(' → ')}</p>
         </div>
         <div className="card">
           <h3>出発地点を選んでください</h3>
@@ -262,8 +287,8 @@ export default function ManualRouteBuilder({
         <div className="card" data-testid="order-review">
           <h3>順番を調整しました</h3>
           <p className="msg info">移動時間を短くするため、順番を調整しました。</p>
-          <p>選んだ順: {selectedOrderIds.map((id) => getStation(id)?.name ?? id).join(' → ')}</p>
-          <p>調整後: {optimizedOrderIds.map((id) => getStation(id)?.name ?? id).join(' → ')}</p>
+          <p>選んだ順: {selectedOrderIds.map(resolveName).join(' → ')}</p>
+          <p>調整後: {optimizedOrderIds.map(resolveName).join(' → ')}</p>
           <div className="btn-grid">
             <button
               className="btn-primary"
@@ -289,12 +314,15 @@ export default function ManualRouteBuilder({
   }
 
   if (phase === 'over-budget' && cache && activeOrder) {
+    const overEv = evaluateManual(activeOrder, cache.matrix, cache.params)!;
+    const overMargin = computeMarginMin(overEv.totalMin);
     return (
       <div>
         <div className="card" data-testid="over-budget">
           <h3>時間が足りないかもしれません</h3>
           <p className="msg warn">
-            選択した{selectedIds.length}駅をすべて回ると約{formatMin(evaluateManual(activeOrder, cache.matrix, cache.params)!.totalMin)}です。
+            選択した{selectedIds.length}件をすべて回ると約{formatMin(overEv.totalMin + overMargin)}
+            （安全余裕{formatMin(overMargin)}を含む）です。
             設定した{formatMin(cache.params.budgetMin ?? 0)}を約{formatMin(overMin)}超えます。
           </p>
           <div className="btn-grid">
@@ -302,17 +330,17 @@ export default function ManualRouteBuilder({
               時間を変更する
             </button>
             <button onClick={onBackToMapSelect} data-testid="over-budget-reduce">
-              選択駅を減らす
+              選択を減らす
             </button>
             <button
               onClick={() => {
-                const { kept, excluded } = fitToBudget(activeOrder, cache.matrix, cache.params, cache.params.budgetMin!);
+                const { kept, excluded } = fitToBudget(activeOrder, cache.matrix, cache.params, cache.params.budgetMin ?? 0);
                 setFitKept(kept);
-                setExcludedNames(excluded.map((c) => c.st.name));
+                setExcludedNames(excluded.map((c) => c.st.name ?? resolveName(c.st.id)));
               }}
               data-testid="over-budget-fit"
             >
-              時間内に回れる駅だけで作成
+              時間内に回れる分だけで作成
             </button>
             <button
               onClick={() => finalize(cache.params, cache.matrix, cache.roadData, activeOrder)}
@@ -323,10 +351,12 @@ export default function ManualRouteBuilder({
           </div>
           {fitKept && (
             <div className="note-box" style={{ marginTop: 10 }} data-testid="over-budget-fit-result">
-              {excludedNames.length > 0 ? (
+              {fitKept.length === 0 ? (
+                <p>設定時間が短すぎるため、1件も回れません。時間を長くするか選択を見直してください。</p>
+              ) : excludedNames.length > 0 ? (
                 <>
                   <p>
-                    時間内に収めるため、次の{excludedNames.length}駅を除外します：
+                    時間内に収めるため、次の{excludedNames.length}件を除外します：
                     <br />
                     {excludedNames.join('、')}
                   </p>
@@ -336,7 +366,7 @@ export default function ManualRouteBuilder({
                     onClick={() => finalize(cache.params, cache.matrix, cache.roadData, fitKept)}
                     data-testid="over-budget-fit-confirm"
                   >
-                    この{fitKept.length}駅で作成する
+                    この{fitKept.length}件で作成する
                   </button>
                 </>
               ) : (
@@ -410,8 +440,8 @@ export default function ManualRouteBuilder({
   return (
     <div>
       <div className="card">
-        <h3>選んだ{selectedIds.length}駅</h3>
-        <p className="addr">{selectedIds.map((id) => getStation(id)?.name ?? id).join(' → ')}</p>
+        <h3>選んだ{selectedIds.length}件</h3>
+        <p className="addr">{selectedIds.map(resolveName).join(' → ')}</p>
         <button style={{ width: '100%' }} onClick={onBackToMapSelect} data-testid="manual-change-selection">
           🗺️ 選択を変更する
         </button>
@@ -484,7 +514,10 @@ export default function ManualRouteBuilder({
       </div>
 
       <div className="card">
-        <h3>1駅に何分いる？</h3>
+        <h3>道の駅に何分いる？</h3>
+        <p className="msg info" style={{ marginTop: -4 }}>
+          周辺スポットの滞在時間は、それぞれの詳細画面で個別に変更できます（既定はカテゴリごとの目安）。
+        </p>
         <div className="seg">
           {STAYS.map((s) => (
             <button
@@ -525,6 +558,11 @@ export default function ManualRouteBuilder({
         </div>
       </div>
 
+      <div className="card">
+        <h3>道路の希望</h3>
+        <RoadPrefPicker value={roadPref} onChange={setRoadPref} />
+      </div>
+
       {errorMsg && <div className="msg warn">{errorMsg}</div>}
 
       <button
@@ -537,7 +575,7 @@ export default function ManualRouteBuilder({
         🚗 このコースで作成
       </button>
       <p className="msg info" style={{ marginTop: 10 }}>
-        選択した{selectedIds.length}駅すべてが候補になります（最大{MAX_MANUAL_STATIONS}駅）。所要時間は目安です。
+        選択した{selectedIds.length}件すべてが候補になります（最大{MAX_MANUAL_STATIONS}件）。所要時間は目安です。
       </p>
       <button style={{ width: '100%', marginTop: 8 }} onClick={onCancel} data-testid="manual-cancel">
         ← 選択に戻る

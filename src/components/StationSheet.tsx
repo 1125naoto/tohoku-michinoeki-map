@@ -8,6 +8,8 @@ interface Props {
   visits: VisitMap;
   onSetState: (id: string, state: StationState) => void;
   onClose: () => void;
+  /** この駅の周辺で飲食店・観光地・温泉を探す */
+  onSearchNearby: () => void;
 }
 
 const STATION_STATUS_LABEL: Record<string, string> = {
@@ -27,7 +29,7 @@ const HOURS_BADGE: Record<HoursKind, { cls: string; text: string }> = {
 
 const WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
 
-export default function StationSheet({ station: st, visits, onSetState, onClose }: Props) {
+export default function StationSheet({ station: st, visits, onSetState, onClose, onSearchNearby }: Props) {
   const state = visits[st.id]?.state ?? 'unvisited';
   const rec = visits[st.id];
   const [hoursOpen, setHoursOpen] = useState(false);
@@ -155,6 +157,9 @@ export default function StationSheet({ station: st, visits, onSetState, onClose 
           >
             Googleマップで開く ↗
           </a>
+          <button onClick={onSearchNearby} data-testid="btn-search-nearby">
+            🍴 周辺のお店・観光地・温泉を探す
+          </button>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
           💡 地図のマーカーは押すたびに 未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問 の順で切り替わります。

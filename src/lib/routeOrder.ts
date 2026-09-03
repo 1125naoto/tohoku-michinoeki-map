@@ -18,15 +18,27 @@ export interface OrderEval {
   totalKm: number;
 }
 
+/**
+ * 各地点の滞在時間。数値なら全地点一律（自動コース作成のように滞在時間が
+ * 全駅共通の場合）、関数なら地点ごとに個別の滞在時間を返す（道の駅とPOIが
+ * 混在する「地図から選ぶ」ルートのように、地点ごとに滞在時間が異なる場合）。
+ */
+type StayMinSpec<T> = number | ((item: T) => number);
+
+function stayOf<T>(spec: StayMinSpec<T>, item: T): number {
+  return typeof spec === 'function' ? spec(item) : spec;
+}
+
 /** 訪問順に対する 移動+滞在 の合計（分・区間ごとに切り上げで丸め超過を防止） */
-export function evaluateOrder(
-  order: OrderItem[],
+export function evaluateOrder<T extends OrderItem>(
+  order: T[],
   matrix: RouteMatrix,
-  stayMin: number,
+  stayMin: StayMinSpec<T>,
   returnToStart: boolean,
 ): OrderEval | null {
   let drive = 0;
   let km = 0;
+  let stay = 0;
   let cur = 0; // 行列index（0=出発地点）
   for (const c of order) {
     const t = matrix.durationsMin[cur][c.mi];
@@ -34,6 +46,7 @@ export function evaluateOrder(
     if (!Number.isFinite(t)) return null;
     drive += Math.ceil(t);
     km += d;
+    stay += stayOf(stayMin, c);
     cur = c.mi;
   }
   if (returnToStart && order.length > 0) {
@@ -42,7 +55,7 @@ export function evaluateOrder(
     drive += Math.ceil(t);
     km += matrix.distancesKm[cur][0];
   }
-  const totalMin = drive + order.length * stayMin;
+  const totalMin = drive + stay;
   return { totalMin, driveMin: drive, totalKm: km };
 }
 
@@ -50,7 +63,7 @@ export function evaluateOrder(
 export function twoOptOrder<T extends OrderItem>(
   order: T[],
   matrix: RouteMatrix,
-  stayMin: number,
+  stayMin: StayMinSpec<T>,
   returnToStart: boolean,
 ): T[] {
   if (order.length < 3) return order;

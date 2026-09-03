@@ -15,6 +15,8 @@ async function noHorizontalScroll(page: import('@playwright/test').Page) {
 }
 
 test('主要画面のスクリーンショット @smoke', async ({ page }, testInfo) => {
+  // 10画面近くを1テストで連続撮影するため、既定の60秒では負荷時に不足しうる
+  test.setTimeout(120_000);
   const p = testInfo.project.name;
 
   // 1. 地図初期表示（訪問0件・初回は凡例+ホーム画面追加案内が表示された状態）

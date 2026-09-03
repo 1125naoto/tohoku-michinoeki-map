@@ -1385,3 +1385,176 @@ a {
 .legend-details .legend-hint {
   margin-top: 4px;
 }
+
+/* ===== 周辺スポット（飲食店・観光地・温泉）: 道の駅とは明確に形を分けたマーカー ===== */
+.poi-hit {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poi-marker {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%; /* 道の駅（角丸正方形）とは丸型で明確に区別 */
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+}
+.poi-hit.picked .poi-marker {
+  box-shadow: 0 0 0 3px #ffb300, 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+/* 道の駅の駅名表示設定(lm-off等)からは独立して常に表示する（.rs-labelは継承しない） */
+.poi-label {
+  position: absolute;
+  top: calc(50% + 17px);
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: block;
+  background: rgba(255, 255, 255, 0.92);
+  color: #14213d;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+  text-align: center;
+}
+.poi-detail-num {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* 周辺スポット検索の入口ボタン（現在地ボタンの上に重ならないよう縦に並べる） */
+.poi-search-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 204px;
+  z-index: 900;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.app.map-fs .poi-search-btn {
+  bottom: calc(204px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 周辺スポット検索パネル（地図上のボトムシート） */
+.poi-panel {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 12px;
+  z-index: 950;
+  /* 地図を覆いすぎないよう、画面の半分未満に収める（結果は地図上のマークで確認する設計） */
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.app.map-fs .poi-panel {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.poi-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.poi-panel-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.poi-panel-head button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 14px;
+}
+.poi-panel-origin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.poi-panel-origin-actions {
+  display: flex;
+  gap: 6px;
+}
+.poi-panel-origin-actions button {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.poi-subcats {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin: 6px 0;
+}
+.poi-subcats button {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 999px;
+}
+.poi-subcats button.active {
+  background: var(--select);
+  color: #fff;
+  border-color: var(--select);
+  font-weight: 700;
+}
+.poi-radius {
+  margin: 8px 0 4px;
+}
+.poi-radius-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+
+.poi-detail-sheet .field {
+  margin-top: 10px;
+}

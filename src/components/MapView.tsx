@@ -6,6 +6,7 @@ import { TOHOKU_BOUNDS } from '../data';
 import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
+import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
 
 interface Props {
   stations: Station[];
@@ -43,9 +44,15 @@ interface Props {
    * 一切変更せず、onToggleRouteSelectでルート候補への追加/解除だけを行う。
    */
   routeSelectMode: boolean;
-  /** ルートに選択済みの駅ID（選んだ順。番号バッジは配列内の位置から決まる） */
+  /** ルートに選択済みの駅ID・周辺スポットID（選んだ順。番号バッジは配列内の位置から決まる） */
   routeSelectedIds: string[];
   onToggleRouteSelect: (id: string) => void;
+  /** 表示中の周辺スポット検索結果（検索していない間は空配列） */
+  poiResults: Poi[];
+  /** 通常モードでの周辺スポットタップ（詳細シートを開く） */
+  onTapPoi: (poi: Poi) => void;
+  /** ルート選択モードでの周辺スポットタップ（選択の追加/解除） */
+  onTogglePoiSelect: (poi: Poi) => void;
 }
 
 export type MarkerState = 'none' | 'want' | 'visited' | 'stamp' | 'pre';
@@ -166,6 +173,28 @@ export function markerHtml(
   return (
     `<div class="rs-hit${selected ? ' sel' : ''}${picked ? ' picked' : ''}">` +
     `<div class="rs-marker ${state}" data-sid="${stationId}">${signSvg(STATE_COLOR[state])}${badge}${dot}${numBadge}</div>` +
+    `${label}</div>`
+  );
+}
+
+/**
+ * 周辺スポット（POI）用マーカー。道の駅とは形（丸型+絵文字）・色系統を
+ * 明確に分け、混同しないようにする。訪問状態の色循環対象ではないため
+ * data-sid属性は付けない（data-poi-idを使う）。
+ */
+export function poiMarkerHtml(poi: Poi, selectedNumber?: number): string {
+  const stopType = stopTypeOf(poi.subcategory);
+  const glyph = STOP_TYPE_GLYPH[stopType];
+  const color = STOP_TYPE_COLOR[stopType];
+  const picked = selectedNumber != null;
+  const numBadge = picked
+    ? `<span class="rs-route-num" data-testid="route-select-num" aria-hidden="true">${selectedNumber}</span>`
+    : '';
+  const name = poiDisplayName(poi);
+  const label = `<span class="poi-label" aria-hidden="true">${escapeHtml(name)}</span>`;
+  return (
+    `<div class="poi-hit${picked ? ' picked' : ''}">` +
+    `<div class="poi-marker" data-poi-id="${poi.id}" style="background:${color}">${glyph}${numBadge}</div>` +
     `${label}</div>`
   );
 }
@@ -360,11 +389,15 @@ export default function MapView({
   routeSelectMode,
   routeSelectedIds,
   onToggleRouteSelect,
+  poiResults,
+  onTapPoi,
+  onTogglePoiSelect,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const allLayerRef = useRef<L.LayerGroup | null>(null);
+  const poiLayerRef = useRef<L.LayerGroup | null>(null);
   const lineRef = useRef<L.Polyline | null>(null);
   const orderLayerRef = useRef<L.LayerGroup | null>(null);
   const pickRef = useRef(pickMode);
@@ -373,12 +406,16 @@ export default function MapView({
   const onMapTapRef = useRef(onMapTap);
   const routeSelectModeRef = useRef(routeSelectMode);
   const onToggleRouteSelectRef = useRef(onToggleRouteSelect);
+  const onTapPoiRef = useRef(onTapPoi);
+  const onTogglePoiSelectRef = useRef(onTogglePoiSelect);
   pickRef.current = pickMode;
   onPickRef.current = onPick;
   onTapRef.current = onTapStation;
   onMapTapRef.current = onMapTap;
   routeSelectModeRef.current = routeSelectMode;
   onToggleRouteSelectRef.current = onToggleRouteSelect;
+  onTapPoiRef.current = onTapPoi;
+  onTogglePoiSelectRef.current = onTogglePoiSelect;
 
   // 1回の物理タップから touchend と click が二重発火しても「1タップ=1段階」を守るための
   // デデュープ（80ms未満の同一ID再入は同じ物理タップとみなす）。
@@ -396,6 +433,20 @@ export default function MapView({
     }
     // タップ間隔に関係なく、押した瞬間に状態を1段階だけ進める（保留・時間差判定なし）
     onTapRef.current(id);
+  };
+
+  // 周辺スポットのタップ（道の駅と同じデデュープを適用。訪問状態には一切触れない）
+  const lastPoiTapRef = useRef<{ id: string; at: number } | null>(null);
+  const handlePoiTap = (poi: Poi) => {
+    const now = Date.now();
+    const lastTap = lastPoiTapRef.current;
+    lastPoiTapRef.current = { id: poi.id, at: now };
+    if (lastTap && lastTap.id === poi.id && now - lastTap.at < 80) return;
+    if (routeSelectModeRef.current) {
+      onTogglePoiSelectRef.current(poi);
+      return;
+    }
+    onTapPoiRef.current(poi);
   };
 
   // 初期化
@@ -433,6 +484,8 @@ export default function MapView({
     clusterRef.current = cluster;
     // 全駅個別表示用のレイヤー（クラスタと排他で地図へ載せる）
     allLayerRef.current = L.layerGroup();
+    // 周辺スポット用のレイヤー（道の駅の表示モードとは独立して常に地図へ載せる）
+    poiLayerRef.current = L.layerGroup().addTo(map);
     // ズームに応じたサイズ/ラベルのCSSクラスをコンテナへ付与（再描画なしで切替）
     const applyZoomClasses = () => {
       const el = rootRef.current;
@@ -472,6 +525,7 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
+      poiLayerRef.current = null;
     };
   }, []);
 
@@ -566,6 +620,40 @@ export default function MapView({
     routeSelectMode,
     routeSelectedIds,
   ]);
+
+  // 周辺スポット（POI）マーカー。道の駅の表示モードとは独立して常時再構築する
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = poiLayerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+    for (const poi of poiResults) {
+      const idx = routeSelectMode ? routeSelectedIds.indexOf(poi.id) : -1;
+      const selectedNumber = idx >= 0 ? idx + 1 : undefined;
+      const marker = L.marker([poi.lat, poi.lng], {
+        icon: L.divIcon({
+          html: poiMarkerHtml(poi, selectedNumber),
+          className: '',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
+          tooltipAnchor: [0, -26],
+        }),
+        alt: poiDisplayName(poi),
+        keyboard: true,
+        zIndexOffset: selectedNumber != null ? 1800 : 500,
+      });
+      marker.bindTooltip(`<b>${escapeHtml(poiDisplayName(poi))}</b>`, {
+        direction: 'top',
+        className: 'rs-tooltip',
+        opacity: 1,
+      });
+      marker.on('click', () => handlePoiTap(poi));
+      marker.on('dblclick', (e: L.LeafletMouseEvent) => {
+        L.DomEvent.stop(e.originalEvent);
+      });
+      layer.addLayer(marker);
+    }
+  }, [poiResults, routeSelectMode, routeSelectedIds]);
 
   // 駅名表示モードのCSSクラス（自動/常に表示/非表示）
   useEffect(() => {

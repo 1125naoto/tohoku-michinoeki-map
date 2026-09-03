@@ -17,7 +17,15 @@ import {
   saveVisits,
 } from './storage';
 import { MAP_SETTINGS_KEY, loadMapSettings, saveMapSettings, type MapSettings } from './mapSettings';
-import { ROUTE_DRAFT_KEY, isRouteDraft, loadRouteDraft, saveRouteDraft, clearRouteDraft, type RouteDraft } from './routeDraft';
+import {
+  ROUTE_DRAFT_KEY,
+  isRouteDraft,
+  loadRouteDraft,
+  saveRouteDraft,
+  clearRouteDraft,
+  sanitizeRouteDraft,
+  type RouteDraft,
+} from './routeDraft';
 
 /**
  * 2: 「地図から選ぶ」の選択下書き(manualDraft)を追加。
@@ -90,7 +98,7 @@ export function parseBackup(text: string): ParseResult {
   // manualDraft: 壊れている/存在しない(旧schemaVersion 1)場合は「下書きなし」として
   // 扱うだけにとどめ、バックアップ全体は拒否しない（他フィールドはすべて有効なため）
   const rawDraft = o.manualDraft;
-  const manualDraft = isRouteDraft(rawDraft) ? rawDraft : null;
+  const manualDraft = isRouteDraft(rawDraft) ? sanitizeRouteDraft(rawDraft) : null;
   return {
     ok: true,
     data: {

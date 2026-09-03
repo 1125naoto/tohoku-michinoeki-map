@@ -3,6 +3,7 @@ import type { PlanParams, PlanPriority, Prefecture, RoadPref, Station } from '..
 import { PREFECTURES } from '../types';
 import type { LatLng } from '../lib/geo';
 import OriginPicker from './OriginPicker';
+import RoadPrefPicker from './RoadPrefPicker';
 
 export interface OriginValue extends LatLng {
   label: string;
@@ -211,6 +212,11 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
       </div>
 
       <div className="card">
+        <h3>道路の希望</h3>
+        <RoadPrefPicker value={roadPref} onChange={setRoadPref} />
+      </div>
+
+      <div className="card">
         <h3>5. 出発地点へ戻る？</h3>
         <div className="seg">
           <button className={returnToStart ? 'active' : ''} onClick={() => setReturnToStart(true)}>
@@ -250,25 +256,6 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
                   style={{ width: '100%', marginTop: 6 }}
                   aria-label="出発日時"
                 />
-              )}
-            </div>
-            <div className="field">
-              <label>道路</label>
-              <div className="seg">
-                <button className={roadPref === 'highway_ok' ? 'active' : ''} onClick={() => setRoadPref('highway_ok')}>
-                  高速道路OK
-                </button>
-                <button className={roadPref === 'no_highway' ? 'active' : ''} onClick={() => setRoadPref('no_highway')}>
-                  高速を避ける
-                </button>
-                <button className={roadPref === 'no_tolls' ? 'active' : ''} onClick={() => setRoadPref('no_tolls')}>
-                  有料を避ける
-                </button>
-              </div>
-              {roadPref !== 'highway_ok' && (
-                <p className="msg info" style={{ marginBottom: 0 }}>
-                  回避の条件は、Googleマップを開くときに反映されます（コース計算の時間には反映されません）。
-                </p>
               )}
             </div>
             <div className="row2">

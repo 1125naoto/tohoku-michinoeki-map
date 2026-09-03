@@ -11,9 +11,14 @@ export function stationSearchUrl(st: Station): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 
-/** 道路条件 → Google Maps URLs の avoid パラメータ（反映できるものだけ渡す） */
+/**
+ * 道路の希望 → Google Maps URLs の avoid パラメータ。
+ * - highway_ok（おまかせ・早いルート）: 指定なし（Googleマップに任せる）
+ * - no_tolls（有料道路を使わない）: avoid=tolls
+ * - no_highway（一般道を優先）: avoid=highways,tolls（高速・有料の両方を避ける）
+ */
 export function avoidParam(roadPref: RoadPref): string | null {
-  if (roadPref === 'no_highway') return 'highways';
+  if (roadPref === 'no_highway') return 'highways,tolls';
   if (roadPref === 'no_tolls') return 'tolls';
   return null;
 }

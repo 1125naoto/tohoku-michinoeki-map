@@ -209,6 +209,8 @@ test.describe('地図から選ぶルート作成', () => {
   });
 
   test('シナリオ3: 時間超過 - 除外候補を提示し、確認後だけ除外する', async ({ page }) => {
+    // 30秒の超過待ちポーリング＋advanceToRouteDetailの60秒ポーリングを内包するため、既定の60秒では不足しうる
+    test.setTimeout(120_000);
     await page.route('**router.project-osrm.org/**', (route) => route.abort());
     await page.clock.install({ time: DAY });
     await page.goto('/');
@@ -238,7 +240,7 @@ test.describe('地図から選ぶルート作成', () => {
       await page.waitForTimeout(300);
     }
     await expect(page.getByTestId('over-budget')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId('over-budget')).toContainText('選択した5駅をすべて回ると約');
+    await expect(page.getByTestId('over-budget')).toContainText('選択した5件をすべて回ると約');
     await expect(page.getByTestId('over-budget')).toContainText('超えます');
 
     // 駅が勝手に削除されていない（選択バー等の状態には触れないが、除外候補UIが出るのみ）
@@ -260,6 +262,8 @@ test.describe('地図から選ぶルート作成', () => {
   });
 
   test('シナリオ3b: 「時間を超えてこのまま作成」で全駅のまま作成する', async ({ page }) => {
+    // シナリオ3と同様、複数のポーリング待ちを内包するため既定の60秒では不足しうる
+    test.setTimeout(120_000);
     await page.route('**router.project-osrm.org/**', (route) => route.abort());
     await page.clock.install({ time: DAY });
     await page.goto('/');
@@ -398,7 +402,7 @@ test.describe('地図から選ぶルート作成', () => {
     await expect(page.getByRole('dialog', { name: '前回の続きがあります' })).toBeVisible({ timeout: 10000 });
     await page.getByTestId('confirm-ok').click();
     // 出発地点未設定だったため、選択内容を保ったまま出発地点の入力画面へ直接戻る
-    await expect(page.getByTestId('manual-selection-summary')).toContainText('選んだ3駅');
+    await expect(page.getByTestId('manual-selection-summary')).toContainText('選んだ3件');
   });
 
   test('シナリオ7b: バックアップの書き出し・復元に選択下書きが含まれる', async ({ page }) => {

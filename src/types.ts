@@ -1,3 +1,5 @@
+import type { Poi } from './lib/poi';
+
 /** 道の駅の営業状態 */
 export type StationStatus = 'open' | 'pre_open' | 'closed_temp' | 'unknown';
 
@@ -114,11 +116,22 @@ export interface RouteLeg {
   driveMin: number;
 }
 
+/** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'park' | 'other';
+
 export interface RouteStop {
+  /** 道の駅の場合は実際の駅ID。周辺スポットの場合はPoi.idをそのまま使う（一意性のため） */
   stationId: string;
   arriveAt: string;
   departAt: string;
   stayMin: number;
+  /**
+   * 立ち寄り先の種別。省略時（既存の保存データ）は道の駅として扱う後方互換のため。
+   * 'station'以外は周辺スポット（Poi）で、達成率・スタンプ数には一切影響しない。
+   */
+  stopType?: StopType;
+  /** stopTypeが道の駅以外のときの周辺スポット詳細 */
+  poi?: Poi;
 }
 
 export interface PlannedRoute {
@@ -165,4 +178,6 @@ export interface TripState {
   savedRouteId: string;
   startedAt: string;
   progress: Record<string, StopProgress>;
+  /** 旅行中に変更した道路の希望（未変更ならコース作成時の設定をそのまま使う） */
+  roadPref?: RoadPref;
 }

@@ -1,21 +1,25 @@
 /**
- * 「地図から選ぶ」ルート作成: ユーザーが選んだ駅だけを対象に順序・時間を計算する。
+ * 「地図から選ぶ」ルート作成: ユーザーが選んだ道の駅・周辺スポットだけを対象に
+ * 順序・時間を計算する。
  *
- * 自動コース作成（planner.ts）との違いは「候補駅をアプリが自動選定するか、
+ * 自動コース作成（planner.ts）との違いは「候補をアプリが自動選定するか、
  * ユーザーが手動で選ぶか」だけであり、所要時間行列の取得・順序評価・2-opt改善は
  * routeOrder.ts / planner.ts の estimateMatrix を共有し、重複実装しない。
+ * 道の駅と周辺スポット（POI）は所要時間計算上は同じ「地点」として扱うが、
+ * 滞在時間は地点ごとに個別に持てる（routeOrder.tsの滞在時間アクセサを利用）。
  */
-import type { PlannedRoute, PlanParams, RoadPref, RouteLeg, RouteStop, Station } from '../types';
+import type { PlannedRoute, PlanParams, RoadPref, RouteLeg, RouteStop, Station, StopType } from '../types';
 import { estimateMatrix } from './planner';
 import { osrmProvider, type RouteMatrix, type RoutingProvider } from './routing';
 import { evaluateOrder, twoOptOrder, type OrderItem } from './routeOrder';
 import { statusAtArrival } from './hours';
+import { DEFAULT_STAY_MIN, stopTypeOf, type Poi } from './poi';
 
 /**
- * 一度に選べる駅の上限。出発地点+選択駅数の合計地点数を、自動コース作成で
- * 本番実績のある安全上限（出発地点+22駅=23地点、planner.ts の MAX_MATRIX_STATIONS）
- * 以下に収まるよう、余裕を持たせて20駅とした。OSRM公開デモへの負荷試験は行わない
- * （「常識的な軽負荷利用」の利用規約に反するため）。
+ * 一度に選べる地点（道の駅+周辺スポット合計）の上限。出発地点+選択数の合計を、
+ * 自動コース作成で本番実績のある安全上限（出発地点+22駅=23地点、
+ * planner.ts の MAX_MATRIX_STATIONS）以下に収まるよう、余裕を持たせて20とした。
+ * OSRM公開デモへの負荷試験は行わない（「常識的な軽負荷利用」の利用規約に反するため）。
  */
 export const MAX_MANUAL_STATIONS = 20;
 /** コース作成に必要な最低選択数 */
@@ -26,16 +30,30 @@ export type ManualOrderMode = 'selected' | 'optimized';
 export interface ManualPlanParams {
   origin: { lat: number; lng: number; label: string };
   departAt: string;
+  /** 道の駅の既定滞在時間（分）。周辺スポットはカテゴリ既定値またはstayOverridesを使う */
   stayMin: number;
   returnToStart: boolean;
   roadPref: RoadPref;
   /** null = 時間制限なし */
   budgetMin: number | null;
   orderMode: ManualOrderMode;
+  /** 地点ごとの滞在時間の上書き（キー: 駅ID または Poi.id） */
+  stayOverrides?: Record<string, number>;
+}
+
+/** 道の駅・周辺スポットを問わない、順序計算のための共通地点表現 */
+export interface ManualPoint {
+  id: string;
+  name: string | null;
+  lat: number;
+  lng: number;
+  stayMin: number;
+  stopType: StopType;
+  poi?: Poi;
 }
 
 export interface ManualCandidateLike extends OrderItem {
-  st: Station;
+  st: ManualPoint;
 }
 type ManualCandidate = ManualCandidateLike;
 
@@ -51,27 +69,60 @@ export interface ManualPlanOptions {
   signal?: AbortSignal;
 }
 
-/** 選択駅の所要時間行列を取得する（OSRM成功→実道路 / 失敗→概算フォールバック） */
+function resolvePoint(
+  id: string,
+  stationsById: Map<string, Station>,
+  pois: Record<string, Poi>,
+  p: Pick<ManualPlanParams, 'stayMin' | 'stayOverrides'>,
+): ManualPoint | null {
+  const st = stationsById.get(id);
+  if (st) {
+    return {
+      id: st.id,
+      name: st.name,
+      lat: st.lat,
+      lng: st.lng,
+      stayMin: p.stayOverrides?.[id] ?? p.stayMin,
+      stopType: 'station',
+    };
+  }
+  const poi = pois[id];
+  if (poi) {
+    return {
+      id: poi.id,
+      name: poi.name,
+      lat: poi.lat,
+      lng: poi.lng,
+      stayMin: p.stayOverrides?.[id] ?? DEFAULT_STAY_MIN[poi.subcategory],
+      stopType: stopTypeOf(poi.subcategory),
+      poi,
+    };
+  }
+  return null;
+}
+
+/** 選択地点の所要時間行列を取得する（OSRM成功→実道路 / 失敗→概算フォールバック） */
 export async function buildManualMatrix(
   stations: Station[],
+  pois: Record<string, Poi>,
   selectedIds: string[],
-  p: Pick<ManualPlanParams, 'origin' | 'departAt' | 'roadPref'>,
+  p: Pick<ManualPlanParams, 'origin' | 'departAt' | 'roadPref' | 'stayMin' | 'stayOverrides'>,
   opts: ManualPlanOptions = {},
 ): Promise<ManualMatrixResult> {
   const byId = new Map(stations.map((s) => [s.id, s]));
-  const selected = selectedIds.map((id) => byId.get(id)).filter((s): s is Station => !!s);
-  const points = [p.origin, ...selected];
-  const candidates: ManualCandidate[] = selected.map((st, i) => ({ st, mi: i + 1 }));
+  const points = selectedIds.map((id) => resolvePoint(id, byId, pois, p)).filter((x): x is ManualPoint => x !== null);
+  const routePoints = [p.origin, ...points];
+  const candidates: ManualCandidate[] = points.map((pt, i) => ({ st: pt, mi: i + 1 }));
 
   const provider = opts.provider ?? osrmProvider;
   let matrix: RouteMatrix;
   let roadData: 'road' | 'approx';
   try {
-    matrix = await provider.table(points, opts.signal);
+    matrix = await provider.table(routePoints, opts.signal);
     roadData = 'road';
-    const est = estimateMatrix(points, p);
-    for (let i = 0; i < points.length; i++) {
-      for (let j = 0; j < points.length; j++) {
+    const est = estimateMatrix(routePoints, p);
+    for (let i = 0; i < routePoints.length; i++) {
+      for (let j = 0; j < routePoints.length; j++) {
         if (!Number.isFinite(matrix.durationsMin[i][j])) {
           matrix.durationsMin[i][j] = est.durationsMin[i][j];
           matrix.distancesKm[i][j] = est.distancesKm[i][j];
@@ -80,28 +131,30 @@ export async function buildManualMatrix(
     }
   } catch (e) {
     if (opts.signal?.aborted) throw e;
-    matrix = estimateMatrix(points, p);
+    matrix = estimateMatrix(routePoints, p);
     roadData = 'approx';
   }
   return { matrix, roadData, candidates };
 }
 
+const stayAccessor = (c: ManualCandidate) => c.st.stayMin;
+
 /** 選んだ順のまま、または移動時間が短くなるよう自動調整した順序を返す */
 export function orderManual(
   candidates: ManualCandidate[],
   matrix: RouteMatrix,
-  p: Pick<ManualPlanParams, 'stayMin' | 'returnToStart' | 'orderMode'>,
+  p: Pick<ManualPlanParams, 'returnToStart' | 'orderMode'>,
 ): ManualCandidate[] {
   if (p.orderMode === 'selected') return candidates;
-  return twoOptOrder(candidates, matrix, p.stayMin, p.returnToStart);
+  return twoOptOrder(candidates, matrix, stayAccessor, p.returnToStart);
 }
 
 export function evaluateManual(
   order: ManualCandidate[],
   matrix: RouteMatrix,
-  p: Pick<ManualPlanParams, 'stayMin' | 'returnToStart'>,
+  p: Pick<ManualPlanParams, 'returnToStart'>,
 ) {
-  return evaluateOrder(order, matrix, p.stayMin, p.returnToStart);
+  return evaluateOrder(order, matrix, stayAccessor, p.returnToStart);
 }
 
 export interface FitToBudgetResult {
@@ -110,25 +163,28 @@ export interface FitToBudgetResult {
 }
 
 /**
- * 予算時間に収まるよう、除外すると最も時間短縮になる駅から順に取り除く（貪欲法）。
+ * 予算時間に収まるよう、除外すると最も時間短縮になる地点から順に取り除く（貪欲法）。
  * ユーザーの確認なしに呼び出し側で結果を確定させないこと（除外候補の提示が必須）。
+ * 安全余裕は候補を減らすたびに縮む（computeMarginMinで都度再計算）ため、
+ * 呼び出し側は元の（絞り込み前の）安全余裕を差し引いた予算を渡さないこと
+ * （固定の余裕を引いてしまうと、絞り込むほど不要に厳しくなり全除外され得る）。
  */
 export function fitToBudget(
   order: ManualCandidate[],
   matrix: RouteMatrix,
-  p: Pick<ManualPlanParams, 'stayMin' | 'returnToStart'>,
+  p: Pick<ManualPlanParams, 'returnToStart'>,
   budgetMin: number,
 ): FitToBudgetResult {
   let cur = [...order];
   const excluded: ManualCandidate[] = [];
   while (cur.length > 0) {
-    const ev = evaluateOrder(cur, matrix, p.stayMin, p.returnToStart);
-    if (ev && ev.totalMin <= budgetMin) break;
+    const ev = evaluateOrder(cur, matrix, stayAccessor, p.returnToStart);
+    if (ev && ev.totalMin + computeMarginMin(ev.totalMin) <= budgetMin) break;
     let bestIdx = -1;
     let bestTotal = Number.POSITIVE_INFINITY;
     for (let i = 0; i < cur.length; i++) {
       const trial = [...cur.slice(0, i), ...cur.slice(i + 1)];
-      const tev = evaluateOrder(trial, matrix, p.stayMin, p.returnToStart);
+      const tev = evaluateOrder(trial, matrix, stayAccessor, p.returnToStart);
       if (tev && tev.totalMin < bestTotal) {
         bestTotal = tev.totalMin;
         bestIdx = i;
@@ -141,6 +197,31 @@ export function fitToBudget(
   return { kept: cur, excluded };
 }
 
+/** 立ち寄り先種別ごとの滞在時間の内訳（分）。Gate7の予定表内訳表示に使う */
+export interface StayBreakdown {
+  station: number;
+  restaurant: number;
+  cafe: number;
+  onsen: number;
+  tourism: number;
+  park: number;
+  other: number;
+}
+
+export function computeStayBreakdown(stops: RouteStop[]): StayBreakdown {
+  const b: StayBreakdown = { station: 0, restaurant: 0, cafe: 0, onsen: 0, tourism: 0, park: 0, other: 0 };
+  for (const s of stops) {
+    const t = s.stopType ?? 'station';
+    b[t] += s.stayMin;
+  }
+  return b;
+}
+
+/** 安全余裕（分）: 総時間の約10%、最低10分（自動コース作成の考え方と整合させる） */
+export function computeMarginMin(totalMin: number): number {
+  return Math.max(10, Math.round(totalMin * 0.1));
+}
+
 /** 確定した訪問順から PlannedRoute を組み立てる（自動コース作成の buildRoute と同じ構造） */
 export function buildManualRoute(
   order: ManualCandidate[],
@@ -151,7 +232,7 @@ export function buildManualRoute(
   reason: string,
 ): PlannedRoute | null {
   if (order.length === 0) return null;
-  const ev = evaluateOrder(order, matrix, p.stayMin, p.returnToStart);
+  const ev = evaluateOrder(order, matrix, stayAccessor, p.returnToStart);
   if (!ev) return null;
   const departAt = new Date(p.departAt);
   const stops: RouteStop[] = [];
@@ -159,6 +240,7 @@ export function buildManualRoute(
   let t = new Date(departAt);
   let cur = 0;
   let curId: string | null = null;
+  let stayTotalMin = 0;
   for (const c of order) {
     const driveMin = Math.ceil(matrix.durationsMin[cur][c.mi]);
     legs.push({
@@ -169,8 +251,16 @@ export function buildManualRoute(
     });
     t = new Date(t.getTime() + driveMin * 60000);
     const arriveAt = t.toISOString();
-    t = new Date(t.getTime() + p.stayMin * 60000);
-    stops.push({ stationId: c.st.id, arriveAt, departAt: t.toISOString(), stayMin: p.stayMin });
+    t = new Date(t.getTime() + c.st.stayMin * 60000);
+    stayTotalMin += c.st.stayMin;
+    stops.push({
+      stationId: c.st.id,
+      arriveAt,
+      departAt: t.toISOString(),
+      stayMin: c.st.stayMin,
+      stopType: c.st.stopType,
+      poi: c.st.poi,
+    });
     cur = c.mi;
     curId = c.st.id;
   }
@@ -184,8 +274,12 @@ export function buildManualRoute(
     });
     t = new Date(t.getTime() + driveMin * 60000);
   }
+  // 営業時間見込みは道の駅（hours.jsonにデータがある）のみ集計。POIは対象外
   const hoursSummary = { open: 0, closing: 0, closed: 0, unknown: 0 };
-  for (const s of stops) hoursSummary[statusAtArrival(s.stationId, new Date(s.arriveAt))]++;
+  for (const s of stops) {
+    if ((s.stopType ?? 'station') !== 'station') continue;
+    hoursSummary[statusAtArrival(s.stationId, new Date(s.arriveAt))]++;
+  }
 
   // PlanParams互換の params を保持（RouteResults/TripView/保存ルートが共通で読めるようにする）
   const params: PlanParams = {
@@ -206,6 +300,8 @@ export function buildManualRoute(
     includeUnknownHours: true,
   };
 
+  const stationCount = order.filter((c) => c.st.stopType === 'station').length;
+
   return {
     key: 'manual',
     title,
@@ -215,10 +311,11 @@ export function buildManualRoute(
     legs,
     totalMin: ev.totalMin,
     driveMin: ev.driveMin,
-    stayTotalMin: order.length * p.stayMin,
-    marginMin: 0,
+    stayTotalMin,
+    marginMin: computeMarginMin(ev.totalMin),
     totalKm: Math.round(ev.totalKm * 10) / 10,
-    newCount: order.length,
+    // 達成率に影響するのは道の駅のみ（周辺スポットは含めない）
+    newCount: stationCount,
     wantCount: 0,
     returnAt: t.toISOString(),
     roadData,

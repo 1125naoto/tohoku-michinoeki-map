@@ -33,6 +33,10 @@ import {
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
+import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
+import { searchNearbyPois, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
+import PoiSearchPanel from './components/PoiSearchPanel';
+import PoiDetailSheet from './components/PoiDetailSheet';
 import {
   DEFAULT_ROUTE_DRAFT,
   clearRouteDraft,
@@ -139,6 +143,100 @@ export default function App() {
   // 地図から選ぶ: 選択モード・選択済み駅ID（選んだ順）・下書き
   const [routeSelectMode, setRouteSelectMode] = useState(false);
   const [routeSelectedIds, setRouteSelectedIds] = useState<string[]>([]);
+  // 選択済みの周辺スポット（キー: Poi.id）。routeSelectedIds内のPOI由来IDを解決するための実データ
+  const [selectedPois, setSelectedPois] = useState<Record<string, Poi>>({});
+
+  // ---- 周辺スポット検索（Gate2〜4） ----
+  const [poiSearchActive, setPoiSearchActive] = useState(false);
+  const [poiOrigin, setPoiOrigin] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [poiCategory, setPoiCategory] = useState<PoiCategory | null>(null);
+  const [poiSubcategory, setPoiSubcategory] = useState<string>('all');
+  const [poiRadius, setPoiRadius] = useState<SearchRadiusM>(DEFAULT_RADIUS_M);
+  const [poiLoading, setPoiLoading] = useState(false);
+  const [poiFailed, setPoiFailed] = useState(false);
+  const [poiMapPickActive, setPoiMapPickActive] = useState(false);
+  const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
+  const [poiDetail, setPoiDetail] = useState<Poi | null>(null);
+  const poiAbortRef = useRef<AbortController | null>(null);
+
+  // カテゴリ/サブカテゴリでの絞り込みはクライアント側で行う（同じ地点+半径ならAPIへ再検索しない）
+  const poiSearchResults = useMemo(() => {
+    let list = poiRawResults;
+    if (poiCategory) {
+      list = list.filter((p) => p.category === poiCategory);
+      if (poiSubcategory === '__rainy__') {
+        list = list.filter((p) => RAINY_DAY_SUBCATEGORIES.includes(p.subcategory));
+      } else if (poiSubcategory !== 'all') {
+        list = list.filter((p) => p.subcategory === poiSubcategory);
+      }
+    }
+    return list;
+  }, [poiRawResults, poiCategory, poiSubcategory]);
+
+  const runPoiSearch = useCallback(
+    async (o: { lat: number; lng: number; label: string }, radius: SearchRadiusM) => {
+      poiAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      poiAbortRef.current = ctrl;
+      setPoiOrigin(o);
+      setPoiSearchActive(true);
+      setPoiLoading(true);
+      setPoiFailed(false);
+      try {
+        const res = await searchNearbyPois(o.lat, o.lng, radius, ctrl.signal);
+        if (ctrl.signal.aborted) return;
+        setPoiRawResults(res.pois);
+        setPoiFailed(res.failed);
+      } catch {
+        if (ctrl.signal.aborted) return;
+        setPoiRawResults([]);
+        setPoiFailed(true);
+      } finally {
+        if (poiAbortRef.current === ctrl) {
+          setPoiLoading(false);
+          poiAbortRef.current = null;
+        }
+      }
+    },
+    [],
+  );
+
+  const changePoiRadius = useCallback(
+    (r: SearchRadiusM) => {
+      setPoiRadius(r);
+      if (poiOrigin) void runPoiSearch(poiOrigin, r);
+    },
+    [poiOrigin, runPoiSearch],
+  );
+
+  const usePoiCurrentLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => void runPoiSearch({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }, poiRadius),
+      () => setPoiFailed(true),
+      { timeout: 10000 },
+    );
+  }, [poiRadius, runPoiSearch]);
+
+  const searchNearbyFor = useCallback(
+    (o: { lat: number; lng: number; label: string }) => {
+      setTab('map');
+      void runPoiSearch(o, poiRadius);
+    },
+    [poiRadius, runPoiSearch],
+  );
+
+  const closePoiSearch = useCallback(() => {
+    poiAbortRef.current?.abort();
+    setPoiSearchActive(false);
+    setPoiMapPickActive(false);
+    setPoiRawResults([]);
+    setPoiOrigin(null);
+    setPoiCategory(null);
+    setPoiSubcategory('all');
+    setPoiDetail(null);
+  }, []);
+
   const [showSelectionSheet, setShowSelectionSheet] = useState(false);
   const [selectMsg, setSelectMsg] = useState<string | null>(null);
   const [manualDraftSnapshot, setManualDraftSnapshot] = useState<RouteDraft>(
@@ -216,19 +314,49 @@ export default function App() {
     (id: string) => {
       const ids = removeSelection(routeSelectedIds, id);
       setRouteSelectedIds(ids);
-      persistDraft({ selectedIds: ids });
+      setSelectedPois((prev) => {
+        if (!(id in prev)) {
+          persistDraft({ selectedIds: ids });
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[id];
+        persistDraft({ selectedIds: ids, selectedPois: next });
+        return next;
+      });
     },
     [routeSelectedIds, persistDraft],
   );
   const clearAllSelection = useCallback(() => {
     setRouteSelectedIds([]);
-    persistDraft({ selectedIds: [] });
+    setSelectedPois({});
+    persistDraft({ selectedIds: [], selectedPois: {} });
   }, [persistDraft]);
   const moveSelectionItem = useCallback(
     (index: number, dir: -1 | 1) => {
       const ids = moveSelection(routeSelectedIds, index, dir);
       setRouteSelectedIds(ids);
       persistDraft({ selectedIds: ids });
+    },
+    [routeSelectedIds, persistDraft],
+  );
+  /** 周辺スポットの選択トグル（地図タップ・詳細シートの両方から呼ばれる） */
+  const togglePoiSelect = useCallback(
+    (poi: Poi) => {
+      const { ids, result } = toggleSelection(routeSelectedIds, poi.id, MAX_MANUAL_STATIONS);
+      if (result === 'max-reached') {
+        setSelectMsg(`一度に選べるのは最大${MAX_MANUAL_STATIONS}件です`);
+        setTimeout(() => setSelectMsg(null), 3000);
+        return;
+      }
+      setRouteSelectedIds(ids);
+      setSelectedPois((prev) => {
+        const next = { ...prev };
+        if (result === 'removed') delete next[poi.id];
+        else next[poi.id] = poi;
+        persistDraft({ selectedIds: ids, selectedPois: next });
+        return next;
+      });
     },
     [routeSelectedIds, persistDraft],
   );
@@ -252,6 +380,7 @@ export default function App() {
   const resumeDraft = useCallback(() => {
     if (!pendingDraft) return;
     setRouteSelectedIds(pendingDraft.selectedIds);
+    setSelectedPois(pendingDraft.selectedPois);
     if (pendingDraft.origin) setOrigin(pendingDraft.origin);
     setManualDraftSnapshot(pendingDraft);
     setLastCourseMode('manual');
@@ -707,8 +836,13 @@ export default function App() {
             statusFilter={statusFilter}
             onTapStation={handleTapStation}
             onMapTap={closeSheet}
-            pickMode={pickMode}
+            pickMode={pickMode || poiMapPickActive}
             onPick={(p) => {
+              if (poiMapPickActive) {
+                setPoiMapPickActive(false);
+                searchNearbyFor({ lat: p.lat, lng: p.lng, label: `指定した地点 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
+                return;
+              }
               setOrigin({ lat: p.lat, lng: p.lng, label: `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
               setPickMode(false);
               setTab('route');
@@ -725,6 +859,9 @@ export default function App() {
             routeSelectMode={routeSelectMode}
             routeSelectedIds={routeSelectedIds}
             onToggleRouteSelect={toggleRouteSelect}
+            poiResults={poiSearchActive ? poiSearchResults : []}
+            onTapPoi={(poi) => setPoiDetail(poi)}
+            onTogglePoiSelect={togglePoiSelect}
           />
           {/* 全画面の切替（CSSのみで確実に動作。左上・44px以上・safe-area対応） */}
           {tab === 'map' &&
@@ -769,18 +906,86 @@ export default function App() {
             <RouteSelectionSheet
               selectedIds={routeSelectedIds}
               getStation={getStation}
+              selectedPois={selectedPois}
               now={now}
               onRemove={removeFromSelection}
               onMove={moveSelectionItem}
               onClearAll={clearAllSelection}
               onClose={() => setShowSelectionSheet(false)}
               onProceed={proceedFromSelection}
+              onOpenPoiDetail={(poi) => {
+                setShowSelectionSheet(false);
+                setPoiDetail(poi);
+              }}
             />
           )}
           {tab === 'map' && selectMsg && (
             <div className="map-hint" data-testid="route-select-msg">
               {selectMsg}
             </div>
+          )}
+          {tab === 'map' && !poiSearchActive && (
+            <button
+              className="poi-search-btn"
+              onClick={() => {
+                if (poiOrigin) void runPoiSearch(poiOrigin, poiRadius);
+                else setPoiSearchActive(true);
+              }}
+              data-testid="poi-search-open"
+              aria-label="周辺スポットを探す"
+            >
+              🔍 周辺スポット
+            </button>
+          )}
+          {tab === 'map' && poiSearchActive && (
+            <PoiSearchPanel
+              originLabel={poiOrigin?.label ?? '地図の中心'}
+              onUseCurrentLocation={usePoiCurrentLocation}
+              onRequestMapPick={() => setPoiMapPickActive((v) => !v)}
+              mapPickActive={poiMapPickActive}
+              category={poiCategory}
+              onChangeCategory={(c) => {
+                setPoiCategory(c);
+                setPoiSubcategory('all');
+              }}
+              subcategory={poiSubcategory}
+              onChangeSubcategory={setPoiSubcategory}
+              radius={poiRadius}
+              onChangeRadius={changePoiRadius}
+              loading={poiLoading}
+              failed={poiFailed}
+              resultCount={poiSearchResults.length}
+              onGoogleFallback={() => {
+                const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';
+                const near = poiOrigin ? `${poiOrigin.lat},${poiOrigin.lng}` : '';
+                openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
+              }}
+              onClose={closePoiSearch}
+            />
+          )}
+          {tab === 'map' && poiDetail && (
+            <PoiDetailSheet
+              poi={poiDetail}
+              distanceLabel={`${poiOrigin?.label ?? '検索地点'}から`}
+              selectedNumber={
+                routeSelectedIds.includes(poiDetail.id) ? routeSelectedIds.indexOf(poiDetail.id) + 1 : null
+              }
+              stayMin={manualDraftSnapshot.stayOverrides[poiDetail.id] ?? DEFAULT_STAY_MIN[poiDetail.subcategory]}
+              onChangeStayMin={(min) =>
+                persistDraft({ stayOverrides: { ...manualDraftSnapshot.stayOverrides, [poiDetail.id]: min } })
+              }
+              onToggleRoute={() => {
+                if (!routeSelectMode) {
+                  // 通常閲覧中に「ルートに追加」した場合は、その場で地図選択モードへ入る
+                  setCourseMode('manual');
+                  setRouteSelectMode(true);
+                }
+                togglePoiSelect(poiDetail);
+              }}
+              onNav={() => openExternal(navToPointUrl({ lat: poiDetail.lat, lng: poiDetail.lng }, 'highway_ok'))}
+              onGoogleSearch={() => openExternal(poiGoogleSearchUrl(poiDetail))}
+              onClose={() => setPoiDetail(null)}
+            />
           )}
           {tab === 'map' && showA2hs && !selectedId && !pickMode && !routeSelectMode && (
             <div className="a2hs-banner" data-testid="a2hs-banner">
@@ -851,14 +1056,30 @@ export default function App() {
                 onFinish={finishTrip}
                 onShowMap={() => previewOnMap(activeSaved.route)}
                 onExit={() => setTab('map')}
-                onNavToStation={(st: Station) => openExternal(navToStationUrl(st, activeSaved.route.params.roadPref))}
+                onNavToStation={(st: Station) =>
+                  openExternal(navToStationUrl(st, trip.roadPref ?? activeSaved.route.params.roadPref))
+                }
+                onNavToPoi={(poi) =>
+                  openExternal(
+                    navToPointUrl({ lat: poi.lat, lng: poi.lng }, trip.roadPref ?? activeSaved.route.params.roadPref),
+                  )
+                }
                 onNavHome={() =>
                   openExternal(
                     navToPointUrl(
                       { lat: activeSaved.route.params.origin.lat, lng: activeSaved.route.params.origin.lng },
-                      activeSaved.route.params.roadPref,
+                      trip.roadPref ?? activeSaved.route.params.roadPref,
                     ),
                   )
+                }
+                roadPref={trip.roadPref ?? activeSaved.route.params.roadPref}
+                onChangeRoadPref={(rp) =>
+                  setTrip((prev) => {
+                    if (!prev) return prev;
+                    const next = { ...prev, roadPref: rp };
+                    saveTrip(next);
+                    return next;
+                  })
                 }
               />
             ) : routeStage === 'results' && results ? (
@@ -886,6 +1107,8 @@ export default function App() {
                   stations={STATIONS}
                   getStation={getStation}
                   selectedIds={routeSelectedIds}
+                  selectedPois={selectedPois}
+                  stayOverrides={manualDraftSnapshot.stayOverrides}
                   origin={origin}
                   onOriginChange={handleManualOriginChange}
                   onRequestMapPick={() => {
@@ -962,7 +1185,16 @@ export default function App() {
         )}
 
         {selected && tab === 'map' && (
-          <StationSheet station={selected} visits={visits} onSetState={setState} onClose={closeSheet} />
+          <StationSheet
+            station={selected}
+            visits={visits}
+            onSetState={setState}
+            onClose={closeSheet}
+            onSearchNearby={() => {
+              closeSheet();
+              searchNearbyFor({ lat: selected.lat, lng: selected.lng, label: `道の駅${selected.name}` });
+            }}
+          />
         )}
       </main>
 

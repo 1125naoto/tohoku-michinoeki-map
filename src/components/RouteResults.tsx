@@ -3,6 +3,8 @@ import type { PlannedRoute, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { directionsUrls } from '../lib/gmaps';
 import { statusAtArrival, type ArrivalHours } from '../lib/hours';
+import { poiDisplayName } from '../lib/poi';
+import { computeStayBreakdown } from '../lib/manualRoute';
 
 /** 到着見込みの小さなバッジ */
 const ARRIVAL_BADGE: Record<ArrivalHours, { cls: string; text: string }> = {
@@ -11,6 +13,33 @@ const ARRIVAL_BADGE: Record<ArrivalHours, { cls: string; text: string }> = {
   closed: { cls: 'hclosed', text: '時間外の可能性' },
   unknown: { cls: 'pre', text: '要確認' },
 };
+
+/** 予想時間の内訳（Gate7: 移動・道の駅滞在・食事・観光・温泉休憩・安全余裕・帰路・合計） */
+export function TimeBreakdownRow({ r }: { r: PlannedRoute }) {
+  const b = computeStayBreakdown(r.stops);
+  const foodMin = b.restaurant + b.cafe;
+  const tourismMin = b.tourism + b.park;
+  const returnLeg = r.params.returnToStart ? r.legs[r.legs.length - 1] : null;
+  return (
+    <div className="route-meta" data-testid="time-breakdown" style={{ marginTop: 6 }}>
+      <span>移動 {formatMin(r.driveMin)}</span>
+      {b.station > 0 && <span>道の駅滞在 {formatMin(b.station)}</span>}
+      {foodMin > 0 && <span>食事 {formatMin(foodMin)}</span>}
+      {tourismMin > 0 && <span>観光 {formatMin(tourismMin)}</span>}
+      {b.onsen > 0 && <span>温泉・休憩 {formatMin(b.onsen)}</span>}
+      {b.other > 0 && <span>その他滞在 {formatMin(b.other)}</span>}
+      <span data-testid="breakdown-margin">安全余裕 {formatMin(r.marginMin)}</span>
+      {returnLeg && <span>帰路 {formatMin(returnLeg.driveMin)}</span>}
+      <span data-testid="breakdown-total">合計 {formatMin(r.totalMin + r.marginMin)}</span>
+      <span>出発予定 {formatHM(new Date(r.params.departAt))}</span>
+      <span data-testid="breakdown-return">
+        {r.params.returnToStart ? '帰着予定' : '到着予定'} {formatHM(new Date(r.returnAt))}
+      </span>
+      <span>総距離 約{r.totalKm}km</span>
+      <span>{r.roadData === 'road' ? '実道路時間を使用（渋滞は含みません）' : '概算時間を使用'}</span>
+    </div>
+  );
+}
 
 /** コースカードの営業見込みサマリー */
 export function HoursSummaryRow({ r }: { r: PlannedRoute }) {
@@ -36,11 +65,24 @@ interface Props {
 export function routePoints(r: PlannedRoute, getStation: (id: string) => Station | undefined) {
   const pts = [{ lat: r.params.origin.lat, lng: r.params.origin.lng }];
   for (const s of r.stops) {
+    if ((s.stopType ?? 'station') !== 'station') {
+      if (s.poi) pts.push({ lat: s.poi.lat, lng: s.poi.lng });
+      continue;
+    }
     const st = getStation(s.stationId);
     if (st) pts.push({ lat: st.lat, lng: st.lng });
   }
   if (r.params.returnToStart) pts.push({ lat: r.params.origin.lat, lng: r.params.origin.lng });
   return pts;
+}
+
+/** 停留地点の表示名（道の駅は「道の駅◯◯」、周辺スポットはそのまま名称） */
+function stopDisplayName(s: PlannedRoute['stops'][number], getStation: (id: string) => Station | undefined): string {
+  if ((s.stopType ?? 'station') === 'station') {
+    const st = getStation(s.stationId);
+    return `道の駅 ${st?.name ?? s.stationId}`;
+  }
+  return s.poi ? poiDisplayName(s.poi) : s.stationId;
 }
 
 /** 実道路/概算のバッジ */
@@ -89,22 +131,29 @@ export function RouteTimeline({
         </span>
       </li>
       {r.stops.map((s, i) => {
-        const st = getStation(s.stationId);
         const leg = r.legs[i];
         const state = progress?.[s.stationId];
         const cls =
           s.stationId === currentId ? 'current' : state === 'done' ? 'done' : state === 'skipped' ? 'skipped' : '';
-        const arrival = ARRIVAL_BADGE[statusAtArrival(s.stationId, new Date(s.arriveAt))];
+        const isStation = (s.stopType ?? 'station') === 'station';
+        const arrival = isStation ? ARRIVAL_BADGE[statusAtArrival(s.stationId, new Date(s.arriveAt))] : null;
         return (
           <li key={s.stationId} className={cls}>
             <span className="time">{formatHM(new Date(s.arriveAt))}</span>
             <span>
               <b>
-                {i + 1}. 道の駅 {st?.name ?? s.stationId}
+                {i + 1}. {stopDisplayName(s, getStation)}
               </b>{' '}
-              <span className={`badge ${arrival.cls}`} style={{ fontSize: 11 }}>
-                {arrival.text}
-              </span>
+              {arrival && (
+                <span className={`badge ${arrival.cls}`} style={{ fontSize: 11 }}>
+                  {arrival.text}
+                </span>
+              )}
+              {!isStation && (
+                <span className="badge pre" style={{ fontSize: 11 }}>
+                  周辺スポット
+                </span>
+              )}
               <br />
               <span className="leg">
                 ← 約{leg.distanceKm}km・{formatMin(leg.driveMin)} ／ 滞在{s.stayMin}分（
@@ -252,6 +301,8 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
           <span>総走行 約{open.totalKm}km</span>
         </div>
         <HoursSummaryRow r={open} />
+        <h3 style={{ marginTop: 10, fontSize: 14 }}>予想時間の内訳</h3>
+        <TimeBreakdownRow r={open} />
         <RouteTimeline r={open} getStation={getStation} />
         <RoadDataNote r={open} />
       </div>
