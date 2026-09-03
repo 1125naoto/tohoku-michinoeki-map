@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /** しちのへ（青森県七戸町）: 実在の駅IDで詳細カードをディープリンク表示 */
 const STATION_ID = 'mne-18900';
@@ -48,6 +51,36 @@ async function closeLegend(page: Page) {
   }
 }
 
+/** 凡例パネルを開く（閉じていれば開く。バナーが被らないよう先に閉じる） */
+async function openLegendPanel(page: Page) {
+  const banner = page.getByTestId('a2hs-banner');
+  if (await banner.isVisible().catch(() => false)) {
+    await page.getByTestId('a2hs-close').click();
+    await expect(banner).toBeHidden();
+  }
+  const panel = page.getByTestId('legend-panel');
+  if (!(await panel.isVisible().catch(() => false))) {
+    await page.getByTestId('legend-toggle').click();
+  }
+  await expect(panel).toBeVisible();
+  return panel;
+}
+
+/** 地図表示設定（マーカー表示/駅名表示）を凡例パネルから切り替える */
+async function setMarkerMode(page: Page, mode: 'all' | 'cluster') {
+  await openLegendPanel(page);
+  await page.getByTestId(`setting-marker-${mode}`).click();
+  await page.getByTestId('legend-toggle').click();
+  await expect(page.getByTestId('legend-panel')).toBeHidden();
+}
+
+async function setLabelMode(page: Page, mode: 'auto' | 'always' | 'off') {
+  await openLegendPanel(page);
+  await page.getByTestId(`setting-label-${mode}`).click();
+  await page.getByTestId('legend-toggle').click();
+  await expect(page.getByTestId('legend-panel')).toBeHidden();
+}
+
 test.describe('地図と詳細カード @smoke', () => {
   test('地図が表示され、帰属表示・達成率ヘッダーがある', async ({ page }) => {
     await page.goto('/');
@@ -65,9 +98,10 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(page.locator('.cluster-pill, .rs-marker').first()).toBeVisible({ timeout: 15000 });
   });
 
-  test('クラスタは紺色ピルで「N駅」表示、タップで範囲へズーム @smoke', async ({ page }) => {
+  test('クラスタは「まとめて表示」設定に切り替えると紺色ピルで「N駅」表示、タップで範囲へズーム @smoke', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
+    await setMarkerMode(page, 'cluster');
     const pill = page.locator('.cluster-pill').first();
     await expect(pill).toBeVisible({ timeout: 15000 });
     await expect(pill).toHaveText(/^\d+駅$/);
@@ -93,7 +127,15 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).toBeVisible(); // 初回のみ自動展開
     await expect(panel).toContainText('行きたい');
     await expect(panel).toContainText('スタンプ取得済み');
+    // 初期状態は全駅個別表示のため、クラスタ（まとめ表示）の説明は出ない
+    await expect(panel).not.toContainText('道の駅の件数');
+    await expect(panel).toContainText('マーカー表示');
+    await expect(panel).toContainText('駅名表示');
+    // 「まとめて表示」に切り替えるとクラスタの説明が現れる
+    await page.getByTestId('setting-marker-cluster').click();
     await expect(panel).toContainText('道の駅の件数');
+    await page.getByTestId('setting-marker-all').click();
+    await expect(panel).not.toContainText('道の駅の件数');
     // 新しい操作説明（押すたびに1段階循環）
     await expect(panel).toContainText('未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問');
     // 旧・時間差判定の案内を残さない
@@ -971,5 +1013,232 @@ test.describe('シナリオC: ルーティング障害時の概算フォール�
     await page.getByTestId('plan-submit').click();
     await expect(page.getByTestId('route-empty')).toBeVisible();
     await expect(page.getByTestId('route-empty')).toContainText('見つかりませんでした');
+  });
+});
+
+test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
+  test('初期状態では東北全域が182件の個別マーカーで表示され、まとめ表示（クラスタ）は出ない @smoke', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await expect(page.locator('.rs-marker').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.rs-hit')).toHaveCount(182);
+    await expect(page.locator('.cluster-pill')).toHaveCount(0);
+  });
+
+  test('「まとめて表示」に切り替えるとクラスタ表示になり、訪問記録は変化しない', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await setMarkerMode(page, 'cluster');
+    await expect(page.locator('.cluster-pill').first()).toBeVisible({ timeout: 15000 });
+    // クラスタ化時は大半がピルにまとまる（近隣に他駅がない孤立した駅だけは
+    // 単独マーカーのまま出ることがあるため、182件全部ではないことだけ確認する）
+    await expect(page.locator('.rs-hit')).not.toHaveCount(182);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    // 「全駅表示」へ戻すと元通りになる
+    await setMarkerMode(page, 'all');
+    await expect(page.locator('.rs-hit')).toHaveCount(182);
+    await expect(page.locator('.cluster-pill')).toHaveCount(0);
+  });
+
+  test('表示設定は再読み込み後も維持される', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await setMarkerMode(page, 'cluster');
+    await setLabelMode(page, 'always');
+    await page.reload();
+    await closeLegend(page);
+    await expect(page.locator('.cluster-pill').first()).toBeVisible({ timeout: 15000 });
+    const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:map-settings:v1'));
+    expect(saved).toContain('"markerMode":"cluster"');
+    expect(saved).toContain('"labelMode":"always"');
+  });
+
+  test('駅名ラベル: 広域では非表示、拡大すると表示される（自動モード）', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
+    await page.waitForTimeout(300);
+    const label = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"]) .rs-label`);
+    await expect(label).toBeHidden();
+    // 拡大すると表示される
+    await page.evaluate(
+      ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat as number, lng as number, 13),
+      [40.63, 141.13],
+    );
+    await page.waitForTimeout(300);
+    await expect(label).toBeVisible({ timeout: 10000 });
+    await expect(label).toContainText(STATION_NAME);
+  });
+
+  test('「常に表示」「非表示」設定がズームによらず反映される', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
+    const label = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"]) .rs-label`);
+    await setLabelMode(page, 'always');
+    await expect(label).toBeVisible({ timeout: 10000 });
+    await setLabelMode(page, 'off');
+    await expect(label).toBeHidden();
+  });
+
+  test('選択中の駅は設定・ズームに関わらずラベルが表示される', async ({ page }) => {
+    // 「非表示」設定を先に保存してから駅を選択（selectedIdはシートを開いている間だけ
+    // 有効なため、シートを閉じずに検証する）
+    await page.goto('/');
+    await closeLegend(page);
+    await setLabelMode(page, 'off');
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    const label = page.locator(`.rs-hit.sel .rs-label`);
+    await expect(label).toBeVisible({ timeout: 10000 });
+    await expect(label).toContainText(STATION_NAME);
+  });
+
+  test('タップ可能領域は見た目のサイズによらず約44×44pxを維持する', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
+    await page.waitForTimeout(300);
+    const hit = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"])`).first();
+    const box = await stableBox(page, hit);
+    expect(box.width).toBeGreaterThanOrEqual(40);
+    expect(box.height).toBeGreaterThanOrEqual(40);
+  });
+});
+
+test.describe('記録のバックアップ・復元', () => {
+  test('バックアップを書き出すと、現在の記録を含むJSONファイルがダウンロードされる @smoke', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click(); // シートが駅を覆う画面幅があるため先に閉じる
+    await closeLegend(page);
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 訪問済みにする
+    await page.getByTestId('tab-records').click();
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('backup-export').click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^michinoeki-backup-\d{8}-\d{4}\.json$/);
+    const stream = await download.createReadStream();
+    const chunks: Buffer[] = [];
+    await new Promise<void>((resolve, reject) => {
+      stream!.on('data', (c) => chunks.push(c as Buffer));
+      stream!.on('end', () => resolve());
+      stream!.on('error', reject);
+    });
+    const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+    expect(data.schemaVersion).toBe(1);
+    expect(data.visits[STATION_ID].state).toBe('visited');
+    expect(Array.isArray(data.routes)).toBe(true);
+    expect(data.settings.map.markerMode).toBe('all');
+  });
+
+  test('バックアップの復元（上書き）: 記録がバックアップの内容に置き換わる', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    // 現在の記録: 別の駅を「行きたい」にしておく（上書きで消えることを確認するため）
+    await page.evaluate(() => {
+      const now = new Date().toISOString();
+      localStorage.setItem(
+        'tohoku-me:visits:v2',
+        JSON.stringify({
+          'mne-99999-dummy': { state: 'wishlist', visitedAt: null, wishlistAt: now, stampAt: null, updatedAt: now },
+        }),
+      );
+    });
+    await page.reload();
+    await closeLegend(page);
+    const backupJson = JSON.stringify({
+      schemaVersion: 1,
+      appVersion: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      visits: {
+        [STATION_ID]: {
+          state: 'stamped',
+          visitedAt: new Date().toISOString(),
+          wishlistAt: null,
+          stampAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      },
+      routes: [],
+      trip: null,
+      settings: { map: { markerMode: 'all', labelMode: 'auto' } },
+    });
+    const filePath = join(tmpdir(), `backup-overwrite-${Date.now()}.json`);
+    writeFileSync(filePath, backupJson, 'utf-8');
+    await page.getByTestId('tab-records').click();
+    await page.getByTestId('backup-file-input').setInputFiles(filePath);
+    await expect(page.getByTestId('restore-dialog')).toBeVisible();
+    await page.getByTestId('restore-overwrite').click();
+    await expect(page.getByTestId('backup-restored')).toContainText('上書き復元');
+    // ダミーの駅は消え、バックアップの駅がスタンプ済みになっている
+    const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
+    expect(saved).not.toContain('mne-99999-dummy');
+    expect(saved).toContain(`"${STATION_ID}"`);
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+  });
+
+  test('バックアップの復元（統合）: 既存の記録を残しつつバックアップ側を反映する', async ({ page }) => {
+    await page.goto('/');
+    await closeLegend(page);
+    await page.evaluate(() => {
+      const now = new Date().toISOString();
+      localStorage.setItem(
+        'tohoku-me:visits:v2',
+        JSON.stringify({
+          'mne-99999-dummy': { state: 'wishlist', visitedAt: null, wishlistAt: now, stampAt: null, updatedAt: now },
+        }),
+      );
+    });
+    await page.reload();
+    await closeLegend(page);
+    const backupJson = JSON.stringify({
+      schemaVersion: 1,
+      appVersion: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      visits: {
+        [STATION_ID]: {
+          state: 'visited',
+          visitedAt: new Date().toISOString(),
+          wishlistAt: null,
+          stampAt: null,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+      routes: [],
+      trip: null,
+      settings: { map: { markerMode: 'all', labelMode: 'auto' } },
+    });
+    const filePath = join(tmpdir(), `backup-merge-${Date.now()}.json`);
+    writeFileSync(filePath, backupJson, 'utf-8');
+    await page.getByTestId('tab-records').click();
+    await page.getByTestId('backup-file-input').setInputFiles(filePath);
+    await expect(page.getByTestId('restore-dialog')).toBeVisible();
+    await page.getByTestId('restore-merge').click();
+    await expect(page.getByTestId('backup-restored')).toContainText('統合復元');
+    // 既存のダミー駅は残り、バックアップの駅も追加されている
+    const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
+    expect(saved).toContain('mne-99999-dummy');
+    expect(saved).toContain(`"${STATION_ID}"`);
+    await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+  });
+
+  test('壊れたバックアップファイルはエラー表示となり、既存の記録は変更されない', async ({ page }) => {
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('sheet-x').click(); // シートが駅を覆う画面幅があるため先に閉じる
+    await closeLegend(page);
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 訪問済みにする
+    const filePath = join(tmpdir(), `backup-broken-${Date.now()}.json`);
+    writeFileSync(filePath, '{this is not valid json', 'utf-8');
+    await page.getByTestId('tab-records').click();
+    await page.getByTestId('backup-file-input').setInputFiles(filePath);
+    await expect(page.getByTestId('backup-error')).toBeVisible();
+    await expect(page.getByTestId('restore-dialog')).toHaveCount(0);
+    const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
+    expect(saved).toContain(`"${STATION_ID}"`);
   });
 });

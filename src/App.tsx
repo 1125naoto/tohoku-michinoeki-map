@@ -16,6 +16,8 @@ import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { navToPointUrl, navToStationUrl } from './lib/gmaps';
 import { filterSummary } from './lib/ui';
+import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
+import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
 import type { Station } from './types';
 import {
@@ -101,6 +103,13 @@ export default function App() {
       }
     }
   }, []);
+  // 地図表示設定（全駅表示/まとめて表示・駅名表示）。localStorage保存で再読み込み後も維持
+  const [mapSettings, setMapSettings] = useState<MapSettings>(() => loadMapSettings());
+  const changeMapSettings = useCallback((s: MapSettings) => {
+    setMapSettings(s);
+    saveMapSettings(s);
+  }, []);
+
   // 営業状態表示の基準時刻（1分ごとに更新。テストはclock固定で制御可能）
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
@@ -331,6 +340,37 @@ export default function App() {
     setRouteLine(null);
   }, []);
 
+  // 記録のバックアップ書き出し（この端末のlocalStorageのみのため、機種変更・別ブラウザ移行用にJSONで保存）
+  const exportBackup = useCallback(() => {
+    const data = buildBackup();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date();
+    const ts = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `michinoeki-backup-${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
+  const readBackupFile = useCallback(async (file: File): Promise<ParseResult> => {
+    const text = await file.text();
+    return parseBackup(text);
+  }, []);
+
+  // 復元を適用し、画面の状態（訪問記録・保存ルート・旅行中・地図設定）にも即時反映する
+  const applyRestore = useCallback((data: BackupFile, mode: RestoreMode) => {
+    const applied = applyBackup(data, mode);
+    setVisits(applied.visits);
+    setSavedRoutes(applied.routes);
+    setTrip(applied.trip);
+    setMapSettings(applied.mapSettings);
+  }, []);
+
   // 最新の訪問記録をコールバックから参照するためのref
   const visitsRef = useRef(visits);
   useEffect(() => {
@@ -501,6 +541,9 @@ export default function App() {
             sheetOpen={selectedId != null}
             now={now}
             fullscreen={mapFullscreen}
+            selectedId={selectedId}
+            settings={mapSettings}
+            onChangeSettings={changeMapSettings}
           />
           {/* 全画面の切替（CSSのみで確実に動作。左上・44px以上・safe-area対応） */}
           {tab === 'map' &&
@@ -668,6 +711,9 @@ export default function App() {
                 setShowA2hs(true);
                 setTab('map');
               }}
+              onExportBackup={exportBackup}
+              onReadBackupFile={readBackupFile}
+              onApplyRestore={applyRestore}
             />
           </div>
         )}

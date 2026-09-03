@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { SavedRoute, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import ConfirmDialog from './ConfirmDialog';
 import { DATA_META } from '../data';
+import type { BackupFile, ParseResult, RestoreMode } from '../lib/backup';
 
 interface Props {
   routes: SavedRoute[];
@@ -13,6 +14,9 @@ interface Props {
   onDelete: (id: string) => void;
   onResetAll: () => void;
   onShowInstallHint: () => void;
+  onExportBackup: () => void;
+  onReadBackupFile: (file: File) => Promise<ParseResult>;
+  onApplyRestore: (data: BackupFile, mode: RestoreMode) => void;
 }
 
 export default function SavedRoutesView({
@@ -24,9 +28,27 @@ export default function SavedRoutesView({
   onDelete,
   onResetAll,
   onShowInstallHint,
+  onExportBackup,
+  onReadBackupFile,
+  onApplyRestore,
 }: Props) {
   const [deleting, setDeleting] = useState<SavedRoute | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<BackupFile | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreDone, setRestoreDone] = useState<RestoreMode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFilePicked = async (file: File) => {
+    setRestoreError(null);
+    setRestoreDone(null);
+    const result = await onReadBackupFile(file);
+    if (!result.ok) {
+      setRestoreError(result.error);
+      return;
+    }
+    setPendingRestore(result.data);
+  };
 
   return (
     <div>
@@ -80,8 +102,39 @@ export default function SavedRoutesView({
         <h3>データ管理</h3>
         <p className="msg info">
           訪問記録・スタンプ・保存ルートはこの端末のブラウザ内（localStorage）にのみ保存されます。
+          機種変更やブラウザの変更に備えて、バックアップファイルを保存しておくことをおすすめします。
         </p>
-        <button className="btn-danger-ghost" style={{ width: '100%' }} onClick={() => setResetting(true)} data-testid="reset-all">
+        <div className="btn-grid">
+          <button onClick={onExportBackup} data-testid="backup-export">
+            💾 記録をバックアップ
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} data-testid="backup-import">
+            📂 バックアップを復元
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: 'none' }}
+          data-testid="backup-file-input"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) void handleFilePicked(file);
+          }}
+        />
+        {restoreError && (
+          <p className="msg error" data-testid="backup-error" style={{ marginTop: 8 }}>
+            復元できませんでした：{restoreError}
+          </p>
+        )}
+        {restoreDone && (
+          <p className="msg info" data-testid="backup-restored" style={{ marginTop: 8 }}>
+            {restoreDone === 'overwrite' ? '上書き復元' : '統合復元'}が完了しました。
+          </p>
+        )}
+        <button className="btn-danger-ghost" style={{ width: '100%', marginTop: 12 }} onClick={() => setResetting(true)} data-testid="reset-all">
           すべての記録を初期化する
         </button>
       </div>
@@ -119,6 +172,46 @@ export default function SavedRoutesView({
           }}
           onCancel={() => setResetting(false)}
         />
+      )}
+      {pendingRestore && (
+        <div className="dialog-backdrop" role="dialog" aria-modal="true" aria-label="バックアップの復元">
+          <div className="dialog" data-testid="restore-dialog">
+            <h3>バックアップの復元</h3>
+            <p>
+              バックアップ日時：{pendingRestore.exportedAt ? new Date(pendingRestore.exportedAt).toLocaleString('ja-JP') : '不明'}
+              <br />
+              訪問記録 {Object.keys(pendingRestore.visits).length}件／保存ルート {pendingRestore.routes.length}件
+            </p>
+            <p className="msg info" style={{ margin: '8px 0' }}>
+              「統合」は今の記録を残したままバックアップの内容を合わせます（同じ駅はバックアップ側を優先）。
+              「上書き」は今の記録をすべてバックアップの内容に置き換えます。
+            </p>
+            <div className="actions" style={{ flexWrap: 'wrap' }}>
+              <button onClick={() => setPendingRestore(null)}>キャンセル</button>
+              <button
+                onClick={() => {
+                  onApplyRestore(pendingRestore, 'merge');
+                  setPendingRestore(null);
+                  setRestoreDone('merge');
+                }}
+                data-testid="restore-merge"
+              >
+                統合する
+              </button>
+              <button
+                className="btn-danger-ghost"
+                onClick={() => {
+                  onApplyRestore(pendingRestore, 'overwrite');
+                  setPendingRestore(null);
+                  setRestoreDone('overwrite');
+                }}
+                data-testid="restore-overwrite"
+              >
+                上書きする
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
