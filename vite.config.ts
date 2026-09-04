@@ -21,9 +21,9 @@ export default defineConfig({
       injectRegister: false, // main.tsx で手動登録
       filename: 'sw.js',
       manifest: {
-        name: '東北・道の駅制覇マップ',
-        short_name: '道の駅マップ',
-        description: '東北6県の道の駅を地図で管理。訪問記録・スタンプ・達成率・週末周遊ルート提案。',
+        name: '道の駅ナビ｜東北スタンプラリー＆ルート検索',
+        short_name: '道の駅ナビ',
+        description: '東北6県の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索アプリ',
         lang: 'ja',
         start_url: DEPLOY_BASE,
         scope: DEPLOY_BASE,
@@ -31,9 +31,21 @@ export default defineConfig({
         background_color: '#f7f8f5',
         theme_color: '#2e7d32',
         icons: [
+          { src: iconPath('icons/icon-48.png'), sizes: '48x48', type: 'image/png' },
+          { src: iconPath('icons/icon-72.png'), sizes: '72x72', type: 'image/png' },
+          { src: iconPath('icons/icon-96.png'), sizes: '96x96', type: 'image/png' },
+          { src: iconPath('icons/icon-128.png'), sizes: '128x128', type: 'image/png' },
+          { src: iconPath('icons/icon-144.png'), sizes: '144x144', type: 'image/png' },
+          { src: iconPath('icons/icon-152.png'), sizes: '152x152', type: 'image/png' },
           { src: iconPath('icons/icon-192.png'), sizes: '192x192', type: 'image/png' },
+          { src: iconPath('icons/icon-384.png'), sizes: '384x384', type: 'image/png' },
           { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png' },
-          { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          {
+            src: iconPath('icons/icon-512-maskable.png'),
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {

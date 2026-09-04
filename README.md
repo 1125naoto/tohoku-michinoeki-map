@@ -1,4 +1,4 @@
-# 東北・道の駅制覇マップ
+# 道の駅ナビ｜東北スタンプラリー＆ルート検索
 
 東北6県（青森・岩手・宮城・秋田・山形・福島）の**全道の駅**を地図上で管理し、
 訪問記録・スタンプ取得・県別達成率・営業時間表示・週末の周遊ルート提案までできるWebアプリ（PWA）です。
@@ -40,7 +40,7 @@ https://（ユーザー名）.github.io/tohoku-michinoeki-map/
 | `npm run preview` | 本番ビルドをローカル配信 (http://127.0.0.1:4173) |
 | `npm test` | ユニット/データテスト（Vitest） |
 | `npm run e2e` | ブラウザE2Eテスト（Playwright、要 `npx playwright install chromium`） |
-| `npm run gen-icons` | PWAアイコンの再生成 |
+| `npm run gen-icons` | アプリアイコン／OGP画像の再生成（`app-icon-source.png` から。要 Python + Pillow） |
 
 `main` ブランチへの push で GitHub Actions が自動的にビルド・GitHub Pages へ公開します
 （`.github/workflows/deploy.yml`）。
