@@ -33,7 +33,7 @@ import {
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
-import { searchNearbyPoisAuto, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
+import { searchNearbyPoisAuto, DEFAULT_RADIUS_M, type EndpointAttemptLog, type SearchRadiusM } from './lib/overpass';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
@@ -180,6 +180,8 @@ export default function App() {
   const [poiFromCache, setPoiFromCache] = useState(false);
   const [poiMapPickActive, setPoiMapPickActive] = useState(false);
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
+  /** 直近の検索の接続先ごとの試行ログ（診断表示専用。本番の公開URLでは表示しない） */
+  const [poiAttemptLog, setPoiAttemptLog] = useState<EndpointAttemptLog[]>([]);
   const [poiDetail, setPoiDetail] = useState<Poi | null>(null);
   const poiAbortRef = useRef<AbortController | null>(null);
   // 旧コードとの互換用エイリアス（同じ意味の派生値。読みやすさのためだけに用意）
@@ -226,6 +228,7 @@ export default function App() {
         setPoiRawResults(res.pois);
         setPoiRequestStatus(res.failed ? 'error' : 'ok');
         setPoiFromCache(res.fromCache);
+        setPoiAttemptLog(res.attemptLog);
         if (res.radiusUsed !== radius) {
           setPoiRadius(res.radiusUsed);
           setPoiAutoExpanded(true);
@@ -1190,6 +1193,7 @@ export default function App() {
               totalRawCount={poiRawResults.length}
               autoExpanded={poiAutoExpanded}
               fromCache={poiFromCache}
+              attemptLog={poiAttemptLog}
               onRetry={runPoiSearchNow}
               onGoogleFallback={() => {
                 const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';

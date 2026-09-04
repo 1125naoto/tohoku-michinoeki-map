@@ -290,6 +290,48 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
   });
 });
 
+describe('診断ログ（attemptLog）', () => {
+  it('成功時は成功した接続先のログ(outcome:ok, status, elementCount)を含む', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ elements: makeElements(2) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.attemptLog).toHaveLength(2);
+    expect(res.attemptLog[0]).toMatchObject({ outcome: 'http_error', status: 429, radiusM: DEFAULT_RADIUS_M });
+    expect(res.attemptLog[1]).toMatchObject({ outcome: 'ok', status: 200, elementCount: 2 });
+  });
+
+  it('タイムアウトはoutcome:timeoutとして記録される', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.attemptLog.every((a) => a.outcome === 'timeout')).toBe(true);
+  });
+
+  it('キャッシュヒット時はattemptLogが空配列になる（新規通信していないため）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(second.fromCache).toBe(true);
+    expect(second.attemptLog).toEqual([]);
+  });
+
+  it('searchNearbyPoisAutoは範囲拡張をまたいでattemptLogを累積する', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(1) }) }) // 3km: 少ない
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(5) }) }); // 5km: 十分
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, 3000);
+    expect(res.attemptLog).toHaveLength(2);
+    expect(res.attemptLog[0].radiusM).toBe(3000);
+    expect(res.attemptLog[1].radiusM).toBe(5000);
+  });
+});
+
 describe('検索範囲の自動拡張（searchNearbyPoisAuto）', () => {
   it('最初の範囲で十分な件数があれば範囲を広げない', async () => {
     const fetchMock = vi.fn().mockResolvedValue({

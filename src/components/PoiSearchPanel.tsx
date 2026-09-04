@@ -1,9 +1,25 @@
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory } from '../lib/poi';
-import { RADIUS_CHOICES, type SearchRadiusM } from '../lib/overpass';
+import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Station } from '../types';
 
 export type PoiSortMode = 'distance' | 'name' | 'category';
 export type PoiOriginMode = 'station' | 'current' | 'map' | 'route';
+
+/**
+ * 診断表示（接続先・HTTPステータス・タイムアウト等）を出してよい環境か。
+ * 一般公開中のGitHub Pages本番URLでは絶対に出さない（ローカル/LANプレビュー/開発時のみ）。
+ */
+function isDiagnosticsHost(): boolean {
+  if (typeof location === 'undefined') return false;
+  return location.hostname !== '1125naoto.github.io';
+}
+
+const OUTCOME_LABEL: Record<EndpointAttemptLog['outcome'], string> = {
+  ok: 'OK',
+  http_error: 'HTTPエラー',
+  timeout: 'タイムアウト',
+  network_error: '通信エラー',
+};
 
 /** 一覧の並び順（近い順が既定）。OSMには評価データが無いため「評価順」は用意しない */
 export function sortPois(pois: Poi[], mode: PoiSortMode): Poi[] {
@@ -69,6 +85,8 @@ interface Props {
   autoExpanded: boolean;
   /** 新鮮なキャッシュまたは前回成功時の保存結果を表示している間true */
   fromCache: boolean;
+  /** 直近の検索の接続先ごとの試行ログ（診断表示専用） */
+  attemptLog: EndpointAttemptLog[];
   onRetry: () => void;
   onGoogleFallback: () => void;
   onClose: () => void;
@@ -117,6 +135,7 @@ export default function PoiSearchPanel({
   totalRawCount,
   autoExpanded,
   fromCache,
+  attemptLog,
   onRetry,
   onGoogleFallback,
   onClose,
@@ -390,6 +409,24 @@ export default function PoiSearchPanel({
             </button>
           </div>
         </div>
+      )}
+      {!loading && searched && (failed || resultCount === 0) && isDiagnosticsHost() && (
+        <details className="msg info" style={{ marginTop: 8, fontSize: 12 }} data-testid="poi-diagnostics">
+          <summary>🔧 診断情報（開発/検証環境のみ表示）</summary>
+          <div style={{ marginTop: 6 }}>
+            <div>カテゴリー: {category ? CATEGORY_LABEL[category] : 'すべて'} / 検索範囲: {radius}m</div>
+            {attemptLog.length === 0 && <div>（試行ログなし。キャッシュ由来の結果か、検索が始まっていません）</div>}
+            {attemptLog.map((a, i) => (
+              <div key={i}>
+                [{a.radiusM}m] {a.url.replace('https://', '').replace('/api/interpreter', '').replace('/osm/tools/overpass', '')}
+                {' → '}
+                {OUTCOME_LABEL[a.outcome]}
+                {a.status != null ? ` (HTTP ${a.status})` : ''}
+                {a.elementCount != null ? ` / ${a.elementCount}件` : ''}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
       {!loading && !failed && resultCount > 0 && (
         <>

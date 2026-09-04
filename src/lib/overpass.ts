@@ -126,12 +126,23 @@ function writeStaleFallback(key: string, pois: Poi[]): void {
   }
 }
 
+/** 1接続先ぶんの試行結果（診断表示用。DEV/検証環境限定でUIに出す想定） */
+export interface EndpointAttemptLog {
+  url: string;
+  radiusM: number;
+  outcome: 'ok' | 'http_error' | 'timeout' | 'network_error';
+  status?: number;
+  elementCount?: number;
+}
+
 export interface PoiSearchResult {
   pois: Poi[];
   /** trueなら通信/解析エラーによるフォールバック（呼び出し側でGoogleマップ検索の案内を出す） */
   failed: boolean;
   /** trueなら「今回の検索」ではなく、新鮮なキャッシュまたは前回成功時の保存結果を表示している */
   fromCache: boolean;
+  /** 各接続先への試行ログ（キャッシュヒット時は空配列）。診断表示専用で挙動には影響しない */
+  attemptLog: EndpointAttemptLog[];
 }
 
 /**
@@ -145,7 +156,12 @@ export interface PoiSearchResult {
  * 設定しない。逆に検証用スクリプト（poi_audit.py等、ブラウザではない）側では、
  * ブラウザ同様に振る舞うようUser-Agent/Refererを明示的に付与する必要がある。
  */
-async function tryEndpoint(url: string, query: string, outerSignal?: AbortSignal): Promise<OsmElement[] | null> {
+async function tryEndpoint(
+  url: string,
+  query: string,
+  radiusM: number,
+  outerSignal?: AbortSignal,
+): Promise<{ elements: OsmElement[] | null; log: EndpointAttemptLog }> {
   const attemptCtrl = new AbortController();
   const onOuterAbort = () => attemptCtrl.abort();
   outerSignal?.addEventListener('abort', onOuterAbort);
@@ -162,17 +178,18 @@ async function tryEndpoint(url: string, query: string, outerSignal?: AbortSignal
       if (import.meta.env.DEV) {
         console.warn(`[overpass] ${url} → HTTP ${res.status}${res.status === 429 ? ' (rate limited)' : ''}`);
       }
-      return null; // 429/5xx等
+      return { elements: null, log: { url, radiusM, outcome: 'http_error', status: res.status } };
     }
     const json = (await res.json()) as { elements?: OsmElement[] };
-    return json.elements ?? [];
+    const elements = json.elements ?? [];
+    return { elements, log: { url, radiusM, outcome: 'ok', status: res.status, elementCount: elements.length } };
   } catch (e) {
     if (outerSignal?.aborted) throw e; // 呼び出し元の意図的な中断は次の接続先へ回さず伝播する
+    const isTimeout = e instanceof DOMException && e.name === 'AbortError';
     if (import.meta.env.DEV) {
-      const reason = e instanceof DOMException && e.name === 'AbortError' ? 'timeout' : 'network error';
-      console.warn(`[overpass] ${url} → ${reason}:`, e);
+      console.warn(`[overpass] ${url} → ${isTimeout ? 'timeout' : 'network error'}:`, e);
     }
-    return null; // ネットワークエラー・タイムアウト（この接続先だけの失敗）
+    return { elements: null, log: { url, radiusM, outcome: isTimeout ? 'timeout' : 'network_error' } };
   } finally {
     clearTimeout(timer);
     outerSignal?.removeEventListener('abort', onOuterAbort);
@@ -193,7 +210,7 @@ export async function searchNearbyPois(
   const key = cacheKey(lat, lng, radiusM);
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at <= CACHE_TTL_MS) {
-    return { pois: hit.pois, failed: false, fromCache: true };
+    return { pois: hit.pois, failed: false, fromCache: true, attemptLog: [] };
   }
 
   // 前回の検索が残っていれば中断してから新しいリクエストを開始する
@@ -204,10 +221,13 @@ export async function searchNearbyPois(
   signal?.addEventListener('abort', onOuterAbort);
 
   const query = buildQuery(lat, lng, radiusM);
+  const attemptLog: EndpointAttemptLog[] = [];
   try {
     let elements: OsmElement[] | null = null;
     for (const url of OVERPASS_ENDPOINTS) {
-      elements = await tryEndpoint(url, query, ctrl.signal);
+      const attempt = await tryEndpoint(url, query, radiusM, ctrl.signal);
+      attemptLog.push(attempt.log);
+      elements = attempt.elements;
       if (elements !== null) break; // 成功したら他の接続先は試さない（同一接続先への無制限リトライもしない）
       if (ctrl.signal.aborted) break; // 呼び出し側の意図的な中断（新しい検索の開始等）
     }
@@ -226,13 +246,13 @@ export async function searchNearbyPois(
         if (oldest) cache.delete(oldest[0]);
       }
       writeStaleFallback(key, pois);
-      return { pois, failed: false, fromCache: false };
+      return { pois, failed: false, fromCache: false, attemptLog };
     }
 
     // 全接続先が失敗: 前回成功時の結果があればそれを劣化フォールバックとして返す
     const stale = readStaleFallback(key);
-    if (stale) return { pois: stale, failed: false, fromCache: true };
-    return { pois: [], failed: true, fromCache: false };
+    if (stale) return { pois: stale, failed: false, fromCache: true, attemptLog };
+    return { pois: [], failed: true, fromCache: false, attemptLog };
   } finally {
     signal?.removeEventListener('abort', onOuterAbort);
     if (inFlightController === ctrl) inFlightController = null;
@@ -259,12 +279,14 @@ export async function searchNearbyPoisAuto(
 ): Promise<PoiSearchAutoResult> {
   let radius = startRadius;
   let result = await searchNearbyPois(lat, lng, radius, signal);
+  const attemptLog = [...result.attemptLog];
   while (!result.failed && result.pois.length < MIN_AUTO_RESULTS && radius < AUTO_ESCALATE_MAX_M) {
     const next = RADIUS_CHOICES.find((r) => r.value > radius && r.value <= AUTO_ESCALATE_MAX_M);
     if (!next) break;
     radius = next.value;
     result = await searchNearbyPois(lat, lng, radius, signal);
+    attemptLog.push(...result.attemptLog);
   }
-  return { ...result, radiusUsed: radius };
+  return { ...result, attemptLog, radiusUsed: radius };
 }
 
