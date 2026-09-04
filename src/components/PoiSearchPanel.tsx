@@ -19,6 +19,7 @@ const OUTCOME_LABEL: Record<EndpointAttemptLog['outcome'], string> = {
   http_error: 'HTTPエラー',
   timeout: 'タイムアウト',
   network_error: '通信エラー',
+  aborted: '他が先に成功（未使用）',
 };
 
 /** 一覧の並び順（近い順が既定）。OSMには評価データが無いため「評価順」は用意しない */
@@ -85,6 +86,8 @@ interface Props {
   autoExpanded: boolean;
   /** 新鮮なキャッシュまたは前回成功時の保存結果を表示している間true */
   fromCache: boolean;
+  /** stale-while-revalidate: キャッシュを表示しつつ裏で最新データを取得中の間true */
+  revalidating: boolean;
   /** 直近の検索の接続先ごとの試行ログ（診断表示専用） */
   attemptLog: EndpointAttemptLog[];
   onRetry: () => void;
@@ -135,6 +138,7 @@ export default function PoiSearchPanel({
   totalRawCount,
   autoExpanded,
   fromCache,
+  revalidating,
   attemptLog,
   onRetry,
   onGoogleFallback,
@@ -443,6 +447,12 @@ export default function PoiSearchPanel({
               ? '前回取得した周辺スポットを表示しています。'
               : `周辺スポットを${resultCount}件見つけました。`}
             地図のマークまたは下の一覧をタップすると詳しく見られます。
+            {revalidating && (
+              <>
+                <br />
+                <span data-testid="poi-revalidating">🔄 最新の情報を確認しています…</span>
+              </>
+            )}
           </p>
           <div className="poi-sort" data-testid="poi-sort">
             <span className="poi-radius-label">並び順</span>

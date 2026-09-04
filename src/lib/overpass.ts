@@ -26,11 +26,30 @@ const OVERPASS_ENDPOINTS = [
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   'https://overpass-api.de/api/interpreter',
 ];
-/** 接続先1つあたりのタイムアウト。3接続先に増えたため、全滅時の合計待ち時間が伸びすぎないよう短縮した */
-const TIMEOUT_MS = 6000;
+/**
+ * 接続先1つあたりのタイムアウト。実測（2026-09-04の実ブラウザ検証）で、成功する応答でも
+ * 0.9〜8.9秒程度かかることがあったため、stagger raceで並行化した前提で余裕を持たせた。
+ */
+const TIMEOUT_MS = 8000;
+/**
+ * 接続先を並行起動する間隔（ミリ秒）。直列3本×6秒(最大18秒)だと1本目が遅い/死んでいるだけで
+ * ユーザーを長時間待たせてしまうため、1本目を即開始し、STAGGER_MSごとに次を追加で開始する
+ * 「stagger（時差）race」方式にする。どれか1つが最初に成功した時点で残りは中断する。
+ * 全滅時の最大待ち時間は概ね (本数-1)×STAGGER_MS + TIMEOUT_MS に収まる。
+ */
+let STAGGER_MS = 600;
+/** テスト専用: stagger間隔を変更する（実タイマーでのテストを高速化するため。本番コードからは呼ばない） */
+export function __setStaggerMsForTest(ms: number): void {
+  STAGGER_MS = ms;
+}
 const CACHE_TTL_MS = 30 * 60 * 1000; // 同一条件の新鮮なキャッシュ: 30分
-/** 全接続先が失敗した場合にだけ使う「最後に成功した結果」の保持期間（劣化フォールバック） */
-const STALE_FALLBACK_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * 「前回成功した結果」を劣化フォールバックとして使える期間。
+ * 全滅時だけでなく、stale-while-revalidateの即時表示にも使うため、
+ * 「何も出ない」を避ける目的で長めに保持する（道の駅周辺の飲食店・観光地・温泉は
+ * 短期間で大きく変わるものではないため、7日程度は実用上問題にならない）。
+ */
+const STALE_FALLBACK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const STALE_FALLBACK_KEY = 'tohoku-me:poi-last-ok:v1';
 /** Overpass側の出力上限（サーバー負荷を抑える）。表示件数の上限は呼び出し側でさらに絞る */
 const OVERPASS_ELEMENT_LIMIT = 80;
@@ -126,11 +145,25 @@ function writeStaleFallback(key: string, pois: Poi[]): void {
   }
 }
 
+/**
+ * stale-while-revalidate用: 通信を一切せず、既存のメモリキャッシュ/端末保存の
+ * 前回成功結果を同期的に覗く。呼び出し側（App.tsx）は検索開始と同時にこれを表示し、
+ * 裏で searchNearbyPoisAuto() の結果が届いたら置き換えることで、
+ * 「何も出ない」状態を極力見せない。見つからなければnull。
+ */
+export function peekCachedPois(lat: number, lng: number, radiusM: SearchRadiusM): Poi[] | null {
+  const key = cacheKey(lat, lng, radiusM);
+  const fresh = cache.get(key);
+  if (fresh) return fresh.pois;
+  return readStaleFallback(key);
+}
+
 /** 1接続先ぶんの試行結果（診断表示用。DEV/検証環境限定でUIに出す想定） */
 export interface EndpointAttemptLog {
   url: string;
   radiusM: number;
-  outcome: 'ok' | 'http_error' | 'timeout' | 'network_error';
+  /** 'aborted' = 他の接続先が先に成功した、または開始前に中断された（stagger race） */
+  outcome: 'ok' | 'http_error' | 'timeout' | 'network_error' | 'aborted';
   status?: number;
   elementCount?: number;
 }
@@ -197,9 +230,78 @@ async function tryEndpoint(
 }
 
 /**
+ * OVERPASS_ENDPOINTSをstagger race（時差並行）で試行する。1本目は即座に開始し、
+ * 以降はSTAGGER_MSごとに追加で開始する。最初に成功したものを採用し、残りは
+ * AbortControllerで中断する（同一接続先への無制限リトライはしない・各接続先1回のみ）。
+ * 全滅した場合のみ、全接続先の試行ログとともに elements:null を返す。
+ */
+async function raceEndpoints(
+  query: string,
+  radiusM: number,
+  outerSignal?: AbortSignal,
+): Promise<{ elements: OsmElement[] | null; attemptLog: EndpointAttemptLog[] }> {
+  const attemptLog: EndpointAttemptLog[] = [];
+  const controllers = OVERPASS_ENDPOINTS.map(() => new AbortController());
+  const onOuterAbort = () => controllers.forEach((c) => c.abort());
+  outerSignal?.addEventListener('abort', onOuterAbort);
+  if (outerSignal?.aborted) onOuterAbort();
+
+  const runOne = (url: string, index: number) =>
+    (async (): Promise<{ elements: OsmElement[] | null; log: EndpointAttemptLog }> => {
+      const delay = index * STAGGER_MS;
+      if (delay > 0) await new Promise<void>((resolve) => setTimeout(resolve, delay));
+      if (controllers[index].signal.aborted) {
+        return { elements: null, log: { url, radiusM, outcome: 'aborted' } };
+      }
+      return tryEndpoint(url, query, radiusM, controllers[index].signal);
+    })();
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let remaining = OVERPASS_ENDPOINTS.length;
+    const cleanup = () => outerSignal?.removeEventListener('abort', onOuterAbort);
+
+    OVERPASS_ENDPOINTS.forEach((url, i) => {
+      runOne(url, i)
+        .then((result) => {
+          attemptLog.push(result.log);
+          remaining--;
+          if (settled) return;
+          if (result.elements !== null) {
+            settled = true;
+            controllers.forEach((c, j) => {
+              if (j !== i) c.abort();
+            });
+            cleanup();
+            resolve({ elements: result.elements, attemptLog });
+          } else if (remaining === 0) {
+            settled = true;
+            cleanup();
+            resolve({ elements: null, attemptLog });
+          }
+        })
+        .catch((e: unknown) => {
+          remaining--;
+          if (settled) return;
+          if (outerSignal?.aborted) {
+            // 呼び出し元の意図的な中断（新しい検索の開始等）はそのまま上位へ伝播する
+            settled = true;
+            cleanup();
+            reject(e as Error);
+          } else if (remaining === 0) {
+            settled = true;
+            cleanup();
+            resolve({ elements: null, attemptLog });
+          }
+        });
+    });
+  });
+}
+
+/**
  * 指定地点周辺のPOIを検索する。失敗時は例外を投げず failed:true を返す
  * （アプリ全体を落とさない・呼び出し側でGoogleマップ検索へ誘導するため）。
- * 複数のOverpassインスタンスへ順に1回ずつ試行し、いずれかが成功すれば打ち切る。
+ * 複数のOverpassインスタンスをstagger raceで並行試行し、最初に成功したものを採用する。
  */
 export async function searchNearbyPois(
   lat: number,
@@ -221,16 +323,10 @@ export async function searchNearbyPois(
   signal?.addEventListener('abort', onOuterAbort);
 
   const query = buildQuery(lat, lng, radiusM);
-  const attemptLog: EndpointAttemptLog[] = [];
   try {
-    let elements: OsmElement[] | null = null;
-    for (const url of OVERPASS_ENDPOINTS) {
-      const attempt = await tryEndpoint(url, query, radiusM, ctrl.signal);
-      attemptLog.push(attempt.log);
-      elements = attempt.elements;
-      if (elements !== null) break; // 成功したら他の接続先は試さない（同一接続先への無制限リトライもしない）
-      if (ctrl.signal.aborted) break; // 呼び出し側の意図的な中断（新しい検索の開始等）
-    }
+    const raced = await raceEndpoints(query, radiusM, ctrl.signal);
+    const elements = raced.elements;
+    const attemptLog = raced.attemptLog;
 
     if (elements !== null) {
       const origin = { lat, lng };

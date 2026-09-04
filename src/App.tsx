@@ -33,7 +33,13 @@ import {
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
-import { searchNearbyPoisAuto, DEFAULT_RADIUS_M, type EndpointAttemptLog, type SearchRadiusM } from './lib/overpass';
+import {
+  searchNearbyPoisAuto,
+  peekCachedPois,
+  DEFAULT_RADIUS_M,
+  type EndpointAttemptLog,
+  type SearchRadiusM,
+} from './lib/overpass';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
@@ -178,6 +184,8 @@ export default function App() {
   const [poiRequestStatus, setPoiRequestStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   /** 表示中の結果が新鮮なキャッシュ/前回成功時の保存結果である間true */
   const [poiFromCache, setPoiFromCache] = useState(false);
+  /** stale-while-revalidate: キャッシュを即表示しつつ裏で最新データを取得中の間true */
+  const [poiRevalidating, setPoiRevalidating] = useState(false);
   const [poiMapPickActive, setPoiMapPickActive] = useState(false);
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
   /** 直近の検索の接続先ごとの試行ログ（診断表示専用。本番の公開URLでは表示しない） */
@@ -220,24 +228,50 @@ export default function App() {
       poiAbortRef.current = ctrl;
       setSearchOrigin(o);
       setIsPoiPanelOpen(true);
-      setPoiRequestStatus('loading');
       setPoiAutoExpanded(false);
+
+      // stale-while-revalidate: 過去に成功した結果があれば通信を待たずに即表示し、
+      // 裏で最新データを取得する。取得が失敗してもこの表示は消さない
+      // （「周辺スポット画面は何も表示されない状態を作らない」ため）。
+      const cached = peekCachedPois(o.lat, o.lng, radius);
+      const hadCache = cached !== null;
+      if (hadCache) {
+        setPoiRawResults(cached);
+        setPoiRequestStatus('ok');
+        setPoiFromCache(true);
+        setPoiRevalidating(true);
+      } else {
+        setPoiRequestStatus('loading');
+        setPoiRevalidating(false);
+      }
+
       try {
         const res = await searchNearbyPoisAuto(o.lat, o.lng, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
-        setPoiRawResults(res.pois);
-        setPoiRequestStatus(res.failed ? 'error' : 'ok');
-        setPoiFromCache(res.fromCache);
+        setPoiRevalidating(false);
         setPoiAttemptLog(res.attemptLog);
+        if (res.failed) {
+          // 失敗時、キャッシュを表示済みならそのまま見せ続ける（statusはok/fromCacheのまま維持）
+          if (!hadCache) {
+            setPoiRawResults([]);
+            setPoiRequestStatus('error');
+          }
+        } else {
+          setPoiRawResults(res.pois);
+          setPoiRequestStatus('ok');
+          setPoiFromCache(res.fromCache);
+        }
         if (res.radiusUsed !== radius) {
           setPoiRadius(res.radiusUsed);
           setPoiAutoExpanded(true);
         }
       } catch {
         if (ctrl.signal.aborted) return;
-        setPoiRawResults([]);
-        setPoiRequestStatus('error');
-        setPoiFromCache(false);
+        setPoiRevalidating(false);
+        if (!hadCache) {
+          setPoiRawResults([]);
+          setPoiRequestStatus('error');
+        }
       } finally {
         if (poiAbortRef.current === ctrl) {
           poiAbortRef.current = null;
@@ -308,6 +342,7 @@ export default function App() {
     setPoiCategory(null);
     setPoiSubcategory('all');
     setPoiAutoExpanded(false);
+    setPoiRevalidating(false);
     setPoiDetail(null);
   }, []);
 
@@ -1194,6 +1229,7 @@ export default function App() {
               autoExpanded={poiAutoExpanded}
               fromCache={poiFromCache}
               attemptLog={poiAttemptLog}
+              revalidating={poiRevalidating}
               onRetry={runPoiSearchNow}
               onGoogleFallback={() => {
                 const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';

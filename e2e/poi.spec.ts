@@ -491,6 +491,43 @@ test.describe('周辺スポット検索', () => {
     expect(calls).toBe(1);
   });
 
+  test('stale-while-revalidate: 端末保存の前回成功結果があれば、今回の通信が全滅しても表示を維持する', async ({
+    page,
+  }) => {
+    // 1回目: 成功させ、端末保存(localStorage)の劣化フォールバックにも書き込ませる
+    await mockOverpassResponse(page);
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('件見つけました', { timeout: 10000 });
+
+    // ページを完全に再読み込みして、ページ内メモリキャッシュ(30分)だけを消す
+    // （端末保存の劣化フォールバックはlocalStorageのため生き残る）
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+
+    // 2回目: 今回は全接続先が失敗する状況を模す
+    await page.unroute('**/api/interpreter');
+    await page.route('**/api/interpreter', (route) => route.abort());
+    await page.getByTestId('btn-search-nearby').click();
+
+    // 通信を待たず即座に前回結果が表示される（stale-while-revalidateの「即表示」）。
+    // 裏の再取得は route.abort() により即座に全滅するため「更新中」表示は一瞬で消えうる
+    // （その一瞬の表示自体はoverpass.test.tsのユニットテストで検証済み）。
+    await expect(page.getByTestId('poi-result-count')).toContainText('前回取得した周辺スポットを表示しています', {
+      timeout: 5000,
+    });
+
+    // 裏の再取得が全滅しても、表示は「失敗しました」に切り替わらず、前回結果を見せ続ける
+    // （何も表示されない/失敗表示に化けることがない、という要求の直接的な検証）
+    await page.waitForTimeout(2000);
+    await expect(page.getByTestId('poi-result-count')).toContainText('前回取得した周辺スポットを表示しています');
+    await expect(page.getByTestId('poi-failed')).toBeHidden();
+    await expect(page.getByTestId('poi-result-list')).toBeVisible();
+  });
+
   test('現在地の取得に失敗した場合はOverpass通信失敗とは別の案内になる（Googleへは飛ばさない）', async ({ page }) => {
     // ヘッドレスブラウザの権限プロンプトは自動応答されず無期限に待つことがあるため、
     // navigator.geolocationを決定的に「拒否」で応答するようスタブする

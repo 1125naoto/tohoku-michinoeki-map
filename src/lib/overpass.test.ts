@@ -4,7 +4,9 @@ import {
   DEFAULT_RADIUS_M,
   MIN_AUTO_RESULTS,
   POI_RESULT_LIMIT,
+  __setStaggerMsForTest,
   clearPoiCache,
+  peekCachedPois,
   searchNearbyPois,
   searchNearbyPoisAuto,
 } from './overpass';
@@ -47,6 +49,12 @@ class MemoryStorage implements Storage {
 beforeEach(() => {
   (globalThis as { localStorage?: Storage }).localStorage = new MemoryStorage();
   clearPoiCache();
+  // stagger raceの実タイマー待ちでテストが遅くならないよう既定では短くする。
+  // 0msにはしない: 0だとforEachの同期実行中にendpoint0の勝敗が決まる前に
+  // 全endpointのfetch()が呼ばれてしまう。数msでもマクロタスク(setTimeout)は
+  // モックfetchのマイクロタスク解決より必ず後に実行されるため、
+  // 「先に成功したら後続は呼ばれない」という本番と同じ挙動を維持できる。
+  __setStaggerMsForTest(5);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -230,6 +238,51 @@ describe('障害時のふるまい', () => {
     expect(urls.some((u) => u.includes('kumi.systems'))).toBe(false);
   });
 
+  it('1本目がstagger間隔より先に成功すれば、2本目・3本目は一度も呼ばれない', async () => {
+    __setStaggerMsForTest(20);
+    try {
+      let calls = 0;
+      const fetchMock = vi.fn().mockImplementation(() => {
+        calls++;
+        // 1本目はstagger間隔(20ms)より短い1msで成功させる
+        return new Promise((resolve) =>
+          setTimeout(() => resolve({ ok: true, json: async () => ({ elements: makeElements(1) }) }), 1),
+        );
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      expect(res.failed).toBe(false);
+      expect(calls).toBe(1);
+      // 2本目・3本目はstagger待ち中にabortされ、一度もfetchが呼ばれない
+      await new Promise((r) => setTimeout(r, 50));
+      expect(calls).toBe(1);
+    } finally {
+      __setStaggerMsForTest(5);
+    }
+  });
+
+  it('1本目が遅ければ、staggerで開始した2本目が先に成功できる', async () => {
+    __setStaggerMsForTest(20);
+    try {
+      const fetchMock = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('private.coffee')) {
+          // 1本目はstagger間隔より遅い(100ms)
+          return new Promise((resolve) =>
+            setTimeout(() => resolve({ ok: true, json: async () => ({ elements: makeElements(1) }) }), 100),
+          );
+        }
+        // 2本目(maps.mail.ru)はすぐ成功する
+        return Promise.resolve({ ok: true, json: async () => ({ elements: makeElements(9) }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      expect(res.failed).toBe(false);
+      expect(res.pois.length).toBe(9); // 2本目(maps.mail.ru)の結果を採用
+    } finally {
+      __setStaggerMsForTest(5);
+    }
+  });
+
   it('呼び出し側のsignalで中断した場合は例外を投げる（結果を上書きしない）', async () => {
     const fetchMock = vi.fn().mockImplementation(
       (_url: string, opts: { signal?: AbortSignal }) =>
@@ -260,10 +313,14 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
     // 30分キャッシュを飛び越して「新鮮なキャッシュではない」状態を作る
     vi.useFakeTimers();
     try {
-      vi.advanceTimersByTime(31 * 60 * 1000);
+      await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
       const failMock = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) });
       vi.stubGlobal('fetch', failMock);
-      const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      const secondPromise = searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      // stagger raceの遅延タイマー(setTimeout)はフェイクタイマー配下では自動進行しないため、
+      // Promiseの解決と交互にタイマーを進める advanceTimersByTimeAsync で明示的に進める
+      await vi.advanceTimersByTimeAsync(100);
+      const second = await secondPromise;
       expect(second.failed).toBe(false);
       expect(second.fromCache).toBe(true);
       expect(second.pois.length).toBe(2);
@@ -287,6 +344,35 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
     const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
     expect(second.fromCache).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('peekCachedPois（stale-while-revalidate用の同期プレビュー）', () => {
+  it('過去に成功結果が無ければnull（何も無いのに表示を捏造しない）', () => {
+    expect(peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M)).toBeNull();
+  });
+
+  it('新鮮なメモリキャッシュがあればそれを返す（通信しない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    const peeked = peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(peeked?.length).toBe(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // peek自体は通信しない
+  });
+
+  it('メモリキャッシュが切れていても、端末保存の前回成功結果があれば返す', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(3) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    vi.useFakeTimers();
+    try {
+      await vi.advanceTimersByTimeAsync(31 * 60 * 1000); // 30分キャッシュは切れるが、端末保存(7日)はまだ有効
+      const peeked = peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M);
+      expect(peeked?.length).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
