@@ -655,6 +655,20 @@ export default function MapView({
     }
   }, [poiResults, routeSelectMode, routeSelectedIds]);
 
+  // 周辺スポットの検索結果が変わったら、地図の表示範囲をその結果に合わせる。
+  // これをしないと、検索は成功していても現在の表示範囲の外にマーカーが出て
+  // 「アプリ内に何も表示されない」ように見えてしまう（実際に確認された不具合）。
+  // 検索結果パネルが画面下部を覆うため、駅フォーカス同様に下側の余白を多くとって
+  // マーカーがパネルの下に隠れない（=タップできない）ようにする。
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || poiResults.length === 0) return;
+    const bounds = L.latLngBounds(poiResults.map((p) => [p.lat, p.lng] as [number, number]));
+    map.fitBounds(bounds, { paddingTopLeft: [50, 50], paddingBottomRight: [50, 260], maxZoom: 16 });
+    // 選択状態の変化だけでは再フィットしない（マーカーをタップするたびに地図が動くと操作しづらいため）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poiResults]);
+
   // 駅名表示モードのCSSクラス（自動/常に表示/非表示）
   useEffect(() => {
     const el = rootRef.current;

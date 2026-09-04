@@ -12,6 +12,10 @@ interface Props {
   onDuplicate: (r: SavedRoute) => void;
   onRecalc: (r: SavedRoute) => void;
   onDelete: (id: string) => void;
+  /** 削除対象が「旅行中」または「現在表示中」のコースと同じ場合のID（それ以外はnull） */
+  activeRouteId: string | null;
+  /** 削除に加えて、旅行中/表示中のコースも終了・取り消す */
+  onDeleteAndClear: (id: string) => void;
   onResetAll: () => void;
   onShowInstallHint: () => void;
   onExportBackup: () => void;
@@ -26,6 +30,8 @@ export default function SavedRoutesView({
   onDuplicate,
   onRecalc,
   onDelete,
+  activeRouteId,
+  onDeleteAndClear,
   onResetAll,
   onShowInstallHint,
   onExportBackup,
@@ -148,11 +154,12 @@ export default function SavedRoutesView({
         </p>
       </div>
 
-      {deleting && (
+      {deleting && deleting.id !== activeRouteId && (
         <ConfirmDialog
-          title="ルートを削除"
-          message={`「${deleting.name}」を削除します。この操作は取り消せません。`}
+          title="この保存済みコースを削除しますか？"
+          message={`「${deleting.name}」（作成 ${new Date(deleting.createdAt).toLocaleDateString('ja-JP')}・立ち寄り${deleting.route.stops.length}件）を削除します。この操作は取り消せません。訪問記録・スタンプ記録は削除されません。`}
           confirmLabel="削除する"
+          cancelLabel="削除しない"
           danger
           onConfirm={() => {
             onDelete(deleting.id);
@@ -160,6 +167,43 @@ export default function SavedRoutesView({
           }}
           onCancel={() => setDeleting(null)}
         />
+      )}
+      {deleting && deleting.id === activeRouteId && (
+        <div className="dialog-backdrop" role="dialog" aria-modal="true" aria-label="この保存済みコースを削除しますか？">
+          <div className="dialog" data-testid="delete-active-dialog">
+            <h3>この保存済みコースを削除しますか？</h3>
+            <p>
+              「{deleting.name}」（作成 {new Date(deleting.createdAt).toLocaleDateString('ja-JP')}・立ち寄り
+              {deleting.route.stops.length}件）は、現在表示中または旅行中のコースと同じです。
+              保存履歴だけ削除するか、現在のコースも終了して削除するかを選んでください。
+              訪問記録・スタンプ記録はどちらでも削除されません。
+            </p>
+            <div className="actions" style={{ flexWrap: 'wrap' }}>
+              <button onClick={() => setDeleting(null)} data-testid="delete-active-cancel">
+                削除しない
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(deleting.id);
+                  setDeleting(null);
+                }}
+                data-testid="delete-active-history-only"
+              >
+                保存履歴だけ削除
+              </button>
+              <button
+                className="btn-danger-ghost"
+                onClick={() => {
+                  onDeleteAndClear(deleting.id);
+                  setDeleting(null);
+                }}
+                data-testid="delete-active-and-clear"
+              >
+                現在のコースも終了して削除
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {resetting && (
         <ConfirmDialog

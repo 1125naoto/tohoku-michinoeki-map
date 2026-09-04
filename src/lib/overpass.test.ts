@@ -14,7 +14,30 @@ function makeElements(n: number) {
   }));
 }
 
+class MemoryStorage implements Storage {
+  private m = new Map<string, string>();
+  get length() {
+    return this.m.size;
+  }
+  clear() {
+    this.m.clear();
+  }
+  getItem(k: string) {
+    return this.m.has(k) ? this.m.get(k)! : null;
+  }
+  key(i: number) {
+    return [...this.m.keys()][i] ?? null;
+  }
+  removeItem(k: string) {
+    this.m.delete(k);
+  }
+  setItem(k: string, v: string) {
+    this.m.set(k, v);
+  }
+}
+
 beforeEach(() => {
+  (globalThis as { localStorage?: Storage }).localStorage = new MemoryStorage();
   clearPoiCache();
 });
 afterEach(() => {
@@ -133,6 +156,58 @@ describe('障害時のふるまい', () => {
     expect(res.failed).toBe(true);
   });
 
+  it('1つ目の接続先が429の場合、2つ目の接続先へ切り替えて成功できる', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.failed).toBe(false);
+    expect(res.pois.length).toBe(1);
+  });
+
+  it('1つ目の接続先が504の場合、2つ目の接続先へ切り替えて成功できる', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 504, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.failed).toBe(false);
+  });
+
+  it('1つ目の接続先がタイムアウト（通信エラー）の場合、2つ目の接続先へ切り替えて成功できる', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'))
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.failed).toBe(false);
+  });
+
+  it('全接続先が失敗した場合はfailed:trueになる（同一接続先への無制限リトライはしない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 429, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    // 接続先の数だけ（無制限ではなく）試行して打ち切る
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res.failed).toBe(true);
+    expect(res.pois).toEqual([]);
+  });
+
+  it('0件（検索は成功したが該当なし）と通信失敗は区別される', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: [] }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(false);
+    expect(res.pois).toEqual([]);
+  });
+
   it('呼び出し側のsignalで中断した場合は例外を投げる（結果を上書きしない）', async () => {
     const fetchMock = vi.fn().mockImplementation(
       (_url: string, opts: { signal?: AbortSignal }) =>
@@ -150,5 +225,45 @@ describe('障害時のふるまい', () => {
     const promise = searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M, ctrl.signal);
     ctrl.abort();
     await expect(promise).rejects.toBeTruthy();
+  });
+});
+
+describe('前回成功結果の劣化フォールバック（全接続先失敗時）', () => {
+  it('過去に成功していれば、全接続先失敗時でも前回の結果をfromCache:trueで返す', async () => {
+    const okMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+    vi.stubGlobal('fetch', okMock);
+    const first = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(first.fromCache).toBe(false);
+
+    // 30分キャッシュを飛び越して「新鮮なキャッシュではない」状態を作る
+    vi.useFakeTimers();
+    try {
+      vi.advanceTimersByTime(31 * 60 * 1000);
+      const failMock = vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) });
+      vi.stubGlobal('fetch', failMock);
+      const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      expect(second.failed).toBe(false);
+      expect(second.fromCache).toBe(true);
+      expect(second.pois.length).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('過去に一度も成功していなければ、全接続先失敗時は素直にfailed:trueになる', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(true);
+    expect(res.fromCache).toBe(false);
+  });
+
+  it('30分以内の新鮮なキャッシュはfromCache:trueで返る', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(second.fromCache).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

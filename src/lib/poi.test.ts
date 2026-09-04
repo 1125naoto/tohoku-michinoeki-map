@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_STAY_MIN,
   classify,
+  dedupePois,
   normalizeOsmElement,
   poiDisplayName,
   poiGoogleSearchUrl,
@@ -120,6 +121,87 @@ describe('OSM要素の正規化', () => {
     expect(poi).not.toBeNull();
     expect(poi!.lat).toBe(37.42);
     expect(poi!.id).toBe('osm:way/7');
+  });
+
+  it('relation要素もcenterの座標を使い、IDにrelationを含む', () => {
+    const el: OsmElement = {
+      type: 'relation',
+      id: 8,
+      center: { lat: 37.43, lon: 140.39 },
+      tags: { tourism: 'museum', name: '資料館' },
+    };
+    const poi = normalizeOsmElement(el, origin);
+    expect(poi).not.toBeNull();
+    expect(poi!.lat).toBe(37.43);
+    expect(poi!.id).toBe('osm:relation/8');
+    expect(poi!.sourceUrl).toContain('openstreetmap.org/relation/8');
+  });
+
+  it('name:jaタグがあれば汎用nameより優先する', () => {
+    const el: OsmElement = {
+      type: 'node',
+      id: 9,
+      lat: 37.41,
+      lon: 140.37,
+      tags: { amenity: 'cafe', name: 'Cafe Example', 'name:ja': 'カフェ・イグザンプル' },
+    };
+    const poi = normalizeOsmElement(el, origin);
+    expect(poi!.name).toBe('カフェ・イグザンプル');
+  });
+
+  it('name:jaが無ければ汎用nameを使う', () => {
+    const el: OsmElement = { type: 'node', id: 10, lat: 37.41, lon: 140.37, tags: { amenity: 'cafe', name: 'Cafe Example' } };
+    const poi = normalizeOsmElement(el, origin);
+    expect(poi!.name).toBe('Cafe Example');
+  });
+
+  it('phone/websiteはタグがある場合のみ保持する（無ければnull）', () => {
+    const withContact = normalizeOsmElement(
+      { type: 'node', id: 11, lat: 37.41, lon: 140.37, tags: { amenity: 'cafe', phone: '024-000-0000', website: 'https://example.com' } },
+      origin,
+    );
+    expect(withContact!.phone).toBe('024-000-0000');
+    expect(withContact!.website).toBe('https://example.com');
+
+    const withoutContact = normalizeOsmElement({ type: 'node', id: 12, lat: 37.41, lon: 140.37, tags: { amenity: 'cafe' } }, origin);
+    expect(withoutContact!.phone).toBeNull();
+    expect(withoutContact!.website).toBeNull();
+  });
+
+  it('contact:phone/contact:websiteもphone/websiteが無い場合のフォールバックとして使う', () => {
+    const el: OsmElement = {
+      type: 'node',
+      id: 13,
+      lat: 37.41,
+      lon: 140.37,
+      tags: { amenity: 'cafe', 'contact:phone': '024-111-1111', 'contact:website': 'https://example.jp' },
+    };
+    const poi = normalizeOsmElement(el, origin);
+    expect(poi!.phone).toBe('024-111-1111');
+    expect(poi!.website).toBe('https://example.jp');
+  });
+});
+
+describe('重複除外（dedupePois）', () => {
+  const origin = { lat: 37.4, lng: 140.36 };
+  it('同じ名前・ほぼ同じ座標の要素は1件にまとめる（近い方を残す）', () => {
+    const near = normalizeOsmElement(
+      { type: 'node', id: 1, lat: 37.4001, lon: 140.3601, tags: { amenity: 'cafe', name: '同じ店' } },
+      origin,
+    )!;
+    const far = normalizeOsmElement(
+      { type: 'way', id: 2, center: { lat: 37.4001, lon: 140.3601 }, tags: { amenity: 'cafe', name: '同じ店' } },
+      { lat: 37.5, lng: 140.5 }, // 別のoriginから計算した遠いdistanceMを持たせる
+    )!;
+    const result = dedupePois([far, near]);
+    expect(result.length).toBe(1);
+    expect(result[0].distanceM).toBe(near.distanceM);
+  });
+
+  it('名前や座標が異なれば別施設として残す', () => {
+    const a = normalizeOsmElement({ type: 'node', id: 1, lat: 37.4001, lon: 140.3601, tags: { amenity: 'cafe', name: '店A' } }, origin)!;
+    const b = normalizeOsmElement({ type: 'node', id: 2, lat: 37.4101, lon: 140.3701, tags: { amenity: 'cafe', name: '店B' } }, origin)!;
+    expect(dedupePois([a, b]).length).toBe(2);
   });
 });
 

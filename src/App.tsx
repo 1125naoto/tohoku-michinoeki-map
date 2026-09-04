@@ -35,7 +35,7 @@ import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
 import { searchNearbyPois, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
-import PoiSearchPanel from './components/PoiSearchPanel';
+import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
   DEFAULT_ROUTE_DRAFT,
@@ -91,6 +91,17 @@ export default function App() {
   const [routeLineApprox, setRouteLineApprox] = useState(false);
   const [routeStops, setRouteStops] = useState<{ lat: number; lng: number; order: number }[] | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
+  /** results/routeStage='results'が「保存」タブから開いた保存済みコースの再表示であるとき、そのID */
+  const [viewingSavedId, setViewingSavedId] = useState<string | null>(null);
+  /** コース取り消し/作り直しの確認ダイアログ（'discard'=このコースを取り消す, 'restart'=最初から作り直す） */
+  const [pendingCourseAction, setPendingCourseAction] = useState<'discard' | 'restart' | null>(null);
+  const [routeActionMsg, setRouteActionMsg] = useState<string | null>(null);
+  const routeActionMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showRouteActionMsg = useCallback((msg: string) => {
+    if (routeActionMsgTimer.current) clearTimeout(routeActionMsgTimer.current);
+    setRouteActionMsg(msg);
+    routeActionMsgTimer.current = setTimeout(() => setRouteActionMsg(null), 5000);
+  }, []);
   const [online, setOnline] = useState(() => navigator.onLine);
   // スマホでは絞り込みを初期状態で閉じ、地図を広く使う
   const [filtersOpen, setFiltersOpen] = useState(
@@ -154,6 +165,10 @@ export default function App() {
   const [poiRadius, setPoiRadius] = useState<SearchRadiusM>(DEFAULT_RADIUS_M);
   const [poiLoading, setPoiLoading] = useState(false);
   const [poiFailed, setPoiFailed] = useState(false);
+  /** 現在地の取得に失敗（Overpass通信の失敗とは別扱い。「地図で指定」を案内する） */
+  const [poiGeoFailed, setPoiGeoFailed] = useState(false);
+  /** 表示中の結果が新鮮なキャッシュ/前回成功時の保存結果である間true */
+  const [poiFromCache, setPoiFromCache] = useState(false);
   const [poiMapPickActive, setPoiMapPickActive] = useState(false);
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
   const [poiDetail, setPoiDetail] = useState<Poi | null>(null);
@@ -172,6 +187,8 @@ export default function App() {
     }
     return list;
   }, [poiRawResults, poiCategory, poiSubcategory]);
+  const [poiSort, setPoiSort] = useState<PoiSortMode>('distance');
+  const sortedPoiResults = useMemo(() => sortPois(poiSearchResults, poiSort), [poiSearchResults, poiSort]);
 
   const runPoiSearch = useCallback(
     async (o: { lat: number; lng: number; label: string }, radius: SearchRadiusM) => {
@@ -182,15 +199,18 @@ export default function App() {
       setPoiSearchActive(true);
       setPoiLoading(true);
       setPoiFailed(false);
+      setPoiGeoFailed(false);
       try {
         const res = await searchNearbyPois(o.lat, o.lng, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
         setPoiRawResults(res.pois);
         setPoiFailed(res.failed);
+        setPoiFromCache(res.fromCache);
       } catch {
         if (ctrl.signal.aborted) return;
         setPoiRawResults([]);
         setPoiFailed(true);
+        setPoiFromCache(false);
       } finally {
         if (poiAbortRef.current === ctrl) {
           setPoiLoading(false);
@@ -210,10 +230,18 @@ export default function App() {
   );
 
   const usePoiCurrentLocation = useCallback(() => {
-    if (!('geolocation' in navigator)) return;
+    setPoiGeoFailed(false);
+    if (!('geolocation' in navigator)) {
+      setPoiGeoFailed(true);
+      return;
+    }
+    setPoiSearchActive(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => void runPoiSearch({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }, poiRadius),
-      () => setPoiFailed(true),
+      // 現在地の取得失敗はOverpass通信の失敗とは別原因（権限拒否・タイムアウト等）。
+      // 同じ「検索に失敗しました」表示にすると、実際には検索すら始まっていないのに
+      // Googleマップへ誘導してしまい、アプリ内検索が機能しないという誤解を生む。
+      () => setPoiGeoFailed(true),
       { timeout: 10000 },
     );
   }, [poiRadius, runPoiSearch]);
@@ -360,6 +388,17 @@ export default function App() {
     },
     [routeSelectedIds, persistDraft],
   );
+  /** 通常閲覧中（選択モードでない）に周辺スポットを選択した場合、その場で地図選択モードへ入る */
+  const togglePoiSelectWithModeEntry = useCallback(
+    (poi: Poi) => {
+      if (!routeSelectMode) {
+        setCourseMode('manual');
+        setRouteSelectMode(true);
+      }
+      togglePoiSelect(poi);
+    },
+    [routeSelectMode, togglePoiSelect],
+  );
 
   const handleManualOriginChange = useCallback(
     (o: OriginValue | null) => {
@@ -372,6 +411,7 @@ export default function App() {
   const handleManualDone = useCallback((route: PlannedRoute) => {
     setResults([route]);
     setRouteStage('results');
+    setViewingSavedId(null);
     // 選択はあえて残す: 結果画面の「← コース一覧に戻る」で選択・設定を調整し直せるようにする
     clearRouteDraft();
     setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
@@ -495,6 +535,7 @@ export default function App() {
       if (ctrl.signal.aborted) return;
       setResults(res.courses);
       setRouteStage('results');
+      setViewingSavedId(null);
     } catch {
       if (ctrl.signal.aborted) return;
       setResults([]);
@@ -590,9 +631,32 @@ export default function App() {
       setRouteLineApprox(false);
       setRouteStage('form');
       setResults(null);
+      setViewingSavedId(null);
+      setCourseMode('choose');
     },
     [trip],
   );
+
+  /**
+   * 「作成途中の下書き」「作成結果として現在表示中のコース」を一括で消す。
+   * このコースを取り消す／最初から作り直す の共通処理。
+   * 触れないもの: visits（訪問・スタンプ・行きたい記録）、savedRoutes（保存済みコース）、trip（旅行中の状態）。
+   */
+  const discardCurrentCourse = useCallback(() => {
+    setResults(null);
+    setRouteStage('form');
+    setRouteLine(null);
+    setRouteStops(null);
+    setRouteLineApprox(false);
+    setRouteSelectMode(false);
+    setShowSelectionSheet(false);
+    setRouteSelectedIds([]);
+    setSelectedPois({});
+    setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+    clearRouteDraft();
+    setViewingSavedId(null);
+    setCourseMode('choose');
+  }, []);
 
   const previewOnMap = useCallback((r: PlannedRoute) => {
     const pts = routePoints(r, getStation);
@@ -629,9 +693,14 @@ export default function App() {
     setResults(null);
     setRouteStage('form');
     setRouteLine(null);
+    setRouteStops(null);
+    setRouteLineApprox(false);
     setRouteSelectedIds([]);
+    setSelectedPois({});
     setRouteSelectMode(false);
+    setShowSelectionSheet(false);
     setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
+    setViewingSavedId(null);
     setCourseMode('choose');
   }, []);
 
@@ -773,6 +842,41 @@ export default function App() {
           onConfirm={resumeDraft}
           onCancel={discardDraft}
         />
+      )}
+      {pendingCourseAction === 'discard' && (
+        <ConfirmDialog
+          title="コースを取り消しますか？"
+          message="現在のコースを取り消しますか？地図上の経路・番号・選択した立ち寄り先が消えます。訪問記録とスタンプ記録は消えません。"
+          confirmLabel="コースを取り消す"
+          cancelLabel="取り消さない"
+          danger
+          onConfirm={() => {
+            discardCurrentCourse();
+            setPendingCourseAction(null);
+            showRouteActionMsg('コースを取り消しました。訪問記録は残っています');
+          }}
+          onCancel={() => setPendingCourseAction(null)}
+        />
+      )}
+      {pendingCourseAction === 'restart' && (
+        <ConfirmDialog
+          title="最初から作り直しますか？"
+          message="最初から作り直しますか？現在の選択・設定はすべて消えます。訪問記録とスタンプ記録は消えません。"
+          confirmLabel="最初から作り直す"
+          cancelLabel="作り直さない"
+          danger
+          onConfirm={() => {
+            discardCurrentCourse();
+            setPendingCourseAction(null);
+            showRouteActionMsg('最初から作り直します。訪問記録は残っています');
+          }}
+          onCancel={() => setPendingCourseAction(null)}
+        />
+      )}
+      {routeActionMsg && (
+        <div className="route-action-toast" data-testid="route-action-toast">
+          {routeActionMsg}
+        </div>
       )}
       {!mapFullscreen && (
         <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
@@ -937,6 +1041,16 @@ export default function App() {
               🔍 周辺スポット
             </button>
           )}
+          {tab === 'map' && !trip && routeLine && (
+            <button
+              className="route-discard-btn"
+              onClick={() => setPendingCourseAction('discard')}
+              data-testid="map-route-discard"
+              aria-label="このコースを取り消す"
+            >
+              ❌ このコースを取り消す
+            </button>
+          )}
           {tab === 'map' && poiSearchActive && (
             <PoiSearchPanel
               originLabel={poiOrigin?.label ?? '地図の中心'}
@@ -954,13 +1068,24 @@ export default function App() {
               onChangeRadius={changePoiRadius}
               loading={poiLoading}
               failed={poiFailed}
+              geoFailed={poiGeoFailed}
               resultCount={poiSearchResults.length}
+              fromCache={poiFromCache}
+              onRetry={() => {
+                if (poiOrigin) void runPoiSearch(poiOrigin, poiRadius);
+              }}
               onGoogleFallback={() => {
                 const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';
                 const near = poiOrigin ? `${poiOrigin.lat},${poiOrigin.lng}` : '';
                 openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
               }}
               onClose={closePoiSearch}
+              results={sortedPoiResults}
+              sort={poiSort}
+              onChangeSort={setPoiSort}
+              selectedIds={routeSelectedIds}
+              onTapResult={(poi) => setPoiDetail(poi)}
+              onToggleSelect={togglePoiSelectWithModeEntry}
             />
           )}
           {tab === 'map' && poiDetail && (
@@ -974,14 +1099,7 @@ export default function App() {
               onChangeStayMin={(min) =>
                 persistDraft({ stayOverrides: { ...manualDraftSnapshot.stayOverrides, [poiDetail.id]: min } })
               }
-              onToggleRoute={() => {
-                if (!routeSelectMode) {
-                  // 通常閲覧中に「ルートに追加」した場合は、その場で地図選択モードへ入る
-                  setCourseMode('manual');
-                  setRouteSelectMode(true);
-                }
-                togglePoiSelect(poiDetail);
-              }}
+              onToggleRoute={() => togglePoiSelectWithModeEntry(poiDetail)}
               onNav={() => openExternal(navToPointUrl({ lat: poiDetail.lat, lng: poiDetail.lng }, 'highway_ok'))}
               onGoogleSearch={() => openExternal(poiGoogleSearchUrl(poiDetail))}
               onClose={() => setPoiDetail(null)}
@@ -1054,6 +1172,10 @@ export default function App() {
                 onArrived={(id) => setState(id, 'visited')}
                 onStamp={(id) => setState(id, 'stamped')}
                 onFinish={finishTrip}
+                onEndTrip={() => {
+                  finishTrip([], []);
+                  showRouteActionMsg('旅行を終了しました。訪問記録・スタンプ記録は残っています');
+                }}
                 onShowMap={() => previewOnMap(activeSaved.route)}
                 onExit={() => setTab('map')}
                 onNavToStation={(st: Station) =>
@@ -1090,6 +1212,9 @@ export default function App() {
                 onStartTrip={startTrip}
                 onPreviewOnMap={previewOnMap}
                 onBack={() => setRouteStage('form')}
+                onRequestDiscard={() => setPendingCourseAction('discard')}
+                onRequestRestart={() => setPendingCourseAction('restart')}
+                viewingSavedName={viewingSavedId ? (savedRoutes.find((r) => r.id === viewingSavedId)?.name ?? null) : null}
               />
             ) : courseMode === 'choose' ? (
               <CourseModePicker lastUsed={lastCourseMode} onChoose={chooseCourseMode} />
@@ -1153,6 +1278,7 @@ export default function App() {
               onOpen={(sr) => {
                 setResults([sr.route]);
                 setRouteStage('results');
+                setViewingSavedId(sr.id);
                 setTab('route');
               }}
               onDuplicate={(sr) => {
@@ -1172,6 +1298,16 @@ export default function App() {
                 void submitPlan(sr.route.params);
               }}
               onDelete={(id) => persistRoutes(loadRoutes().filter((r) => r.id !== id))}
+              activeRouteId={trip?.savedRouteId ?? viewingSavedId ?? null}
+              onDeleteAndClear={(id) => {
+                persistRoutes(loadRoutes().filter((r) => r.id !== id));
+                if (trip?.savedRouteId === id) {
+                  finishTrip([], []);
+                } else if (viewingSavedId === id) {
+                  discardCurrentCourse();
+                }
+                showRouteActionMsg('保存済みコースを削除し、コースを終了しました。訪問記録は残っています');
+              }}
               onResetAll={resetAll}
               onShowInstallHint={() => {
                 setShowA2hs(true);

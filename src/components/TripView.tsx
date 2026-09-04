@@ -4,6 +4,7 @@ import { formatHM, formatMin } from '../lib/geo';
 import { poiDisplayName, type Poi } from '../lib/poi';
 import { RouteTimeline } from './RouteResults';
 import RoadPrefPicker from './RoadPrefPicker';
+import ConfirmDialog from './ConfirmDialog';
 
 interface Props {
   saved: SavedRoute;
@@ -17,6 +18,8 @@ interface Props {
   onStamp: (stationId: string) => void;
   /** 道の駅だけを対象に一括反映する（周辺スポットは達成率・スタンプ数に影響しない） */
   onFinish: (visitedIds: string[], stampIds: string[]) => void;
+  /** この旅行を終了（すでに記録した訪問・スタンプはそのまま。進行状況と地図上のルートだけ消す） */
+  onEndTrip: () => void;
   onShowMap: () => void;
   onExit: () => void;
   /** Googleマップで次の駅へ（中間画面なしで直接開く） */
@@ -39,6 +42,7 @@ export default function TripView({
   onArrived,
   onStamp,
   onFinish,
+  onEndTrip,
   onShowMap,
   onExit,
   onNavToStation,
@@ -51,6 +55,7 @@ export default function TripView({
   const [finishing, setFinishing] = useState(false);
   const [checkedVisit, setCheckedVisit] = useState<Record<string, boolean>>({});
   const [checkedStamp, setCheckedStamp] = useState<Record<string, boolean>>({});
+  const [confirmEndTrip, setConfirmEndTrip] = useState(false);
 
   const doneCount = r.stops.filter((s) => {
     const p = trip.progress[s.stationId];
@@ -174,10 +179,34 @@ export default function TripView({
         </div>
       </div>
 
+      <button
+        className="btn-danger-ghost wide"
+        style={{ width: '100%' }}
+        onClick={() => setConfirmEndTrip(true)}
+        data-testid="trip-end-now"
+      >
+        🏁 この旅行を終了
+      </button>
+
       <div className="card" data-testid="trip-roadpref-card">
         <h3 style={{ marginBottom: 6 }}>道路の希望</h3>
         <RoadPrefPicker value={roadPref} onChange={onChangeRoadPref} compact />
       </div>
+
+      {confirmEndTrip && (
+        <ConfirmDialog
+          title="旅行を終了しますか？"
+          message="旅行中のコースを終了しますか？現在の進行状況と地図上のルート表示は終了します。すでに登録した訪問記録・スタンプ記録は残ります。"
+          confirmLabel="旅行を終了する"
+          cancelLabel="終了しない"
+          danger
+          onConfirm={() => {
+            setConfirmEndTrip(false);
+            onEndTrip();
+          }}
+          onCancel={() => setConfirmEndTrip(false)}
+        />
+      )}
 
       {currentStop && curLeg && curName && (
         <div className="trip-next">

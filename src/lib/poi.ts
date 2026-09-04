@@ -53,6 +53,10 @@ export interface Poi {
   address: string | null;
   /** OSMのopening_hours原文。無ければnull（推測で埋めない） */
   openingHoursRaw: string | null;
+  /** phone/contact:phoneタグがある場合のみ */
+  phone: string | null;
+  /** website/contact:websiteタグがある場合のみ */
+  website: string | null;
   /** 検索起点からの距離(m) */
   distanceM: number;
   source: 'overpass';
@@ -304,15 +308,33 @@ export function normalizeOsmElement(el: OsmElement, origin: { lat: number; lng: 
     id: `osm:${typeKey}/${el.id}`,
     category: cls.category,
     subcategory: cls.subcategory,
-    name: tags.name ?? null,
+    // 日本語名（name:ja / name:ja-Hira等）があれば優先し、無ければ汎用のnameを使う
+    name: tags['name:ja'] ?? tags.name ?? null,
     lat,
     lng,
     address: buildAddress(tags),
     openingHoursRaw: tags.opening_hours ?? null,
+    phone: tags.phone ?? tags['contact:phone'] ?? null,
+    website: tags.website ?? tags['contact:website'] ?? null,
     distanceM: Math.round(haversineM(origin, { lat, lng })),
     source: 'overpass',
     sourceUrl: `https://www.openstreetmap.org/${typeKey}/${el.id}`,
   };
+}
+
+/**
+ * ほぼ同一施設の重複除去（同一OSM IDは元々起きないが、同じ場所が別要素種別
+ * （例: 建物way＋施設node）で二重に取得されることがあるため、座標＋名称で判定する）。
+ */
+export function dedupePois(pois: Poi[]): Poi[] {
+  const seen = new Map<string, Poi>();
+  for (const p of pois) {
+    // 約11m精度に丸めて近接判定（GPS/タグ付けの微小なズレを吸収）
+    const key = `${p.name ?? ''}:${p.lat.toFixed(4)}:${p.lng.toFixed(4)}`;
+    const existing = seen.get(key);
+    if (!existing || p.distanceM < existing.distanceM) seen.set(key, p);
+  }
+  return [...seen.values()];
 }
 
 function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {

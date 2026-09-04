@@ -60,6 +60,12 @@ interface Props {
   onStartTrip: (r: PlannedRoute) => void;
   onPreviewOnMap: (r: PlannedRoute) => void;
   onBack: () => void;
+  /** このコースを取り消す（確認はApp側のダイアログが担当。ここでは要求するだけ） */
+  onRequestDiscard: () => void;
+  /** 最初から作り直す（同上） */
+  onRequestRestart: () => void;
+  /** 「保存」タブから開いた保存済みコースの名前（新規作成の結果ならnull。表示の区別用） */
+  viewingSavedName?: string | null;
 }
 
 export function routePoints(r: PlannedRoute, getStation: (id: string) => Station | undefined) {
@@ -209,10 +215,25 @@ export function GmapsButtons({ r, getStation }: { r: PlannedRoute; getStation: (
   );
 }
 
-export default function RouteResults({ routes, getStation, onSave, onStartTrip, onPreviewOnMap, onBack }: Props) {
+export default function RouteResults({
+  routes,
+  getStation,
+  onSave,
+  onStartTrip,
+  onPreviewOnMap,
+  onBack,
+  onRequestDiscard,
+  onRequestRestart,
+  viewingSavedName,
+}: Props) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const open = routes.find((r) => r.key === openKey) ?? null;
+  const savedBadge = viewingSavedName && (
+    <p className="msg info" data-testid="viewing-saved-badge" style={{ marginBottom: 8 }}>
+      📖 保存済みのコース「{viewingSavedName}」を表示中です
+    </p>
+  );
 
   if (routes.length === 0) {
     return (
@@ -234,6 +255,9 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
         <button style={{ width: '100%' }} onClick={onBack}>
           ← 条件を変えてみる
         </button>
+        <button style={{ width: '100%', marginTop: 8 }} onClick={onRequestRestart} data-testid="route-restart">
+          🔄 最初から作り直す
+        </button>
       </div>
     );
   }
@@ -241,6 +265,7 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
   if (!open) {
     return (
       <div>
+        {savedBadge}
         {routes.map((r) => (
           <button key={r.key} className="route-card" onClick={() => setOpenKey(r.key)} data-testid={`route-card-${r.key}`}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>
@@ -270,12 +295,21 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
         <button style={{ width: '100%' }} onClick={onBack} data-testid="route-back">
           ← 条件を変えてみる
         </button>
+        <div className="btn-grid" style={{ marginTop: 8 }}>
+          <button onClick={onRequestDiscard} data-testid="route-discard">
+            ❌ このコースを取り消す
+          </button>
+          <button onClick={onRequestRestart} data-testid="route-restart">
+            🔄 最初から作り直す
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div data-testid="route-detail">
+      {savedBadge}
       <div className="card">
         <div style={{ fontSize: 20, fontWeight: 800 }}>
           {formatMin(open.params.budgetMin)}で{open.stops.length}駅回れます
@@ -332,6 +366,17 @@ export default function RouteResults({ routes, getStation, onSave, onStartTrip, 
         <button onClick={() => setOpenKey(null)} data-testid="route-detail-back">
           ← コース一覧に戻る
         </button>
+        <button onClick={onBack} data-testid="route-edit">
+          ✏️ 立ち寄り先・順番・時間・道路の希望を変更する
+        </button>
+        <div className="btn-grid">
+          <button onClick={onRequestDiscard} data-testid="route-discard">
+            ❌ このコースを取り消す
+          </button>
+          <button onClick={onRequestRestart} data-testid="route-restart">
+            🔄 最初から作り直す
+          </button>
+        </div>
       </div>
     </div>
   );
