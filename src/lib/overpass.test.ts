@@ -149,11 +149,12 @@ describe('障害時のふるまい', () => {
     expect(res.pois.length).toBe(1);
   });
 
-  it('2回失敗した場合はfailed:trueで打ち切る（無限リトライしない）', async () => {
+  it('全接続先が失敗した場合はfailed:trueで打ち切る（無限リトライしない）', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('down'));
     vi.stubGlobal('fetch', fetchMock);
     const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // 接続先の数だけ（無制限ではなく）試行して打ち切る
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(res.failed).toBe(true);
   });
 
@@ -203,7 +204,7 @@ describe('障害時のふるまい', () => {
     vi.stubGlobal('fetch', fetchMock);
     const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
     // 接続先の数だけ（無制限ではなく）試行して打ち切る
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(res.failed).toBe(true);
     expect(res.pois).toEqual([]);
   });
@@ -214,6 +215,19 @@ describe('障害時のふるまい', () => {
     const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
     expect(res.failed).toBe(false);
     expect(res.pois).toEqual([]);
+  });
+
+  it('接続先の優先順は private.coffee → maps.mail.ru(VK Maps) → overpass-api.de（旧kumi.systemsは含まれない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    const urls = fetchMock.mock.calls.map((c) => c[0] as string);
+    expect(urls).toEqual([
+      'https://overpass.private.coffee/api/interpreter',
+      'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+      'https://overpass-api.de/api/interpreter',
+    ]);
+    expect(urls.some((u) => u.includes('kumi.systems'))).toBe(false);
   });
 
   it('呼び出し側のsignalで中断した場合は例外を投げる（結果を上書きしない）', async () => {
@@ -318,8 +332,8 @@ describe('検索範囲の自動拡張（searchNearbyPoisAuto）', () => {
     const res = await searchNearbyPoisAuto(LAT, LNG, 3000);
     expect(res.failed).toBe(true);
     expect(res.radiusUsed).toBe(3000);
-    // 1段階分の2接続先フェイルオーバーのみ（範囲を変えて再試行しない）
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // 1段階分の3接続先フェイルオーバーのみ（範囲を変えて再試行しない）
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('ユーザーが最初からAUTO_ESCALATE_MAX_Mを超える範囲(15km)を選んでいた場合は広げない', async () => {

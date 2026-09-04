@@ -11,12 +11,23 @@
 import { dedupePois, normalizeOsmElement, type OsmElement, type Poi } from './poi';
 
 /**
- * 公式に公開されている複数のOverpassインスタンス（いずれもCORS対応・実接続確認済み）。
+ * OpenStreetMap Wikiが案内する公開Overpassインスタンス（いずれもCORS対応・実接続確認済み、2026-09時点）。
  * 最初の接続先が429/5xx/タイムアウト/ネットワークエラーの場合、次の接続先へ切り替える。
  * 同一接続先への無制限リトライはしない（各接続先1回のみ試行）。
+ *
+ * 優先順位は疎通確認の結果に基づく:
+ *   1. overpass.private.coffee — 実接続確認済み・良好
+ *   2. maps.mail.ru（VK Maps） — 実接続確認済み・良好、応答が特に速い
+ *   3. overpass-api.de — 公式デフォルト。環境によっては到達しないことがあるため最終フォールバック
+ * 旧 overpass.kumi.systems は private.coffee へ移行済みのため一覧から削除した。
  */
-const OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
-const TIMEOUT_MS = 8000;
+const OVERPASS_ENDPOINTS = [
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
+/** 接続先1つあたりのタイムアウト。3接続先に増えたため、全滅時の合計待ち時間が伸びすぎないよう短縮した */
+const TIMEOUT_MS = 6000;
 const CACHE_TTL_MS = 30 * 60 * 1000; // 同一条件の新鮮なキャッシュ: 30分
 /** 全接続先が失敗した場合にだけ使う「最後に成功した結果」の保持期間（劣化フォールバック） */
 const STALE_FALLBACK_TTL_MS = 24 * 60 * 60 * 1000;
@@ -127,6 +138,12 @@ export interface PoiSearchResult {
  * 1つの接続先へ1回だけ試行する。429/5xx/タイムアウト/通信エラーはnullを返す（例外を投げない）。
  * 接続先ごとに独立したタイムアウトを持たせるため、試行のたびに新しいAbortControllerを使う
  * （1つを使い回すと、最初の接続先のタイムアウトで以後の接続先も中断済み扱いになってしまう）。
+ *
+ * User-Agent/RefererについてOverpassのポリシーは「呼び出し元を識別できること」を求めているが、
+ * ブラウザのfetch()ではこの2つは「forbidden header」でありJSから上書きできない
+ * （ブラウザが実際のUA・Referer[ページのオリジン]を自動付与する）。そのためここでは明示的に
+ * 設定しない。逆に検証用スクリプト（poi_audit.py等、ブラウザではない）側では、
+ * ブラウザ同様に振る舞うようUser-Agent/Refererを明示的に付与する必要がある。
  */
 async function tryEndpoint(url: string, query: string, outerSignal?: AbortSignal): Promise<OsmElement[] | null> {
   const attemptCtrl = new AbortController();
@@ -141,11 +158,20 @@ async function tryEndpoint(url: string, query: string, outerSignal?: AbortSignal
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       signal: attemptCtrl.signal,
     });
-    if (!res.ok) return null; // 429/5xx等
+    if (!res.ok) {
+      if (import.meta.env.DEV) {
+        console.warn(`[overpass] ${url} → HTTP ${res.status}${res.status === 429 ? ' (rate limited)' : ''}`);
+      }
+      return null; // 429/5xx等
+    }
     const json = (await res.json()) as { elements?: OsmElement[] };
     return json.elements ?? [];
   } catch (e) {
     if (outerSignal?.aborted) throw e; // 呼び出し元の意図的な中断は次の接続先へ回さず伝播する
+    if (import.meta.env.DEV) {
+      const reason = e instanceof DOMException && e.name === 'AbortError' ? 'timeout' : 'network error';
+      console.warn(`[overpass] ${url} → ${reason}:`, e);
+    }
     return null; // ネットワークエラー・タイムアウト（この接続先だけの失敗）
   } finally {
     clearTimeout(timer);
