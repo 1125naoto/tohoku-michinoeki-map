@@ -357,24 +357,30 @@ test.describe('地図から選ぶルート作成', () => {
     await expect(page.getByTestId('stats-visited')).not.toContainText('0／182駅');
   });
 
-  test('シナリオ6: モード競合 - 通常タップ→色変更、選択モード中はタップで選択追加、終了後は色循環に復帰', async ({ page }) => {
+  test('シナリオ6: モード競合 - 通常タップ→詳細シート、選択モード中はタップで選択追加（シートは開かない）、終了後は詳細シートに復帰', async ({
+    page,
+  }) => {
     await page.route('**router.project-osrm.org/**', (route) => route.abort());
     await page.clock.install({ time: DAY });
     await page.goto('/');
     await closeBanners(page);
 
-    // 通常モード: タップで色循環
+    // 通常モード: タップで詳細シートが開き、シート内ボタンで状態変更する
     await tapStation(page, ST_A);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('btn-visited').click();
     await expect(page.locator(`.rs-marker.visited[data-sid="${ST_A}"]`)).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('sheet-x').click();
 
     // 選択モードへ
     await page.getByTestId('tab-route').click();
     await page.getByTestId('course-mode-manual').click();
     await expect(page.getByTestId('route-select-bar')).toBeVisible();
 
-    // 同じ駅をタップ→選択に追加されるだけで、色・訪問記録は変わらない
+    // 同じ駅をタップ→詳細シートは開かず選択に追加されるだけで、色・訪問記録は変わらない
     await tapStation(page, ST_A);
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
+    await expect(page.getByTestId('station-sheet')).toHaveCount(0);
     await expect(page.locator(`.rs-marker.visited[data-sid="${ST_A}"]`)).toBeVisible(); // 赤のまま
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅'); // タップ前と同じ（増えない）
 
@@ -382,8 +388,10 @@ test.describe('地図から選ぶルート作成', () => {
     await page.getByTestId('route-select-exit').click();
     await expect(page.getByTestId('route-select-bar')).toHaveCount(0);
 
-    // 通常モードへ復帰: 同じ駅をタップすると色循環が再開する
+    // 通常モードへ復帰: 同じ駅をタップすると詳細シートが開く（状態は変えない）。シート内ボタンで変更できる
     await tapStation(page, ST_A);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.getByTestId('btn-want').click();
     await expect(page.locator(`.rs-marker.want[data-sid="${ST_A}"]`)).toBeVisible({ timeout: 10000 });
   });
 

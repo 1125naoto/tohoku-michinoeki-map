@@ -26,14 +26,24 @@ const OVERPASS_ELEMENT_LIMIT = 80;
 /** アプリで実際に表示する件数の上限 */
 export const POI_RESULT_LIMIT = 30;
 
-export type SearchRadiusM = 1000 | 3000 | 5000 | 10000;
+export type SearchRadiusM = 1000 | 3000 | 5000 | 10000 | 15000;
 export const DEFAULT_RADIUS_M: SearchRadiusM = 3000;
 export const RADIUS_CHOICES: { label: string; value: SearchRadiusM }[] = [
   { label: '1km', value: 1000 },
   { label: '3km', value: 3000 },
   { label: '5km', value: 5000 },
   { label: '10km', value: 10000 },
+  { label: '15km', value: 15000 },
 ];
+
+/**
+ * 結果が少ない場合に自動的に検索範囲を広げる上限（実データ監査の結果、道の駅は
+ * 郊外・山間部が多く3kmでは食事処等が0件になりやすいため、10kmまでは自動で広げる。
+ * 15kmはユーザーが手動で選んだ場合のみ使う「必要ならさらに広げる」選択肢に留める）。
+ */
+export const AUTO_ESCALATE_MAX_M: SearchRadiusM = 10000;
+/** この件数未満なら「少ない」とみなし自動で次の検索範囲を試す */
+export const MIN_AUTO_RESULTS = 3;
 
 interface CacheEntry {
   at: number;
@@ -69,7 +79,7 @@ function buildQuery(lat: number, lng: number, radiusM: number): string {
     `[out:json][timeout:8];` +
     `(` +
     `nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub|public_bath|foot_bath|shelter|place_of_worship)$"]${around};` +
-    `nwr["tourism"~"^(attraction|viewpoint|museum|zoo|aquarium|camp_site|artwork|gallery|picnic_site)$"]${around};` +
+    `nwr["tourism"~"^(attraction|viewpoint|museum|zoo|aquarium|camp_site|artwork|gallery|picnic_site|hotel|guest_house|hostel|motel)$"]${around};` +
     `nwr["leisure"~"^(park|spa)$"]${around};` +
     `nwr["natural"~"^(hot_spring|beach|waterfall|peak|cliff)$"]${around};` +
     `nwr["shop"~"^(confectionery|pastry)$"]${around};` +
@@ -201,5 +211,34 @@ export async function searchNearbyPois(
     signal?.removeEventListener('abort', onOuterAbort);
     if (inFlightController === ctrl) inFlightController = null;
   }
+}
+
+export interface PoiSearchAutoResult extends PoiSearchResult {
+  /** 実際に使われた検索範囲（結果が少なく自動で広げた場合はstartRadiusと異なる） */
+  radiusUsed: SearchRadiusM;
+}
+
+/**
+ * startRadiusで検索し、結果が少なく(MIN_AUTO_RESULTS未満)・失敗もしていない場合は
+ * AUTO_ESCALATE_MAX_Mまで自動的に検索範囲を広げて再検索する（0件だからといって
+ * そこで打ち切らない）。通信が失敗した場合は範囲を変えても無意味なため広げない。
+ * ユーザーが最初からAUTO_ESCALATE_MAX_Mを超える範囲（15km）を選んでいた場合は、
+ * それ以上は自動で広げない（明示的に選んだ範囲を勝手に超えない）。
+ */
+export async function searchNearbyPoisAuto(
+  lat: number,
+  lng: number,
+  startRadius: SearchRadiusM,
+  signal?: AbortSignal,
+): Promise<PoiSearchAutoResult> {
+  let radius = startRadius;
+  let result = await searchNearbyPois(lat, lng, radius, signal);
+  while (!result.failed && result.pois.length < MIN_AUTO_RESULTS && radius < AUTO_ESCALATE_MAX_M) {
+    const next = RADIUS_CHOICES.find((r) => r.value > radius && r.value <= AUTO_ESCALATE_MAX_M);
+    if (!next) break;
+    radius = next.value;
+    result = await searchNearbyPois(lat, lng, radius, signal);
+  }
+  return { ...result, radiusUsed: radius };
 }
 

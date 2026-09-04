@@ -204,12 +204,22 @@ export interface StayBreakdown {
   cafe: number;
   onsen: number;
   tourism: number;
+  lodging: number;
   park: number;
   other: number;
 }
 
 export function computeStayBreakdown(stops: RouteStop[]): StayBreakdown {
-  const b: StayBreakdown = { station: 0, restaurant: 0, cafe: 0, onsen: 0, tourism: 0, park: 0, other: 0 };
+  const b: StayBreakdown = {
+    station: 0,
+    restaurant: 0,
+    cafe: 0,
+    onsen: 0,
+    tourism: 0,
+    lodging: 0,
+    park: 0,
+    other: 0,
+  };
   for (const s of stops) {
     const t = s.stopType ?? 'station';
     b[t] += s.stayMin;

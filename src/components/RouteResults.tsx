@@ -27,6 +27,7 @@ export function TimeBreakdownRow({ r }: { r: PlannedRoute }) {
       {foodMin > 0 && <span>食事 {formatMin(foodMin)}</span>}
       {tourismMin > 0 && <span>観光 {formatMin(tourismMin)}</span>}
       {b.onsen > 0 && <span>温泉・休憩 {formatMin(b.onsen)}</span>}
+      {b.lodging > 0 && <span>宿泊 {formatMin(b.lodging)}</span>}
       {b.other > 0 && <span>その他滞在 {formatMin(b.other)}</span>}
       <span data-testid="breakdown-margin">安全余裕 {formatMin(r.marginMin)}</span>
       {returnLeg && <span>帰路 {formatMin(returnLeg.driveMin)}</span>}

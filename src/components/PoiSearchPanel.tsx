@@ -63,6 +63,10 @@ interface Props {
   /** 一度でも検索を実行したか（まだ一度もしていなければ結果0件でも「見つかりませんでした」は出さない） */
   searched: boolean;
   resultCount: number;
+  /** カテゴリ絞り込み前の総件数（0件がカテゴリ絞り込みのせいか、本当に周辺に無いのかの判定用） */
+  totalRawCount: number;
+  /** 結果が少なく自動的に検索範囲を広げた場合true */
+  autoExpanded: boolean;
   /** 新鮮なキャッシュまたは前回成功時の保存結果を表示している間true */
   fromCache: boolean;
   onRetry: () => void;
@@ -110,6 +114,8 @@ export default function PoiSearchPanel({
   geoFailed,
   searched,
   resultCount,
+  totalRawCount,
+  autoExpanded,
   fromCache,
   onRetry,
   onGoogleFallback,
@@ -342,15 +348,31 @@ export default function PoiSearchPanel({
       )}
       {!loading && !failed && searched && resultCount === 0 && (
         <div className="msg info" style={{ marginTop: 8 }} data-testid="poi-empty">
-          この条件では見つかりませんでした。検索範囲またはカテゴリーを変更してください。
-          <button
-            style={{ marginTop: 6, width: '100%' }}
-            onClick={expandRadius}
-            disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value}
-            data-testid="poi-expand-radius"
-          >
-            📏 検索範囲を広げる
-          </button>
+          {category && totalRawCount > 0 ? (
+            <>
+              「{CATEGORY_LABEL[category]}」では見つかりませんでした。他のカテゴリでは{totalRawCount}
+              件見つかっています。
+            </>
+          ) : (
+            <>この範囲では周辺スポットが見つかりませんでした。</>
+          )}
+          <div className="btn-grid" style={{ marginTop: 6 }}>
+            {category && totalRawCount > 0 && (
+              <button onClick={() => onChangeCategory(null)} data-testid="poi-show-all-categories">
+                🔎 すべてのカテゴリを見る
+              </button>
+            )}
+            <button
+              onClick={expandRadius}
+              disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value}
+              data-testid="poi-expand-radius"
+            >
+              📏 範囲を広げて探す
+            </button>
+            <button onClick={onGoogleFallback} data-testid="poi-empty-google-fallback">
+              🔍 Googleマップで探す
+            </button>
+          </div>
         </div>
       )}
       {!loading && failed && (
@@ -372,6 +394,14 @@ export default function PoiSearchPanel({
       {!loading && !failed && resultCount > 0 && (
         <>
           <p className="msg info" data-testid="poi-result-count" style={{ marginTop: 8, marginBottom: 6 }}>
+            {autoExpanded && (
+              <>
+                結果が少なかったため、検索範囲を自動的に
+                {RADIUS_CHOICES.find((r) => r.value === radius)?.label ?? `${radius / 1000}km`}
+                まで広げました。
+                <br />
+              </>
+            )}
             {fromCache
               ? '前回取得した周辺スポットを表示しています。'
               : `周辺スポットを${resultCount}件見つけました。`}

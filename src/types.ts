@@ -117,7 +117,7 @@ export interface RouteLeg {
 }
 
 /** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
-export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'park' | 'other';
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other';
 
 export interface RouteStop {
   /** 道の駅の場合は実際の駅ID。周辺スポットの場合はPoi.idをそのまま使う（一意性のため） */

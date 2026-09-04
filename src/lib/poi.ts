@@ -7,7 +7,7 @@
  * 評価・口コミはOSMに存在しないため、アプリ内で星評価等を捏造しない。
  */
 
-export type PoiCategory = 'food' | 'tourism' | 'onsen';
+export type PoiCategory = 'food' | 'tourism' | 'onsen' | 'lodging';
 
 export type FoodSub =
   | 'ramen'
@@ -35,10 +35,12 @@ export type TourismSub =
 
 export type OnsenSub = 'onsen' | 'higaeri_onsen' | 'onyoku_shisetsu' | 'ashiyu' | 'kyukei' | 'onsen_other';
 
-export type PoiSubcategory = FoodSub | TourismSub | OnsenSub;
+export type LodgingSub = 'hotel' | 'guesthouse' | 'hostel' | 'lodging_other';
+
+export type PoiSubcategory = FoodSub | TourismSub | OnsenSub | LodgingSub;
 
 /** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
-export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'park' | 'other';
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other';
 
 export interface Poi {
   /** `osm:<node|way|relation>/<id>` 形式の一意ID */
@@ -68,6 +70,7 @@ export const CATEGORY_LABEL: Record<PoiCategory, string> = {
   food: '食べる',
   tourism: '観光',
   onsen: '温泉・休憩',
+  lodging: '宿泊',
 };
 
 export const SUBCATEGORY_LABEL: Record<PoiSubcategory, string> = {
@@ -97,12 +100,17 @@ export const SUBCATEGORY_LABEL: Record<PoiSubcategory, string> = {
   ashiyu: '足湯',
   kyukei: '休憩スポット',
   onsen_other: 'その他',
+  hotel: 'ホテル',
+  guesthouse: '旅館・民宿',
+  hostel: 'ゲストハウス・ホステル',
+  lodging_other: 'その他の宿泊施設',
 };
 
 export const CATEGORY_SUBCATEGORIES: Record<PoiCategory, PoiSubcategory[]> = {
   food: ['ramen', 'shokudo', 'yoshoku', 'sushi', 'yakiniku', 'italian', 'izakaya', 'cafe', 'sweets', 'fastfood', 'food_other'],
   tourism: ['meisho', 'keishou', 'jinja_tera', 'koen', 'hakubutsukan', 'tenbo', 'doubutsuen_suizokukan', 'camp', 'tourism_other'],
   onsen: ['onsen', 'higaeri_onsen', 'onyoku_shisetsu', 'ashiyu', 'kyukei', 'onsen_other'],
+  lodging: ['hotel', 'guesthouse', 'hostel', 'lodging_other'],
 };
 
 /**
@@ -147,6 +155,10 @@ export const DEFAULT_STAY_MIN: Record<'station' | PoiSubcategory, number> = {
   ashiyu: 30,
   kyukei: 30,
   onsen_other: 45,
+  hotel: 480,
+  guesthouse: 480,
+  hostel: 480,
+  lodging_other: 480,
 };
 
 /** 滞在時間の選択肢（任意入力は15分単位に丸める） */
@@ -195,6 +207,7 @@ export function stopTypeOf(sub: PoiSubcategory): StopType {
   ) {
     return 'tourism';
   }
+  if (sub === 'hotel' || sub === 'guesthouse' || sub === 'hostel' || sub === 'lodging_other') return 'lodging';
   return 'other';
 }
 
@@ -205,6 +218,7 @@ export const STOP_TYPE_GLYPH: Record<StopType, string> = {
   cafe: '☕',
   onsen: '♨️',
   tourism: '📷',
+  lodging: '🏨',
   park: '🌳',
   other: '📍',
 };
@@ -216,6 +230,7 @@ export const STOP_TYPE_COLOR: Record<StopType, string> = {
   cafe: '#b07a3e',
   onsen: '#c0397a',
   tourism: '#2f8f6e',
+  lodging: '#7a55c2',
   park: '#4a9e3e',
   other: '#6a6f78',
 };
@@ -281,6 +296,11 @@ export function classify(tags: Record<string, string>): { category: PoiCategory;
   }
   if (tourism === 'attraction') return { category: 'tourism', subcategory: 'meisho' };
   if (tourism === 'artwork' || tourism === 'gallery') return { category: 'tourism', subcategory: 'tourism_other' };
+
+  // ---- 宿泊 ----
+  if (tourism === 'hotel' || tourism === 'motel') return { category: 'lodging', subcategory: 'hotel' };
+  if (tourism === 'guest_house') return { category: 'lodging', subcategory: 'guesthouse' };
+  if (tourism === 'hostel') return { category: 'lodging', subcategory: 'hostel' };
 
   return null;
 }

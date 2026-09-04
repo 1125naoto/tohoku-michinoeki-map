@@ -223,6 +223,64 @@ a {
   font-weight: 700;
 }
 
+/* ===== 駅名・市町村テキスト検索 ===== */
+.station-search-row {
+  overflow: visible;
+}
+.station-search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ===== 絞り込み結果の駅一覧（一覧タップで数秒で選べるように） ===== */
+.station-result-list {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  max-height: 40vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.station-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+}
+.station-result-row:last-child {
+  border-bottom: none;
+}
+.station-result-name {
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.station-result-city {
+  font-size: 12px;
+  color: var(--text-sub);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.station-result-empty {
+  padding: 14px 12px;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
 /* ===== 地図 ===== */
 .map-root {
   position: absolute;
@@ -397,7 +455,10 @@ a {
   left: 12px;
   right: 12px;
   bottom: 64px;
-  z-index: 950;
+  /* 詳細シート(.sheet, z-index:1001)を開いたまま状態変更ボタンを押した際にも
+     トーストのボタンがシートの下に隠れて押せなくならないよう、シートより前面に出す
+     （.route-action-toastと同じ値に揃える） */
+  z-index: 1900;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);

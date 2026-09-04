@@ -8,6 +8,11 @@ import { expect, test, type Page } from '@playwright/test';
 
 const STATION_ID = 'mne-18900'; // しちのへ
 
+/**
+ * 3件（食べる1・温泉1・観光1）を返す。MIN_AUTO_RESULTS(3)以上にしてあるのは、
+ * 既定の検索範囲(3km)で自動範囲拡張（searchNearbyPoisAuto）が発動しないようにするため
+ * （範囲拡張そのものはoverpass.test.tsで別途検証済み。ここでは無関係な再検索の増殖を避ける）。
+ */
 function mockOverpassResponse(page: Page) {
   return page.route('**/api/interpreter', (route) =>
     route.fulfill({
@@ -28,6 +33,15 @@ function mockOverpassResponse(page: Page) {
             lat: 40.719,
             lon: 141.157,
             tags: { natural: 'hot_spring', name: 'テスト温泉' },
+          },
+          {
+            type: 'node',
+            id: 3,
+            // 既存2件のすぐ近くに置く（離しすぎるとfitBoundsのズームが変わり、
+            // 狭いiPhone幅ではマーカーが検索パネルの下に隠れてクリックできなくなるため）
+            lat: 40.7185,
+            lon: 141.1565,
+            tags: { tourism: 'viewpoint', name: 'テスト展望台' },
           },
         ],
       }),
@@ -57,16 +71,14 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('btn-search-nearby').click();
 
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
-    // 既定カテゴリーは「食べる」のため、最初は温泉を除いた1件だけが見える
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    // 既定カテゴリーは「すべて」のため、最初から食べる・温泉・観光の3件が見える
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
 
-    // カテゴリ絞り込み（すべてに切り替えると温泉も含めて2件）
-    await page.getByTestId('poi-category-all').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました');
+    // カテゴリ絞り込み（食べるに絞ると1件、すべてに戻すと3件）
     await page.getByTestId('poi-category-food').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました');
     await page.getByTestId('poi-category-all').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました');
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました');
 
     // 地図上のマーカーをタップ→詳細シート
     const marker = page.locator('[data-poi-id="osm:node/1"]');
@@ -151,18 +163,24 @@ test.describe('周辺スポット検索', () => {
       const body = decodeURIComponent(route.request().postData() ?? '');
       const m = body.match(/around:(\d+)/);
       lastRadius = m ? m[1] : '';
-      const oneResult = lastRadius === '1000';
+      const oneKm = lastRadius === '1000';
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          // どちらも既定カテゴリー「食べる」に含まれる要素にする（カテゴリー絞り込みではなく
-          // 半径による再検索そのものを検証するテストのため）
-          elements: oneResult
-            ? [{ type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } }]
+          // どちらもMIN_AUTO_RESULTS(3)以上にして自動範囲拡張を発動させない
+          // （半径による再検索そのものを検証するテストのため。カテゴリーは既定「食べる」に含まれる要素で揃える）
+          elements: oneKm
+            ? [
+                { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+                { type: 'node', id: 2, lat: 40.7181, lon: 141.1561, tags: { amenity: 'cafe', name: 'テスト店2' } },
+                { type: 'node', id: 3, lat: 40.7182, lon: 141.1562, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+              ]
             : [
-                { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } },
-                { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テストカフェ' } },
+                { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+                { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+                { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+                { type: 'node', id: 4, lat: 40.721, lon: 141.159, tags: { amenity: 'bar', name: 'テスト店4' } },
               ],
         }),
       });
@@ -171,10 +189,10 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('4件見つけました', { timeout: 10000 });
 
     await page.getByTestId('poi-radius-1000').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     expect(lastRadius).toBe('1000');
   });
 
@@ -194,8 +212,8 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('map-root').click({ position: { x: 200, y: 80 } });
     await expect(page.getByTestId('poi-search-origin')).toContainText('指定した地点');
     await page.getByTestId('poi-do-search').click();
-    // 既定カテゴリー「食べる」のため、温泉を除いた1件だけが見える
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    // 既定カテゴリー「すべて」のため、食べる・温泉・観光の3件が見える
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
 
     // 詳細シートを開かずに直接マーカーをタップ→即座に選択に追加される
     const marker = page.locator('[data-poi-id="osm:node/1"]');
@@ -216,7 +234,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     await page.locator('[data-poi-id="osm:node/1"]').click();
     await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
     await page.getByTestId('poi-detail-toggle-route').click();
@@ -296,7 +314,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     await page.locator('[data-poi-id="osm:node/1"]').click();
     await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
     await page.getByTestId('poi-detail-toggle-route').click();
@@ -321,8 +339,14 @@ test.describe('周辺スポット検索', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        // MIN_AUTO_RESULTS(3)以上にして自動範囲拡張による追加リクエストを避ける
+        // （このテストの目的は「1接続先目の失敗→2接続先目への切替」を正確に2回で検証すること）
         body: JSON.stringify({
-          elements: [{ type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } }],
+          elements: [
+            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+            { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+            { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+          ],
         }),
       });
     });
@@ -330,7 +354,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     expect(calls).toBe(2);
   });
 
@@ -346,7 +370,11 @@ test.describe('周辺スポット検索', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          elements: [{ type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } }],
+          elements: [
+            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+            { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+            { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+          ],
         }),
       });
     });
@@ -354,7 +382,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     expect(calls).toBe(2);
   });
 
@@ -371,7 +399,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-google-fallback')).toBeVisible();
   });
 
-  test('0件の場合は通信失敗と別の表示になり、検索範囲を広げる案内が出る', async ({ page }) => {
+  test('0件の場合は通信失敗と別の表示になり、範囲を広げる・Googleマップの案内が出る', async ({ page }) => {
     await page.route('**/api/interpreter', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ elements: [] }) }),
     );
@@ -379,10 +407,12 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-empty')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('poi-empty')).toContainText('この条件では見つかりませんでした');
+    await expect(page.getByTestId('poi-empty')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('poi-empty')).toContainText('この範囲では周辺スポットが見つかりませんでした');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-expand-radius')).toBeVisible();
+    // 「押したのに何も起きない」を防ぐため、Googleマップへのフォールバック導線も出る
+    await expect(page.getByTestId('poi-empty-google-fallback')).toBeVisible();
   });
 
   test('検索結果一覧が表示され、並び替えができる', async ({ page }) => {
@@ -430,8 +460,14 @@ test.describe('周辺スポット検索', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        // MIN_AUTO_RESULTS(3)以上にして自動範囲拡張を発動させない（このテストの目的は
+        // 「同一条件の再検索がキャッシュから返る」ことの検証であり、拡張の有無ではないため）
         body: JSON.stringify({
-          elements: [{ type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } }],
+          elements: [
+            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+            { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+            { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+          ],
         }),
       });
     });
@@ -439,7 +475,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     expect(calls).toBe(1);
 
     // 検索パネルを閉じる（起点情報も破棄される設計）→ 同じ駅のURLハッシュへ変更して開き直す
@@ -514,10 +550,11 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
     expect(overpassCalls.length).toBe(0);
 
-    // 「食べる／観光／温泉・休憩」が見える
+    // 「食べる／観光／温泉・休憩／宿泊」が見える
     await expect(page.getByTestId('poi-category-food')).toBeVisible();
     await expect(page.getByTestId('poi-category-tourism')).toBeVisible();
     await expect(page.getByTestId('poi-category-onsen')).toBeVisible();
+    await expect(page.getByTestId('poi-category-lodging')).toBeVisible();
 
     // 道の駅選択欄が見える（初期タブ）
     await expect(page.getByTestId('poi-origin-station-select')).toBeVisible();
@@ -532,8 +569,8 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     expect(overpassCalls.length).toBe(0); // 地点選択だけでは通信しない
 
-    // 食べる・3kmはすでに既定値のまま、検索を実行
-    await expect(page.getByTestId('poi-category-food')).toHaveClass(/active/);
+    // すべて・3kmはすでに既定値のまま、検索を実行
+    await expect(page.getByTestId('poi-category-all')).toHaveClass(/active/);
     await expect(page.getByTestId('poi-radius-3000')).toHaveClass(/active/);
     await page.getByTestId('poi-do-search').click();
 
@@ -568,7 +605,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     await page.getByTestId('poi-do-search').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
   });
 
   test('iPhone相当でタップ領域が44px以上あり、横スクロールが発生しない', async ({ page }) => {
@@ -588,7 +625,7 @@ test.describe('周辺スポット検索', () => {
 
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     await page.getByTestId('poi-do-search').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
     const rowToggleBox = await page.getByTestId('poi-result-toggle').first().boundingBox();
     expect(rowToggleBox!.height).toBeGreaterThanOrEqual(44);
     const overflow2 = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

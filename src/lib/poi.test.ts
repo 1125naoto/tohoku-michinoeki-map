@@ -46,6 +46,16 @@ describe('カテゴリ分類（OSMタグから）', () => {
     expect(classify({ shop: 'supermarket' })).toBeNull();
     expect(classify({})).toBeNull();
   });
+  it('ホテル(tourism=hotel/motel)を分類する', () => {
+    expect(classify({ tourism: 'hotel' })).toEqual({ category: 'lodging', subcategory: 'hotel' });
+    expect(classify({ tourism: 'motel' })).toEqual({ category: 'lodging', subcategory: 'hotel' });
+  });
+  it('旅館・民宿(tourism=guest_house)を分類する', () => {
+    expect(classify({ tourism: 'guest_house' })).toEqual({ category: 'lodging', subcategory: 'guesthouse' });
+  });
+  it('ゲストハウス(tourism=hostel)を分類する', () => {
+    expect(classify({ tourism: 'hostel' })).toEqual({ category: 'lodging', subcategory: 'hostel' });
+  });
 });
 
 describe('OSM要素の正規化', () => {
@@ -222,6 +232,12 @@ describe('立ち寄り先の内部種別（stopType）', () => {
     expect(stopTypeOf('meisho')).toBe('tourism');
     expect(stopTypeOf('jinja_tera')).toBe('tourism');
   });
+  it('宿泊系はlodging', () => {
+    expect(stopTypeOf('hotel')).toBe('lodging');
+    expect(stopTypeOf('guesthouse')).toBe('lodging');
+    expect(stopTypeOf('hostel')).toBe('lodging');
+    expect(stopTypeOf('lodging_other')).toBe('lodging');
+  });
 });
 
 describe('滞在時間の既定値と丸め', () => {
@@ -230,6 +246,7 @@ describe('滞在時間の既定値と丸め', () => {
     expect(DEFAULT_STAY_MIN.ramen).toBe(45);
     expect(DEFAULT_STAY_MIN.onsen).toBe(90);
     expect(DEFAULT_STAY_MIN.jinja_tera).toBe(45);
+    expect(DEFAULT_STAY_MIN.hotel).toBe(480);
   });
   it('任意入力は15分単位に丸める', () => {
     expect(roundStayMin(50)).toBe(45);

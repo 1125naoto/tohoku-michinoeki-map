@@ -15,7 +15,7 @@ import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { navToPointUrl, navToStationUrl } from './lib/gmaps';
-import { filterSummary } from './lib/ui';
+import { filterSummary, filterStations } from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
@@ -26,7 +26,6 @@ import {
   loadRoutes,
   loadTrip,
   loadVisits,
-  nextState,
   saveRoutes,
   saveTrip,
   saveVisits,
@@ -34,7 +33,7 @@ import {
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
-import { searchNearbyPois, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
+import { searchNearbyPoisAuto, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
@@ -80,6 +79,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('map');
   const [prefFilter, setPrefFilter] = useState<Prefecture | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [stationQuery, setStationQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => hashStationId());
   const [origin, setOrigin] = useState<OriginValue | null>(null);
   const [pickMode, setPickMode] = useState(false);
@@ -165,7 +165,11 @@ export default function App() {
   const [poiOriginMode, setPoiOriginMode] = useState<'station' | 'current' | 'map' | 'route'>('station');
   /** 選択中（まだ検索を実行していない場合を含む）の検索地点 */
   const [searchOrigin, setSearchOrigin] = useState<{ lat: number; lng: number; label: string } | null>(null);
-  const [poiCategory, setPoiCategory] = useState<PoiCategory | null>('food');
+  // 初期値は「すべて」。道の駅の周辺は郊外が多く、特定カテゴリ（例:食べる）だけでは
+  // 0件に見えやすいため、まず全カテゴリを見せてから絞り込んでもらう
+  const [poiCategory, setPoiCategory] = useState<PoiCategory | null>(null);
+  /** 結果が少なく自動的に検索範囲を広げた場合true（ユーザーが明示的に選んだ範囲ではない旨を案内する） */
+  const [poiAutoExpanded, setPoiAutoExpanded] = useState(false);
   const [poiSubcategory, setPoiSubcategory] = useState<string>('all');
   const [poiRadius, setPoiRadius] = useState<SearchRadiusM>(DEFAULT_RADIUS_M);
   /** 現在地取得の状態（Overpass通信の状態とは完全に分離する） */
@@ -215,12 +219,17 @@ export default function App() {
       setSearchOrigin(o);
       setIsPoiPanelOpen(true);
       setPoiRequestStatus('loading');
+      setPoiAutoExpanded(false);
       try {
-        const res = await searchNearbyPois(o.lat, o.lng, radius, ctrl.signal);
+        const res = await searchNearbyPoisAuto(o.lat, o.lng, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
         setPoiRawResults(res.pois);
         setPoiRequestStatus(res.failed ? 'error' : 'ok');
         setPoiFromCache(res.fromCache);
+        if (res.radiusUsed !== radius) {
+          setPoiRadius(res.radiusUsed);
+          setPoiAutoExpanded(true);
+        }
       } catch {
         if (ctrl.signal.aborted) return;
         setPoiRawResults([]);
@@ -293,8 +302,9 @@ export default function App() {
     setPoiOriginMode('station');
     setPoiRawResults([]);
     setPoiOrigin(null);
-    setPoiCategory('food');
+    setPoiCategory(null);
     setPoiSubcategory('all');
+    setPoiAutoExpanded(false);
     setPoiDetail(null);
   }, []);
 
@@ -505,6 +515,12 @@ export default function App() {
 
   const stats = useMemo(() => computeStats(STATIONS, visits), [visits]);
   const selected = selectedId ? getStation(selectedId) : undefined;
+  /** 絞り込み結果の駅一覧（地図のピン探しではなく、一覧タップで数秒で選べるようにするため） */
+  const filteredStationList = useMemo(
+    () => filterStations(STATIONS, visits, prefFilter, statusFilter, stationQuery),
+    [prefFilter, statusFilter, stationQuery, visits],
+  );
+  const stationListActive = prefFilter !== null || statusFilter !== 'all' || stationQuery.trim() !== '';
   const activeSaved = trip ? (savedRoutes.find((r) => r.id === trip.savedRouteId) ?? null) : null;
 
   useEffect(() => {
@@ -815,26 +831,23 @@ export default function App() {
     }
   }, []);
 
-  /**
-   * マーカーのタップ: 状態を1段階だけ進める（未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問）。
-   * タップ間隔に関係なく、押した瞬間に即時反映する。開業前はユーザー操作では変更しない。
-   */
+  /** マーカーのタップ: 詳細シートを開くだけ。訪問状態は一切変更しない（誤タップでの色変化を防ぐ） */
+  const handleOpenStation = useCallback((id: string) => {
+    setSelectedId(id);
+  }, []);
+
   const STATE_MESSAGE: Record<StationState, string> = {
     unvisited: '未訪問に戻しました',
     visited: '訪問済みに変更しました ✓',
     wishlist: '行きたいに変更しました ★',
     stamped: 'スタンプ取得済みに変更しました 印',
   };
-  const handleTapStation = useCallback(
-    (id: string) => {
+  /** 詳細シート内の明示的なボタンから呼ばれる、唯一の状態変更経路 */
+  const handleSetStationState = useCallback(
+    (id: string, next: StationState) => {
       const st = getStation(id);
       if (!st) return;
-      if (st.status !== 'open') {
-        showToast({ stationId: id, name: st.name, message: '開業前の施設です（状態は変更できません）', prev: null });
-        return;
-      }
       const prev = visitsRef.current[id];
-      const next = nextState(prev?.state ?? 'unvisited');
       setState(id, next);
       showToast({ stationId: id, name: st.name, message: STATE_MESSAGE[next], prev });
     },
@@ -921,7 +934,7 @@ export default function App() {
           aria-expanded={filtersOpen}
           data-testid="filters-toggle"
         >
-          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter)}`}
+          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter, stationQuery)}`}
         </button>
       )}
       <div
@@ -961,7 +974,61 @@ export default function App() {
             </button>
           ))}
         </div>
+        <div className="filter-row station-search-row">
+          <span className="fg-label">検索</span>
+          <input
+            type="text"
+            inputMode="search"
+            className="station-search-input"
+            placeholder="駅名・市町村で検索（例: 猪苗代、会津）"
+            value={stationQuery}
+            onChange={(e) => setStationQuery(e.target.value)}
+            data-testid="station-search-input"
+          />
+          {stationQuery !== '' && (
+            <button
+              className="chip"
+              onClick={() => setStationQuery('')}
+              aria-label="検索文字をクリア"
+              data-testid="station-search-clear"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
+      {tab === 'map' && !mapFullscreen && filtersOpen && stationListActive && (
+        <div className="station-result-list" data-testid="station-result-list">
+          {filteredStationList.length === 0 ? (
+            <p className="station-result-empty" data-testid="station-result-empty">
+              条件に一致する道の駅がありません。絞り込みを変更してください。
+            </p>
+          ) : (
+            filteredStationList.map((s) => {
+              const st = visits[s.id]?.state ?? 'unvisited';
+              return (
+                <button
+                  key={s.id}
+                  className="station-result-row"
+                  data-testid={`station-result-${s.id}`}
+                  onClick={() => handleOpenStation(s.id)}
+                >
+                  <span className="station-result-name">{s.name}</span>
+                  <span className="station-result-city">
+                    {s.pref} {s.city}
+                  </span>
+                  {s.status === 'open' && st !== 'unvisited' && (
+                    <span className={`badge ${st === 'visited' ? 'visited' : st === 'wishlist' ? 'want' : 'stamp'}`}>
+                      {st === 'visited' ? '✓ 訪問済み' : st === 'wishlist' ? '★ 行きたい' : '印 スタンプ済み'}
+                    </span>
+                  )}
+                  {s.status !== 'open' && <span className="badge pre">開業前</span>}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
 
       <main className="app-main">
         {/* 地図は常にマウントしたまま表示切替（状態保持のため） */}
@@ -971,7 +1038,7 @@ export default function App() {
             visits={visits}
             prefFilter={prefFilter}
             statusFilter={statusFilter}
-            onTapStation={handleTapStation}
+            onOpenStation={handleOpenStation}
             onMapTap={closeSheet}
             pickMode={pickMode || poiMapPickActive}
             onPick={(p) => {
@@ -1120,6 +1187,8 @@ export default function App() {
               geoFailed={poiGeoFailed}
               searched={poiRequestStatus !== 'idle'}
               resultCount={poiSearchResults.length}
+              totalRawCount={poiRawResults.length}
+              autoExpanded={poiAutoExpanded}
               fromCache={poiFromCache}
               onRetry={runPoiSearchNow}
               onGoogleFallback={() => {
@@ -1189,16 +1258,6 @@ export default function App() {
                   onClick={() => openOfficial(toast.stationId)}
                 >
                   公式HP
-                </button>
-                <button
-                  className="btn-primary"
-                  data-testid="tap-toast-detail"
-                  onClick={() => {
-                    setSelectedId(toast.stationId);
-                    setToast(null);
-                  }}
-                >
-                  詳細
                 </button>
                 <button aria-label="閉じる" onClick={() => setToast(null)} data-testid="tap-toast-close">
                   ✕
@@ -1372,7 +1431,7 @@ export default function App() {
           <StationSheet
             station={selected}
             visits={visits}
-            onSetState={setState}
+            onSetState={handleSetStationState}
             onClose={closeSheet}
             onSearchNearby={() => {
               closeSheet();

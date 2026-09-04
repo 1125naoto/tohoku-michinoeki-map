@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_RADIUS_M, POI_RESULT_LIMIT, clearPoiCache, searchNearbyPois } from './overpass';
+import {
+  AUTO_ESCALATE_MAX_M,
+  DEFAULT_RADIUS_M,
+  MIN_AUTO_RESULTS,
+  POI_RESULT_LIMIT,
+  clearPoiCache,
+  searchNearbyPois,
+  searchNearbyPoisAuto,
+} from './overpass';
 
 const LAT = 37.4004;
 const LNG = 140.3597;
@@ -264,6 +272,61 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
     await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
     const second = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
     expect(second.fromCache).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('検索範囲の自動拡張（searchNearbyPoisAuto）', () => {
+  it('最初の範囲で十分な件数があれば範囲を広げない', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ elements: makeElements(MIN_AUTO_RESULTS) }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.radiusUsed).toBe(DEFAULT_RADIUS_M);
+    expect(res.pois.length).toBe(MIN_AUTO_RESULTS);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('結果が少ない場合は次の検索範囲まで自動的に広げる', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(1) }) }) // 3km: 少ない
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ elements: makeElements(5) }) }); // 5km: 十分
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, 3000);
+    expect(res.failed).toBe(false);
+    expect(res.radiusUsed).toBe(5000);
+    expect(res.pois.length).toBe(5);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('AUTO_ESCALATE_MAX_Mまで広げても少ない場合はそこで打ち切る（失敗扱いにはしない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, 3000);
+    expect(res.failed).toBe(false);
+    expect(res.radiusUsed).toBe(AUTO_ESCALATE_MAX_M);
+    // 3km → 5km → 10km の3段階で打ち切り（15kmへは自動では進まない）
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('通信が失敗した場合は範囲を広げずに失敗を返す（無意味な再試行をしない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, 3000);
+    expect(res.failed).toBe(true);
+    expect(res.radiusUsed).toBe(3000);
+    // 1段階分の2接続先フェイルオーバーのみ（範囲を変えて再試行しない）
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('ユーザーが最初からAUTO_ESCALATE_MAX_Mを超える範囲(15km)を選んでいた場合は広げない', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(1) }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPoisAuto(LAT, LNG, 15000);
+    expect(res.radiusUsed).toBe(15000);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

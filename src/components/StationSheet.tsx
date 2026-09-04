@@ -162,8 +162,6 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
           </button>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
-          💡 地図のマーカーは押すたびに 未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問 の順で切り替わります。
-          <br />
           営業時間・休館日は変わりやすいため、出発前に公式ページで最新情報を確認してください。
         </p>
         <button style={{ width: '100%', marginTop: 4 }} onClick={onClose} data-testid="sheet-close">
