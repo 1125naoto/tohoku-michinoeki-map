@@ -57,9 +57,12 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('btn-search-nearby').click();
 
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました', { timeout: 10000 });
+    // 既定カテゴリーは「食べる」のため、最初は温泉を除いた1件だけが見える
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
 
-    // カテゴリ絞り込み
+    // カテゴリ絞り込み（すべてに切り替えると温泉も含めて2件）
+    await page.getByTestId('poi-category-all').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました');
     await page.getByTestId('poi-category-food').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました');
     await page.getByTestId('poi-category-all').click();
@@ -153,11 +156,13 @@ test.describe('周辺スポット検索', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
+          // どちらも既定カテゴリー「食べる」に含まれる要素にする（カテゴリー絞り込みではなく
+          // 半径による再検索そのものを検証するテストのため）
           elements: oneResult
             ? [{ type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } }]
             : [
                 { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店' } },
-                { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { natural: 'hot_spring', name: 'テスト温泉' } },
+                { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テストカフェ' } },
               ],
         }),
       });
@@ -183,10 +188,14 @@ test.describe('周辺スポット検索', () => {
 
     await page.getByTestId('poi-search-open').click();
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-mode-map').click();
     await page.getByTestId('poi-origin-map').click();
     // 検索パネルは画面下部を占めるため、パネルに隠れない上部をタップする
     await page.getByTestId('map-root').click({ position: { x: 200, y: 80 } });
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-search-origin')).toContainText('指定した地点');
+    await page.getByTestId('poi-do-search').click();
+    // 既定カテゴリー「食べる」のため、温泉を除いた1件だけが見える
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
 
     // 詳細シートを開かずに直接マーカーをタップ→即座に選択に追加される
     const marker = page.locator('[data-poi-id="osm:node/1"]');
@@ -207,7 +216,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
     await page.locator('[data-poi-id="osm:node/1"]').click();
     await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
     await page.getByTestId('poi-detail-toggle-route').click();
@@ -287,7 +296,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
-    await expect(page.getByTestId('poi-result-count')).toContainText('2件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
     await page.locator('[data-poi-id="osm:node/1"]').click();
     await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
     await page.getByTestId('poi-detail-toggle-route').click();
@@ -371,7 +380,7 @@ test.describe('周辺スポット検索', () => {
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-empty')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('poi-empty')).toContainText('この条件では周辺スポットが見つかりませんでした');
+    await expect(page.getByTestId('poi-empty')).toContainText('この条件では見つかりませんでした');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-expand-radius')).toBeVisible();
   });
@@ -464,11 +473,147 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('course-mode-manual').click();
     await page.getByTestId('poi-search-open').click();
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-mode-current').click();
     await page.getByTestId('poi-origin-current').click();
     await expect(page.getByTestId('poi-geo-failed')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('poi-geo-failed')).toContainText('現在地を取得できませんでした');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-google-fallback')).toHaveCount(0);
     await expect(page.getByTestId('poi-geo-use-map')).toBeVisible();
+    // 現在地が拒否されても検索パネルは閉じない
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+
+    // 現在地拒否後、道の駅を選ぶ方法へ切り替えて検索を続けられる
+    await page.getByTestId('poi-geo-use-station').click();
+    await expect(page.getByTestId('poi-origin-station-select')).toBeVisible();
+  });
+
+  test('公開版と同じ手順: ボタンを1回タップ→通信前にパネル表示→道の駅を選んで検索→アプリ内に実データ表示（Google未経由）', async ({ page }) => {
+    const overpassCalls: string[] = [];
+    await page.route('**/api/interpreter', async (route) => {
+      overpassCalls.push(route.request().url());
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          elements: [
+            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', cuisine: 'ramen', name: 'テストラーメン店' } },
+          ],
+        }),
+      });
+    });
+    // 公開版と同じ初期状態（バナー等は開いたまま）で地図を表示
+    await page.goto('/');
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    const appOrigin = new URL(page.url()).origin;
+
+    // 「周辺スポット」を1回タップ（実クリックイベント。内部関数呼び出しではない）
+    await page.getByTestId('poi-search-open').click();
+
+    // API通信前に検索パネルが即座に表示される
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    expect(overpassCalls.length).toBe(0);
+
+    // 「食べる／観光／温泉・休憩」が見える
+    await expect(page.getByTestId('poi-category-food')).toBeVisible();
+    await expect(page.getByTestId('poi-category-tourism')).toBeVisible();
+    await expect(page.getByTestId('poi-category-onsen')).toBeVisible();
+
+    // 道の駅選択欄が見える（初期タブ）
+    await expect(page.getByTestId('poi-origin-station-select')).toBeVisible();
+
+    // 1km/3km/5km/10kmが見える
+    await expect(page.getByTestId('poi-radius-1000')).toBeVisible();
+    await expect(page.getByTestId('poi-radius-3000')).toBeVisible();
+    await expect(page.getByTestId('poi-radius-5000')).toBeVisible();
+    await expect(page.getByTestId('poi-radius-10000')).toBeVisible();
+
+    // 道の駅しちのへを選ぶ
+    await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
+    expect(overpassCalls.length).toBe(0); // 地点選択だけでは通信しない
+
+    // 食べる・3kmはすでに既定値のまま、検索を実行
+    await expect(page.getByTestId('poi-category-food')).toHaveClass(/active/);
+    await expect(page.getByTestId('poi-radius-3000')).toHaveClass(/active/);
+    await page.getByTestId('poi-do-search').click();
+
+    // fixture結果が地図と一覧の両方へ表示される
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-list')).toBeVisible();
+    await expect(page.getByTestId('poi-result-row')).toHaveCount(1);
+    await expect(page.locator('[data-poi-id="osm:node/1"]')).toHaveCount(1);
+    await expect(page.getByTestId('poi-result-row')).toContainText('テストラーメン店');
+
+    // Googleマップへ遷移していない（このアプリと同じオリジンのまま）
+    expect(new URL(page.url()).origin).toBe(appOrigin);
+    expect(page.url()).not.toContain('google.com');
+
+    // 検索結果をルートへ追加
+    await page.getByTestId('poi-result-toggle').first().click();
+    await expect(page.getByTestId('route-select-bar')).toBeVisible();
+    await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
+
+    // POIで達成率が変わらない
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+  });
+
+  test('全画面モードでも周辺スポット検索が使える', async ({ page }) => {
+    await mockOverpassResponse(page);
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('fullscreen-btn').click();
+    await expect(page.getByTestId('fullscreen-exit')).toBeVisible();
+    await expect(page.getByTestId('poi-search-open')).toBeVisible();
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
+    await page.getByTestId('poi-do-search').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+  });
+
+  test('iPhone相当でタップ領域が44px以上あり、横スクロールが発生しない', async ({ page }) => {
+    await mockOverpassResponse(page);
+    await page.goto('/');
+    await closeBanners(page);
+    const searchOpenBox = await page.getByTestId('poi-search-open').boundingBox();
+    expect(searchOpenBox!.height).toBeGreaterThanOrEqual(44);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+
+    const doSearchBox = await page.getByTestId('poi-do-search').boundingBox();
+    expect(doSearchBox!.height).toBeGreaterThanOrEqual(44);
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+
+    await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
+    await page.getByTestId('poi-do-search').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('1件見つけました', { timeout: 10000 });
+    const rowToggleBox = await page.getByTestId('poi-result-toggle').first().boundingBox();
+    expect(rowToggleBox!.height).toBeGreaterThanOrEqual(44);
+    const overflow2 = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow2).toBeLessThanOrEqual(0);
+  });
+
+  test('「🔍 周辺スポット」ボタンがホーム画面追加バナーに隠れて押せなくなる不具合の回帰確認', async ({ page }) => {
+    // 実際に公開版で確認された不具合: 初回訪問時のa2hs-banner（ホーム画面に追加の案内）が
+    // 周辺スポットボタンを完全に覆い隠し、実タップが無反応になっていた。
+    await mockOverpassResponse(page);
+    await page.goto('/');
+    // バナーを閉じずに（初回訪問と同じ状態で）実タップする
+    const legend = page.getByTestId('legend-panel');
+    if (await legend.isVisible().catch(() => false)) await page.getByTestId('legend-toggle').click();
+    await expect(page.getByTestId('a2hs-banner')).toBeVisible();
+    const btnBox = await page.getByTestId('poi-search-open').boundingBox();
+    const bannerBox = await page.getByTestId('a2hs-banner').boundingBox();
+    // ボタンとバナーの矩形が重ならないこと
+    const overlaps =
+      btnBox!.x < bannerBox!.x + bannerBox!.width &&
+      btnBox!.x + btnBox!.width > bannerBox!.x &&
+      btnBox!.y < bannerBox!.y + bannerBox!.height &&
+      btnBox!.y + btnBox!.height > bannerBox!.y;
+    expect(overlaps).toBe(false);
+    await page.getByTestId('poi-search-open').click({ timeout: 5000 });
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
   });
 });

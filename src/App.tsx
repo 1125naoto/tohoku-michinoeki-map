@@ -33,7 +33,7 @@ import {
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
+import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
 import { searchNearbyPois, DEFAULT_RADIUS_M, type SearchRadiusM } from './lib/overpass';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
@@ -157,22 +157,34 @@ export default function App() {
   // 選択済みの周辺スポット（キー: Poi.id）。routeSelectedIds内のPOI由来IDを解決するための実データ
   const [selectedPois, setSelectedPois] = useState<Record<string, Poi>>({});
 
-  // ---- 周辺スポット検索（Gate2〜4） ----
-  const [poiSearchActive, setPoiSearchActive] = useState(false);
-  const [poiOrigin, setPoiOrigin] = useState<{ lat: number; lng: number; label: string } | null>(null);
-  const [poiCategory, setPoiCategory] = useState<PoiCategory | null>(null);
+  // ---- 周辺スポット検索（Gate1〜4） ----
+  // 検索パネルの開閉と、検索条件・通信状態は完全に別のstateとして管理する
+  // （位置情報の失敗やOverpassの失敗でパネルが開かなくなる設計を禁止するため）。
+  const [isPoiPanelOpen, setIsPoiPanelOpen] = useState(false);
+  /** 検索地点の選び方（道の駅を選ぶ/現在地/地図で指定/ルート上の立ち寄り先）。初期値は「道の駅を選ぶ」 */
+  const [poiOriginMode, setPoiOriginMode] = useState<'station' | 'current' | 'map' | 'route'>('station');
+  /** 選択中（まだ検索を実行していない場合を含む）の検索地点 */
+  const [searchOrigin, setSearchOrigin] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [poiCategory, setPoiCategory] = useState<PoiCategory | null>('food');
   const [poiSubcategory, setPoiSubcategory] = useState<string>('all');
   const [poiRadius, setPoiRadius] = useState<SearchRadiusM>(DEFAULT_RADIUS_M);
-  const [poiLoading, setPoiLoading] = useState(false);
-  const [poiFailed, setPoiFailed] = useState(false);
-  /** 現在地の取得に失敗（Overpass通信の失敗とは別扱い。「地図で指定」を案内する） */
-  const [poiGeoFailed, setPoiGeoFailed] = useState(false);
+  /** 現在地取得の状態（Overpass通信の状態とは完全に分離する） */
+  const [geolocationStatus, setGeolocationStatus] = useState<'idle' | 'requesting' | 'denied' | 'ok'>('idle');
+  /** Overpass検索リクエストの状態 */
+  const [poiRequestStatus, setPoiRequestStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   /** 表示中の結果が新鮮なキャッシュ/前回成功時の保存結果である間true */
   const [poiFromCache, setPoiFromCache] = useState(false);
   const [poiMapPickActive, setPoiMapPickActive] = useState(false);
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
   const [poiDetail, setPoiDetail] = useState<Poi | null>(null);
   const poiAbortRef = useRef<AbortController | null>(null);
+  // 旧コードとの互換用エイリアス（同じ意味の派生値。読みやすさのためだけに用意）
+  const poiSearchActive = isPoiPanelOpen;
+  const poiOrigin = searchOrigin;
+  const setPoiOrigin = setSearchOrigin;
+  const poiLoading = poiRequestStatus === 'loading';
+  const poiFailed = poiRequestStatus === 'error';
+  const poiGeoFailed = geolocationStatus === 'denied';
 
   // カテゴリ/サブカテゴリでの絞り込みはクライアント側で行う（同じ地点+半径ならAPIへ再検索しない）
   const poiSearchResults = useMemo(() => {
@@ -190,30 +202,32 @@ export default function App() {
   const [poiSort, setPoiSort] = useState<PoiSortMode>('distance');
   const sortedPoiResults = useMemo(() => sortPois(poiSearchResults, poiSort), [poiSearchResults, poiSort]);
 
+  /**
+   * 実際にOverpassへ通信する。呼び出すのは「この周辺を検索」ボタン、または
+   * 道の駅シート等「検索地点が既に確定している」文脈からの呼び出しのみで、
+   * 検索パネルを開いた時点・検索地点を選んだ時点では絶対に呼ばない。
+   */
   const runPoiSearch = useCallback(
     async (o: { lat: number; lng: number; label: string }, radius: SearchRadiusM) => {
       poiAbortRef.current?.abort();
       const ctrl = new AbortController();
       poiAbortRef.current = ctrl;
-      setPoiOrigin(o);
-      setPoiSearchActive(true);
-      setPoiLoading(true);
-      setPoiFailed(false);
-      setPoiGeoFailed(false);
+      setSearchOrigin(o);
+      setIsPoiPanelOpen(true);
+      setPoiRequestStatus('loading');
       try {
         const res = await searchNearbyPois(o.lat, o.lng, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
         setPoiRawResults(res.pois);
-        setPoiFailed(res.failed);
+        setPoiRequestStatus(res.failed ? 'error' : 'ok');
         setPoiFromCache(res.fromCache);
       } catch {
         if (ctrl.signal.aborted) return;
         setPoiRawResults([]);
-        setPoiFailed(true);
+        setPoiRequestStatus('error');
         setPoiFromCache(false);
       } finally {
         if (poiAbortRef.current === ctrl) {
-          setPoiLoading(false);
           poiAbortRef.current = null;
         }
       }
@@ -221,34 +235,50 @@ export default function App() {
     [],
   );
 
+  /** 「この周辺を検索」ボタン: 選択済みの検索地点で初めて通信を開始する */
+  const runPoiSearchNow = useCallback(() => {
+    if (!searchOrigin) return;
+    void runPoiSearch(searchOrigin, poiRadius);
+  }, [searchOrigin, poiRadius, runPoiSearch]);
+
   const changePoiRadius = useCallback(
     (r: SearchRadiusM) => {
       setPoiRadius(r);
-      if (poiOrigin) void runPoiSearch(poiOrigin, r);
+      // 検索が既に一度実行済み（結果か失敗が表示されている）場合のみ、条件変更で再検索する。
+      // まだ一度も検索していない段階では、地点未選択のまま通信を始めてしまわないようにする。
+      if (searchOrigin && poiRequestStatus !== 'idle') void runPoiSearch(searchOrigin, r);
     },
-    [poiOrigin, runPoiSearch],
+    [searchOrigin, poiRequestStatus, runPoiSearch],
   );
 
+  /** 「現在地」を検索地点として選ぶ。権限拒否・失敗してもパネルは閉じず、他の方法へ誘導する */
   const usePoiCurrentLocation = useCallback(() => {
-    setPoiGeoFailed(false);
+    setGeolocationStatus('requesting');
     if (!('geolocation' in navigator)) {
-      setPoiGeoFailed(true);
+      setGeolocationStatus('denied');
       return;
     }
-    setPoiSearchActive(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => void runPoiSearch({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }, poiRadius),
+      (pos) => {
+        setGeolocationStatus('ok');
+        setSearchOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' });
+      },
       // 現在地の取得失敗はOverpass通信の失敗とは別原因（権限拒否・タイムアウト等）。
       // 同じ「検索に失敗しました」表示にすると、実際には検索すら始まっていないのに
       // Googleマップへ誘導してしまい、アプリ内検索が機能しないという誤解を生む。
-      () => setPoiGeoFailed(true),
+      () => setGeolocationStatus('denied'),
       { timeout: 10000 },
     );
-  }, [poiRadius, runPoiSearch]);
+  }, []);
 
+  /**
+   * 道の駅シート等、検索地点が既に確定している文脈から開く場合の入口。
+   * この場合はユーザーの意図が単一で明確なため、パネルを開くと同時に検索も実行する。
+   */
   const searchNearbyFor = useCallback(
     (o: { lat: number; lng: number; label: string }) => {
       setTab('map');
+      setPoiOriginMode('station');
       void runPoiSearch(o, poiRadius);
     },
     [poiRadius, runPoiSearch],
@@ -256,11 +286,14 @@ export default function App() {
 
   const closePoiSearch = useCallback(() => {
     poiAbortRef.current?.abort();
-    setPoiSearchActive(false);
+    setIsPoiPanelOpen(false);
     setPoiMapPickActive(false);
+    setPoiRequestStatus('idle');
+    setGeolocationStatus('idle');
+    setPoiOriginMode('station');
     setPoiRawResults([]);
     setPoiOrigin(null);
-    setPoiCategory(null);
+    setPoiCategory('food');
     setPoiSubcategory('all');
     setPoiDetail(null);
   }, []);
@@ -944,7 +977,9 @@ export default function App() {
             onPick={(p) => {
               if (poiMapPickActive) {
                 setPoiMapPickActive(false);
-                searchNearbyFor({ lat: p.lat, lng: p.lng, label: `指定した地点 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
+                setIsPoiPanelOpen(true);
+                // 地点を選んだだけでは通信しない。「この周辺を検索」を押して初めて検索する
+                setSearchOrigin({ lat: p.lat, lng: p.lng, label: `指定した地点 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
                 return;
               }
               setOrigin({ lat: p.lat, lng: p.lng, label: `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
@@ -1031,10 +1066,7 @@ export default function App() {
           {tab === 'map' && !poiSearchActive && (
             <button
               className="poi-search-btn"
-              onClick={() => {
-                if (poiOrigin) void runPoiSearch(poiOrigin, poiRadius);
-                else setPoiSearchActive(true);
-              }}
+              onClick={() => setIsPoiPanelOpen(true)}
               data-testid="poi-search-open"
               aria-label="周辺スポットを探す"
             >
@@ -1053,10 +1085,25 @@ export default function App() {
           )}
           {tab === 'map' && poiSearchActive && (
             <PoiSearchPanel
-              originLabel={poiOrigin?.label ?? '地図の中心'}
+              stations={STATIONS.filter((s) => s.status === 'open')}
+              originMode={poiOriginMode}
+              onChangeOriginMode={setPoiOriginMode}
+              origin={searchOrigin}
+              onPickStation={(st) => setSearchOrigin({ lat: st.lat, lng: st.lng, label: `道の駅${st.name}` })}
               onUseCurrentLocation={usePoiCurrentLocation}
+              geolocationStatus={geolocationStatus}
               onRequestMapPick={() => setPoiMapPickActive((v) => !v)}
               mapPickActive={poiMapPickActive}
+              routeStopOptions={routeSelectedIds
+                .map((id, i) => {
+                  const st = getStation(id);
+                  if (st) return { id, label: `${i + 1}. 道の駅${st.name}`, lat: st.lat, lng: st.lng, name: st.name };
+                  const poi = selectedPois[id];
+                  if (poi) return { id, label: `${i + 1}. ${poiDisplayName(poi)}`, lat: poi.lat, lng: poi.lng, name: poiDisplayName(poi) };
+                  return null;
+                })
+                .filter((x): x is { id: string; label: string; lat: number; lng: number; name: string } => x !== null)}
+              onPickRouteStop={(s) => setSearchOrigin({ lat: s.lat, lng: s.lng, label: s.name })}
               category={poiCategory}
               onChangeCategory={(c) => {
                 setPoiCategory(c);
@@ -1066,17 +1113,18 @@ export default function App() {
               onChangeSubcategory={setPoiSubcategory}
               radius={poiRadius}
               onChangeRadius={changePoiRadius}
+              canSearch={searchOrigin !== null}
+              onSearch={runPoiSearchNow}
               loading={poiLoading}
               failed={poiFailed}
               geoFailed={poiGeoFailed}
+              searched={poiRequestStatus !== 'idle'}
               resultCount={poiSearchResults.length}
               fromCache={poiFromCache}
-              onRetry={() => {
-                if (poiOrigin) void runPoiSearch(poiOrigin, poiRadius);
-              }}
+              onRetry={runPoiSearchNow}
               onGoogleFallback={() => {
                 const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';
-                const near = poiOrigin ? `${poiOrigin.lat},${poiOrigin.lng}` : '';
+                const near = searchOrigin ? `${searchOrigin.lat},${searchOrigin.lng}` : '';
                 openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
               }}
               onClose={closePoiSearch}

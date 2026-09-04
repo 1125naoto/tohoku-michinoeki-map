@@ -1,7 +1,9 @@
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory } from '../lib/poi';
 import { RADIUS_CHOICES, type SearchRadiusM } from '../lib/overpass';
+import { PREFECTURES, type Station } from '../types';
 
 export type PoiSortMode = 'distance' | 'name' | 'category';
+export type PoiOriginMode = 'station' | 'current' | 'map' | 'route';
 
 /** 一覧の並び順（近い順が既定）。OSMには評価データが無いため「評価順」は用意しない */
 export function sortPois(pois: Poi[], mode: PoiSortMode): Poi[] {
@@ -24,11 +26,26 @@ function formatDistance(m: number): string {
   return `約${(m / 1000).toFixed(1)}km`;
 }
 
+interface RouteStopOption {
+  id: string;
+  label: string;
+  lat: number;
+  lng: number;
+  name: string;
+}
+
 interface Props {
-  originLabel: string;
+  stations: Station[];
+  origin: { lat: number; lng: number; label: string } | null;
+  originMode: PoiOriginMode;
+  onChangeOriginMode: (m: PoiOriginMode) => void;
+  onPickStation: (st: Station) => void;
   onUseCurrentLocation: () => void;
+  geolocationStatus: 'idle' | 'requesting' | 'denied' | 'ok';
   onRequestMapPick: () => void;
   mapPickActive: boolean;
+  routeStopOptions: RouteStopOption[];
+  onPickRouteStop: (s: RouteStopOption) => void;
   category: PoiCategory | null;
   onChangeCategory: (c: PoiCategory | null) => void;
   /** 'all' | '__rainy__'（雨の日向け・横断フィルタ） | 個別サブカテゴリキー */
@@ -36,10 +53,15 @@ interface Props {
   onChangeSubcategory: (s: string) => void;
   radius: SearchRadiusM;
   onChangeRadius: (r: SearchRadiusM) => void;
+  /** 検索地点が選択済みで「この周辺を検索」を押せる状態か */
+  canSearch: boolean;
+  onSearch: () => void;
   loading: boolean;
   failed: boolean;
   /** 現在地の取得に失敗（Overpass通信の失敗とは別扱い。検索自体は始まっていない） */
   geoFailed: boolean;
+  /** 一度でも検索を実行したか（まだ一度もしていなければ結果0件でも「見つかりませんでした」は出さない） */
+  searched: boolean;
   resultCount: number;
   /** 新鮮なキャッシュまたは前回成功時の保存結果を表示している間true */
   fromCache: boolean;
@@ -57,23 +79,36 @@ interface Props {
 }
 
 /**
- * 周辺スポット検索パネル（Gate2〜3のUI）。「POI」「Overpass」等の専門用語は
- * 画面に出さず、「周辺スポット」「食べる」「観光」「温泉・休憩」で統一する。
+ * 周辺スポット検索パネル。「POI」「Overpass」「nwr」等の専門用語は画面に出さず、
+ * 「周辺スポット」「食べる」「観光」「温泉・休憩」で統一する。
+ *
+ * 重要: パネルを開いた時点・検索地点を選んだ時点では通信を開始しない。
+ * 「この周辺を検索」を押して初めて通信を開始する（Gate1〜3）。
  */
 export default function PoiSearchPanel({
-  originLabel,
+  stations,
+  origin,
+  originMode,
+  onChangeOriginMode,
+  onPickStation,
   onUseCurrentLocation,
+  geolocationStatus,
   onRequestMapPick,
   mapPickActive,
+  routeStopOptions,
+  onPickRouteStop,
   category,
   onChangeCategory,
   subcategory,
   onChangeSubcategory,
   radius,
   onChangeRadius,
+  canSearch,
+  onSearch,
   loading,
   failed,
   geoFailed,
+  searched,
   resultCount,
   fromCache,
   onRetry,
@@ -100,30 +135,128 @@ export default function PoiSearchPanel({
         </button>
       </div>
 
-      <div className="poi-panel-origin">
-        <span data-testid="poi-search-origin">{originLabel}の周辺</span>
-        <div className="poi-panel-origin-actions">
-          <button onClick={onUseCurrentLocation} data-testid="poi-origin-current">
-            📍 現在地
-          </button>
+      <div className="seg" data-testid="poi-origin-tabs" style={{ flexWrap: 'wrap' }}>
+        <button
+          className={originMode === 'station' ? 'active' : ''}
+          onClick={() => onChangeOriginMode('station')}
+          data-testid="poi-origin-mode-station"
+        >
+          道の駅を選ぶ
+        </button>
+        <button
+          className={originMode === 'current' ? 'active' : ''}
+          onClick={() => onChangeOriginMode('current')}
+          data-testid="poi-origin-mode-current"
+        >
+          現在地
+        </button>
+        <button
+          className={originMode === 'map' ? 'active' : ''}
+          onClick={() => onChangeOriginMode('map')}
+          data-testid="poi-origin-mode-map"
+        >
+          地図で指定
+        </button>
+        {routeStopOptions.length > 0 && (
           <button
-            className={mapPickActive ? 'active' : ''}
+            className={originMode === 'route' ? 'active' : ''}
+            onClick={() => onChangeOriginMode('route')}
+            data-testid="poi-origin-mode-route"
+          >
+            ルート上の立ち寄り先
+          </button>
+        )}
+      </div>
+
+      {originMode === 'station' && (
+        <select
+          style={{ width: '100%', marginBottom: 8 }}
+          aria-label="検索する道の駅"
+          value=""
+          onChange={(e) => {
+            const st = stations.find((s) => s.id === e.target.value);
+            if (st) onPickStation(st);
+          }}
+          data-testid="poi-origin-station-select"
+        >
+          <option value="">道の駅を選択…</option>
+          {PREFECTURES.map((p) => (
+            <optgroup key={p} label={p}>
+              {stations
+                .filter((s) => s.pref === p)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}（{s.city}）
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+      )}
+
+      {originMode === 'current' && (
+        <div style={{ marginBottom: 8 }}>
+          <button className="btn-primary" style={{ width: '100%' }} onClick={onUseCurrentLocation} data-testid="poi-origin-current">
+            📍 現在地を取得
+          </button>
+          {geolocationStatus === 'requesting' && (
+            <p className="msg info" style={{ marginTop: 6 }}>
+              現在地を確認しています…
+            </p>
+          )}
+          {geoFailed && (
+            <div className="msg warn" style={{ marginTop: 6 }} data-testid="poi-geo-failed">
+              現在地を取得できませんでした。道の駅を選ぶか、地図で場所を指定してください。
+              <div className="btn-grid" style={{ marginTop: 6 }}>
+                <button onClick={onUseCurrentLocation} data-testid="poi-geo-retry">
+                  📍 もう一度試す
+                </button>
+                <button onClick={() => onChangeOriginMode('station')} data-testid="poi-geo-use-station">
+                  道の駅を選ぶ
+                </button>
+                <button
+                  onClick={() => {
+                    onChangeOriginMode('map');
+                    onRequestMapPick();
+                  }}
+                  data-testid="poi-geo-use-map"
+                >
+                  🗺️ 地図で指定する
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {originMode === 'map' && (
+        <div style={{ marginBottom: 8 }}>
+          <button
+            className={mapPickActive ? 'active btn-primary' : 'btn-primary'}
+            style={{ width: '100%' }}
             onClick={onRequestMapPick}
             data-testid="poi-origin-map"
           >
-            🗺️ 地図で指定
+            🗺️ {mapPickActive ? '地図をタップして指定してください' : '地図でタップして指定する'}
           </button>
         </div>
-      </div>
+      )}
+
+      {originMode === 'route' && routeStopOptions.length > 0 && (
+        <div className="seg" style={{ flexWrap: 'wrap', marginBottom: 8 }} data-testid="poi-origin-route-list">
+          {routeStopOptions.map((s) => (
+            <button key={s.id} onClick={() => onPickRouteStop(s)} data-testid={`poi-origin-route-${s.id}`}>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <p className="poi-origin-current" data-testid="poi-search-origin">
+        検索地点：<b>{origin ? origin.label : '未選択'}</b>
+      </p>
 
       <div className="seg" data-testid="poi-category-tabs">
-        <button
-          className={category === null ? 'active' : ''}
-          onClick={() => onChangeCategory(null)}
-          data-testid="poi-category-all"
-        >
-          すべて
-        </button>
         {(Object.keys(CATEGORY_LABEL) as PoiCategory[]).map((c) => (
           <button
             key={c}
@@ -134,6 +267,13 @@ export default function PoiSearchPanel({
             {CATEGORY_LABEL[c]}
           </button>
         ))}
+        <button
+          className={category === null ? 'active' : ''}
+          onClick={() => onChangeCategory(null)}
+          data-testid="poi-category-all"
+        >
+          すべて
+        </button>
       </div>
 
       {category && (
@@ -180,43 +320,29 @@ export default function PoiSearchPanel({
         </div>
       </div>
 
+      <button
+        className="btn-primary"
+        style={{ width: '100%', minHeight: 48, fontSize: 15, marginTop: 4 }}
+        disabled={!canSearch || loading}
+        onClick={onSearch}
+        data-testid="poi-do-search"
+      >
+        🔍 この周辺を検索
+      </button>
+      {!canSearch && (
+        <p className="msg info" style={{ marginTop: 6 }}>
+          検索地点を選んでください。
+        </p>
+      )}
+
       {loading && (
-        <p className="msg info" data-testid="poi-loading">
+        <p className="msg info" data-testid="poi-loading" style={{ marginTop: 8 }}>
           周辺スポットを探しています…
         </p>
       )}
-      {!loading && geoFailed && (
-        <div className="msg warn" data-testid="poi-geo-failed">
-          現在地を取得できませんでした。位置情報の利用を許可するか、「地図で指定」で探したい場所をタップしてください。
-          <div className="btn-grid" style={{ marginTop: 6 }}>
-            <button onClick={onUseCurrentLocation} data-testid="poi-geo-retry">
-              📍 もう一度試す
-            </button>
-            <button onClick={onRequestMapPick} data-testid="poi-geo-use-map">
-              🗺️ 地図で指定する
-            </button>
-          </div>
-        </div>
-      )}
-      {!loading && !geoFailed && failed && (
-        <div className="msg warn" data-testid="poi-failed">
-          周辺情報を取得できませんでした。時間をおいて再検索するか、Googleマップで検索してください。
-          <div className="btn-grid" style={{ marginTop: 6 }}>
-            <button onClick={onRetry} data-testid="poi-retry">
-              🔄 もう一度試す
-            </button>
-            <button onClick={expandRadius} disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value} data-testid="poi-expand-radius">
-              📏 検索範囲を変更
-            </button>
-            <button onClick={onGoogleFallback} data-testid="poi-google-fallback">
-              🔍 Googleマップで検索
-            </button>
-          </div>
-        </div>
-      )}
-      {!loading && !geoFailed && !failed && resultCount === 0 && (
-        <div className="msg info" data-testid="poi-empty">
-          この条件では周辺スポットが見つかりませんでした。距離やカテゴリーを変えて再検索してください。
+      {!loading && !failed && searched && resultCount === 0 && (
+        <div className="msg info" style={{ marginTop: 8 }} data-testid="poi-empty">
+          この条件では見つかりませんでした。検索範囲またはカテゴリーを変更してください。
           <button
             style={{ marginTop: 6, width: '100%' }}
             onClick={expandRadius}
@@ -227,9 +353,25 @@ export default function PoiSearchPanel({
           </button>
         </div>
       )}
-      {!loading && !geoFailed && !failed && resultCount > 0 && (
+      {!loading && failed && (
+        <div className="msg warn" style={{ marginTop: 8 }} data-testid="poi-failed">
+          周辺情報を取得できませんでした。もう一度試すか、Googleマップで検索してください。
+          <div className="btn-grid" style={{ marginTop: 6 }}>
+            <button onClick={onRetry} data-testid="poi-retry">
+              🔄 もう一度試す
+            </button>
+            <button onClick={expandRadius} disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value} data-testid="poi-expand-radius">
+              📏 条件を変更
+            </button>
+            <button onClick={onGoogleFallback} data-testid="poi-google-fallback">
+              🔍 Googleマップで検索
+            </button>
+          </div>
+        </div>
+      )}
+      {!loading && !failed && resultCount > 0 && (
         <>
-          <p className="msg info" data-testid="poi-result-count" style={{ marginBottom: 6 }}>
+          <p className="msg info" data-testid="poi-result-count" style={{ marginTop: 8, marginBottom: 6 }}>
             {fromCache
               ? '前回取得した周辺スポットを表示しています。'
               : `周辺スポットを${resultCount}件見つけました。`}

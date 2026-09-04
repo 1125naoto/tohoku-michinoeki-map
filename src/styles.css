@@ -525,7 +525,9 @@ a {
 .a2hs-banner {
   position: absolute;
   left: 12px;
-  right: 12px;
+  /* 右側の縦積みフローティングボタン（周辺スポット・現在地・コース取り消し等）の
+     列に重ならないよう、右側を大きく空ける（過去に完全にボタンを覆い隠す不具合を確認済み） */
+  right: 160px;
   bottom: 130px;
   z-index: 940;
   background: var(--surface);
@@ -1542,24 +1544,13 @@ a {
   border-radius: 50%;
   font-size: 14px;
 }
-.poi-panel-origin {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-  font-size: 12px;
+.poi-origin-current {
+  margin: 4px 0 8px;
+  font-size: 13px;
   color: var(--text-sub);
 }
-.poi-panel-origin-actions {
-  display: flex;
-  gap: 6px;
-}
-.poi-panel-origin-actions button {
-  min-height: 32px;
-  padding: 4px 10px;
-  font-size: 12px;
+.poi-origin-current b {
+  color: var(--text);
 }
 .poi-subcats {
   display: flex;
