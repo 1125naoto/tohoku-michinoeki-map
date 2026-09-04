@@ -18,6 +18,13 @@ https://（ユーザー名）.github.io/tohoku-michinoeki-map/
 このURLはスマートフォン・PCのブラウザからそのまま開けます。インストール不要です。
 （ホーム画面に追加する場合は「保存」タブ → 「ホーム画面への追加方法を見る」）
 
+## 開発ブランチについて
+
+- `main`: 現行公開版。GitHub Pagesへ自動デプロイされる
+- `v1.0.3-nami`（タグ）: 2026-09-10 実地テスト用に凍結した安定版。変更・削除しない
+- `product/main`: 将来の製品版（無料/有料プラン、クラウド同期等）を開発するブランチ。
+  設計・方針は [`PRODUCT_ARCHITECTURE.md`](./PRODUCT_ARCHITECTURE.md) を参照
+
 ## 起動方法（Windows・ローカルで使う場合）
 
 1. **`start-michinoeki-map.bat` をダブルクリック**するだけです。
