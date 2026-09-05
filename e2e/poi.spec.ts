@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import stationsRaw from '../src/data/stations.json' with { type: 'json' };
 
 /**
  * 周辺スポット（POI）機能のE2Eシナリオ（ナミさん完成Ver v1.0）。
@@ -7,6 +8,12 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const STATION_ID = 'mne-18900'; // しちのへ
+
+/** 都道府県フィルターの期待値をテスト側でもハードコードせず、実データから動的に算出する */
+const OPEN_STATIONS = (stationsRaw as { stations: { id: string; name: string; pref: string; status: string }[] }).stations.filter(
+  (s) => s.status === 'open',
+);
+const PREFS_IN_DATA = [...new Set(OPEN_STATIONS.map((s) => s.pref))];
 
 /**
  * 3件（食べる1・温泉1・観光1）を返す。MIN_AUTO_RESULTS(3)以上にしてあるのは、
@@ -148,6 +155,65 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('breakdown-margin')).toBeVisible();
   });
 
+  test('検索方法は「道の駅を選ぶ」「現在地」のみで、「地図で指定」は表示されない', async ({ page }) => {
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await expect(page.getByTestId('poi-origin-mode-station')).toBeVisible();
+    await expect(page.getByTestId('poi-origin-mode-current')).toBeVisible();
+    await expect(page.getByTestId('poi-origin-mode-map')).toHaveCount(0);
+    await expect(page.getByTestId('poi-origin-map')).toHaveCount(0);
+  });
+
+  test('道の駅を選ぶ: 都道府県で絞り込むと、その県の道の駅だけが選べる（県を切り替えても前の県の駅が残らない）', async ({ page }) => {
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await expect(page.getByTestId('poi-origin-mode-station')).toHaveClass(/active/);
+
+    const prefSelect = page.getByTestId('poi-origin-pref-select');
+    const stationSelect = page.getByTestId('poi-origin-station-select');
+    await expect(prefSelect).toBeVisible();
+
+    // 都道府県一覧が実データと一致する（ハードコードした県名リストと比較するのではなく、
+    // 実際のデータから動的に算出した一覧と比較する）
+    const prefOptions = await prefSelect.locator('option').allTextContents();
+    expect([...prefOptions].sort()).toEqual([...PREFS_IN_DATA].sort());
+
+    for (const pref of PREFS_IN_DATA) {
+      await prefSelect.selectOption(pref);
+      const expectedIds = OPEN_STATIONS.filter((s) => s.pref === pref).map((s) => s.id);
+      const otherIds = OPEN_STATIONS.filter((s) => s.pref !== pref).map((s) => s.id);
+
+      const optionValues = await stationSelect.locator('option').evaluateAll((els) => els.map((el) => (el as HTMLOptionElement).value));
+      // プレースホルダー("")を除き、選択中の県の駅だけが候補になっている
+      const stationValues = optionValues.filter((v) => v !== '');
+      expect(new Set(stationValues)).toEqual(new Set(expectedIds));
+      // 前の県（他県）の駅が一切残っていない
+      for (const otherId of otherIds) {
+        expect(stationValues).not.toContain(otherId);
+      }
+    }
+  });
+
+  test('道の駅を選ぶ: 都道府県→道の駅の順に選ぶと検索地点が確定し、通常どおり検索できる', async ({ page }) => {
+    await mockOverpassResponse(page);
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+
+    const station = OPEN_STATIONS.find((s) => s.id === STATION_ID)!;
+    await page.getByTestId('poi-origin-pref-select').selectOption(station.pref);
+    await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
+    await expect(page.getByTestId('poi-search-origin')).toContainText(`道の駅${station.name}`);
+
+    await page.getByTestId('poi-do-search').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
+  });
+
   test('Overpass障害時はGoogleマップ検索へフォールバックできる', async ({ page }) => {
     await page.route('**/api/interpreter', (route) => route.abort());
     // このテストは「事前生成キャッシュも無い・Overpassも全滅」という最悪ケースを検証したいため、
@@ -210,11 +276,9 @@ test.describe('周辺スポット検索', () => {
 
     await page.getByTestId('poi-search-open').click();
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
-    await page.getByTestId('poi-origin-mode-map').click();
-    await page.getByTestId('poi-origin-map').click();
-    // 検索パネルは画面下部を占めるため、パネルに隠れない上部をタップする
-    await page.getByTestId('map-root').click({ position: { x: 200, y: 80 } });
-    await expect(page.getByTestId('poi-search-origin')).toContainText('指定した地点');
+    // 「地図で指定」は廃止済みのため、道の駅選択（既定の都道府県=青森県）で検索地点を確定する
+    await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
+    await expect(page.getByTestId('poi-search-origin')).toContainText('しちのへ');
     await page.getByTestId('poi-do-search').click();
     // 既定カテゴリー「すべて」のため、食べる・温泉・観光の3件が見える
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
@@ -649,7 +713,9 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-geo-failed')).toContainText('現在地を取得できませんでした');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-google-fallback')).toHaveCount(0);
-    await expect(page.getByTestId('poi-geo-use-map')).toBeVisible();
+    // 「地図で指定」は廃止済みのため、代替導線は「もう一度試す」「道の駅を選ぶ」のみ
+    await expect(page.getByTestId('poi-geo-retry')).toBeVisible();
+    await expect(page.getByTestId('poi-geo-use-station')).toBeVisible();
     // 現在地が拒否されても検索パネルは閉じない
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
 

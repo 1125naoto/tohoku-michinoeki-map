@@ -176,7 +176,7 @@ export default function App() {
   // （位置情報の失敗やOverpassの失敗でパネルが開かなくなる設計を禁止するため）。
   const [isPoiPanelOpen, setIsPoiPanelOpen] = useState(false);
   /** 検索地点の選び方（道の駅を選ぶ/現在地/地図で指定/ルート上の立ち寄り先）。初期値は「道の駅を選ぶ」 */
-  const [poiOriginMode, setPoiOriginMode] = useState<'station' | 'current' | 'map' | 'route'>('station');
+  const [poiOriginMode, setPoiOriginMode] = useState<'station' | 'current' | 'route'>('station');
   /** 選択中（まだ検索を実行していない場合を含む）の検索地点 */
   const [searchOrigin, setSearchOrigin] = useState<PoiOrigin | null>(null);
   // 初期値は「すべて」。道の駅の周辺は郊外が多く、特定カテゴリ（例:食べる）だけでは
@@ -194,7 +194,6 @@ export default function App() {
   const [poiFromCache, setPoiFromCache] = useState(false);
   /** stale-while-revalidate: キャッシュを即表示しつつ裏で最新データを取得中の間true */
   const [poiRevalidating, setPoiRevalidating] = useState(false);
-  const [poiMapPickActive, setPoiMapPickActive] = useState(false);
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
   /** 直近の検索の接続先ごとの試行ログ（診断表示専用。本番の公開URLでは表示しない） */
   const [poiAttemptLog, setPoiAttemptLog] = useState<EndpointAttemptLog[]>([]);
@@ -357,7 +356,6 @@ export default function App() {
   const closePoiSearch = useCallback(() => {
     poiAbortRef.current?.abort();
     setIsPoiPanelOpen(false);
-    setPoiMapPickActive(false);
     setPoiRequestStatus('idle');
     setGeolocationStatus('idle');
     setPoiOriginMode('station');
@@ -1102,15 +1100,8 @@ export default function App() {
             statusFilter={statusFilter}
             onOpenStation={handleOpenStation}
             onMapTap={closeSheet}
-            pickMode={pickMode || poiMapPickActive}
+            pickMode={pickMode}
             onPick={(p) => {
-              if (poiMapPickActive) {
-                setPoiMapPickActive(false);
-                setIsPoiPanelOpen(true);
-                // 地点を選んだだけでは通信しない。「この周辺を検索」を押して初めて検索する
-                setSearchOrigin({ lat: p.lat, lng: p.lng, label: `指定した地点 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
-                return;
-              }
               setOrigin({ lat: p.lat, lng: p.lng, label: `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
               setPickMode(false);
               setTab('route');
@@ -1223,8 +1214,6 @@ export default function App() {
               }
               onUseCurrentLocation={usePoiCurrentLocation}
               geolocationStatus={geolocationStatus}
-              onRequestMapPick={() => setPoiMapPickActive((v) => !v)}
-              mapPickActive={poiMapPickActive}
               routeStopOptions={routeSelectedIds
                 .map((id, i) => {
                   const st = getStation(id);
