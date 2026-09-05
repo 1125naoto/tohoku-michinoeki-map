@@ -528,6 +528,87 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-result-list')).toBeVisible();
   });
 
+  test('事前生成された静的POIキャッシュ: Overpassが全滅していても道の駅起点の検索なら実POI一覧が表示される', async ({
+    page,
+  }) => {
+    // 事前生成キャッシュ(scripts/fetch_poi_cache.pyが生成するpublic/data/poi/<id>.json)を模す。
+    // このテストの目的は「Overpassの生死に関係なく、事前生成データがあれば必ず一覧が出る」ことの検証のため、
+    // Overpass自体は最初から全滅させる。
+    await page.route('**/api/interpreter', (route) => route.abort());
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          stationId: STATION_ID,
+          lat: 40.718,
+          lng: 141.156,
+          radiusM: 10000,
+          generatedAt: '2026-09-05T00:00:00Z',
+          pois: [
+            {
+              id: 'osm:node/100',
+              category: 'food',
+              subcategory: 'shokudo',
+              name: '事前キャッシュ食堂',
+              lat: 40.719,
+              lng: 141.157,
+              address: null,
+              openingHoursRaw: null,
+              phone: null,
+              website: null,
+              distanceM: 120,
+              source: 'overpass',
+              sourceUrl: 'https://www.openstreetmap.org/node/100',
+            },
+            {
+              id: 'osm:node/101',
+              category: 'onsen',
+              subcategory: 'higaeri_onsen',
+              name: '事前キャッシュ温泉',
+              lat: 40.72,
+              lng: 141.158,
+              address: null,
+              openingHoursRaw: null,
+              phone: null,
+              website: null,
+              distanceM: 300,
+              source: 'overpass',
+              sourceUrl: 'https://www.openstreetmap.org/node/101',
+            },
+          ],
+        }),
+      }),
+    );
+
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+
+    // Overpassは全滅させているにもかかわらず、事前生成キャッシュにより実POI一覧が即座に表示される
+    // （静的キャッシュもfromCache扱いのため「前回取得した周辺スポットを表示しています」の文言になる）
+    await expect(page.getByTestId('poi-result-count')).toContainText('前回取得した周辺スポットを表示しています', {
+      timeout: 5000,
+    });
+    await expect(page.getByTestId('poi-failed')).toBeHidden();
+    const rows = page.locator('[data-testid="poi-result-row"]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first()).toContainText('事前キャッシュ');
+  });
+
+  test('事前生成キャッシュが無い駅（未生成）では通常どおりOverpass検索に進む', async ({ page }) => {
+    // 静的キャッシュが404(未生成)の場合はnullとして扱われ、通常のOverpass検索フローに
+    // 何の影響も与えないことを確認する（事前キャッシュが「無いと壊れる」設計になっていないこと）。
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) => route.fulfill({ status: 404 }));
+    await mockOverpassResponse(page);
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
+  });
+
   test('現在地の取得に失敗した場合はOverpass通信失敗とは別の案内になる（Googleへは飛ばさない）', async ({ page }) => {
     // ヘッドレスブラウザの権限プロンプトは自動応答されず無期限に待つことがあるため、
     // navigator.geolocationを決定的に「拒否」で応答するようスタブする

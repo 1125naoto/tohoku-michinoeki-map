@@ -40,6 +40,7 @@ import {
   type EndpointAttemptLog,
   type SearchRadiusM,
 } from './lib/overpass';
+import { loadStaticPoiCache } from './lib/poiStaticCache';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
@@ -63,6 +64,13 @@ import RouteSelectionSheet from './components/RouteSelectionSheet';
 import ConfirmDialog from './components/ConfirmDialog';
 
 type Tab = 'map' | 'route' | 'records';
+
+/**
+ * 周辺スポットの検索地点。stationIdは道の駅起点で選んだ場合のみ設定され、
+ * 事前生成された静的POIキャッシュ(public/data/poi/<stationId>.json)を
+ * 参照するために使う（現在地・地図指定・ルート立ち寄り先には無い）。
+ */
+type PoiOrigin = { lat: number; lng: number; label: string; stationId?: string };
 type RouteStage = 'form' | 'results';
 
 const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
@@ -170,7 +178,7 @@ export default function App() {
   /** 検索地点の選び方（道の駅を選ぶ/現在地/地図で指定/ルート上の立ち寄り先）。初期値は「道の駅を選ぶ」 */
   const [poiOriginMode, setPoiOriginMode] = useState<'station' | 'current' | 'map' | 'route'>('station');
   /** 選択中（まだ検索を実行していない場合を含む）の検索地点 */
-  const [searchOrigin, setSearchOrigin] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [searchOrigin, setSearchOrigin] = useState<PoiOrigin | null>(null);
   // 初期値は「すべて」。道の駅の周辺は郊外が多く、特定カテゴリ（例:食べる）だけでは
   // 0件に見えやすいため、まず全カテゴリを見せてから絞り込んでもらう
   const [poiCategory, setPoiCategory] = useState<PoiCategory | null>(null);
@@ -222,7 +230,7 @@ export default function App() {
    * 検索パネルを開いた時点・検索地点を選んだ時点では絶対に呼ばない。
    */
   const runPoiSearch = useCallback(
-    async (o: { lat: number; lng: number; label: string }, radius: SearchRadiusM) => {
+    async (o: PoiOrigin, radius: SearchRadiusM) => {
       poiAbortRef.current?.abort();
       const ctrl = new AbortController();
       poiAbortRef.current = ctrl;
@@ -233,16 +241,32 @@ export default function App() {
       // stale-while-revalidate: 過去に成功した結果があれば通信を待たずに即表示し、
       // 裏で最新データを取得する。取得が失敗してもこの表示は消さない
       // （「周辺スポット画面は何も表示されない状態を作らない」ため）。
-      const cached = peekCachedPois(o.lat, o.lng, radius);
-      const hadCache = cached !== null;
-      if (hadCache) {
-        setPoiRawResults(cached);
+      let hadCache = false;
+      const localCached = peekCachedPois(o.lat, o.lng, radius);
+      if (localCached !== null) {
+        hadCache = true;
+        setPoiRawResults(localCached);
         setPoiRequestStatus('ok');
         setPoiFromCache(true);
         setPoiRevalidating(true);
       } else {
         setPoiRequestStatus('loading');
         setPoiRevalidating(false);
+      }
+
+      // ローカルキャッシュが無く、道の駅起点の検索なら、事前生成された静的キャッシュを試す。
+      // 同一オリジンの静的ファイル（GitHub Pages配信）のため、Overpass公開ミラーの
+      // 瞬間的な不調とは無関係に読める。「毎回Overpassに直接依存する」構造そのものを避ける。
+      if (!hadCache && o.stationId) {
+        const staticCache = await loadStaticPoiCache(o.stationId);
+        if (ctrl.signal.aborted) return;
+        if (staticCache && staticCache.pois.length > 0) {
+          hadCache = true;
+          setPoiRawResults(staticCache.pois);
+          setPoiRequestStatus('ok');
+          setPoiFromCache(true);
+          setPoiRevalidating(true);
+        }
       }
 
       try {
@@ -322,7 +346,7 @@ export default function App() {
    * この場合はユーザーの意図が単一で明確なため、パネルを開くと同時に検索も実行する。
    */
   const searchNearbyFor = useCallback(
-    (o: { lat: number; lng: number; label: string }) => {
+    (o: PoiOrigin) => {
       setTab('map');
       setPoiOriginMode('station');
       void runPoiSearch(o, poiRadius);
@@ -1194,7 +1218,9 @@ export default function App() {
               originMode={poiOriginMode}
               onChangeOriginMode={setPoiOriginMode}
               origin={searchOrigin}
-              onPickStation={(st) => setSearchOrigin({ lat: st.lat, lng: st.lng, label: `道の駅${st.name}` })}
+              onPickStation={(st) =>
+                setSearchOrigin({ lat: st.lat, lng: st.lng, label: `道の駅${st.name}`, stationId: st.id })
+              }
               onUseCurrentLocation={usePoiCurrentLocation}
               geolocationStatus={geolocationStatus}
               onRequestMapPick={() => setPoiMapPickActive((v) => !v)}
@@ -1475,7 +1501,12 @@ export default function App() {
             onClose={closeSheet}
             onSearchNearby={() => {
               closeSheet();
-              searchNearbyFor({ lat: selected.lat, lng: selected.lng, label: `道の駅${selected.name}` });
+              searchNearbyFor({
+                lat: selected.lat,
+                lng: selected.lng,
+                label: `道の駅${selected.name}`,
+                stationId: selected.id,
+              });
             }}
           />
         )}
