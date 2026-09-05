@@ -319,8 +319,18 @@ test.describe('周辺スポット検索', () => {
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
-    await page.locator('[data-poi-id="osm:node/1"]').click();
+    // node1/node3はfixture上ごく近接しており(mockOverpassResponse内のコメント参照)、全件並列実行時の
+    // 負荷でfitBoundsの着地がずれるとnode3がnode1の地図マーカーを一時的に覆うことがある
+    // （地図マーカー自体のクリックは別テストで検証済み）。ここでの目的は
+    // 「ルートに追加した状態がreload後も再開できるか」であり対象がnode1であることが重要なため、
+    // 地図マーカーではなく一覧から名前で特定してタップし、対象の曖昧さを無くす。
+    await page
+      .getByTestId('poi-result-row')
+      .filter({ hasText: 'テストラーメン店' })
+      .getByTestId('poi-result-open')
+      .click();
     await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
+    await expect(page.getByTestId('poi-detail-sheet')).toContainText('テストラーメン店');
     await page.getByTestId('poi-detail-toggle-route').click();
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
 
