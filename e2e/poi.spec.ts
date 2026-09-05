@@ -150,6 +150,10 @@ test.describe('周辺スポット検索', () => {
 
   test('Overpass障害時はGoogleマップ検索へフォールバックできる', async ({ page }) => {
     await page.route('**/api/interpreter', (route) => route.abort());
+    // このテストは「事前生成キャッシュも無い・Overpassも全滅」という最悪ケースを検証したいため、
+    // 静的キャッシュ側も明示的に404にする（本駅は実際には事前生成済みのため、放置すると
+    // 静的キャッシュに救われて意図と異なるテストになってしまう）
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) => route.fulfill({ status: 404 }));
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('btn-search-nearby').click();
@@ -388,6 +392,8 @@ test.describe('周辺スポット検索', () => {
 
   test('すべての接続先が失敗した場合はGoogleマップ検索へフォールバックできる（もう一度試す・検索範囲を変更も表示）', async ({ page }) => {
     await page.route('**/api/interpreter', (route) => route.abort());
+    // 事前生成キャッシュも無い状況を明示的に模す（本駅は実際には事前生成済みのため）
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) => route.fulfill({ status: 404 }));
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
