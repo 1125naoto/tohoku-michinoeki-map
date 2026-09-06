@@ -3,27 +3,15 @@
   "lat": 37.5569993,
   "lng": 139.8631361,
   "radiusM": 10000,
-  "generatedAt": "2026-09-05T03:11:55Z",
+  "generatedAt": "2026-09-06T06:50:58Z",
   "pois": [
-    {
-      "id": "osm:node/1963988607",
-      "category": "food",
-      "subcategory": "food_other",
-      "name": "あかべこ",
-      "lat": 37.5617333,
-      "lng": 139.8299331,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2974,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/1963988607"
-    },
     {
       "id": "osm:node/1746012111",
       "category": "food",
       "subcategory": "italian",
+      "subcategories": [
+        "italian"
+      ],
       "name": "伊太利亭",
       "lat": 37.5301824,
       "lng": 139.8687783,
@@ -39,6 +27,9 @@
       "id": "osm:node/944809342",
       "category": "lodging",
       "subcategory": "hostel",
+      "subcategories": [
+        "hostel"
+      ],
       "name": "福島県会津自然の家",
       "lat": 37.5809427,
       "lng": 139.7992843,
@@ -54,12 +45,15 @@
       "id": "osm:node/1295645710",
       "category": "food",
       "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "中華飯店 重慶",
       "lat": 37.518042,
       "lng": 139.916928,
       "address": null,
       "openingHoursRaw": null,
-      "phone": "+81-242252331",
+      "phone": "0242252331",
       "website": null,
       "distanceM": 6423,
       "source": "overpass",
@@ -69,6 +63,9 @@
       "id": "osm:node/778096160",
       "category": "lodging",
       "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
       "name": "糸桜里の湯ばんげ",
       "lat": 37.5881764,
       "lng": 139.7993581,
@@ -84,6 +81,9 @@
       "id": "osm:node/944827633",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "千葉寺",
       "lat": 37.4958065,
       "lng": 139.8738406,
@@ -98,7 +98,10 @@
     {
       "id": "osm:node/878057827",
       "category": "food",
-      "subcategory": "food_other",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
       "name": "焼肉モランボン",
       "lat": 37.5058111,
       "lng": 139.9113822,
@@ -114,6 +117,9 @@
       "id": "osm:node/944734562",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "古峯神社 湯殿山",
       "lat": 37.493654,
       "lng": 139.874183,
@@ -128,7 +134,10 @@
     {
       "id": "osm:node/948292862",
       "category": "food",
-      "subcategory": "yoshoku",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "ガスト",
       "lat": 37.5176904,
       "lng": 139.9272778,
@@ -144,6 +153,9 @@
       "id": "osm:node/1921430367",
       "category": "food",
       "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
       "name": "ベーカリーカフェ　コパン",
       "lat": 37.521899,
       "lng": 139.9356205,
@@ -159,14 +171,17 @@
       "id": "osm:node/926508071",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": null,
-      "lat": 37.4940934,
-      "lng": 139.903995,
+      "lat": 37.4941369,
+      "lng": 139.9041065,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 7868,
+      "distanceM": 7869,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/926508071"
     },
@@ -174,6 +189,9 @@
       "id": "osm:node/1345581847",
       "category": "lodging",
       "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
       "name": "駅前フジグランドホテル",
       "lat": 37.5067989,
       "lng": 139.9305706,
@@ -189,6 +207,9 @@
       "id": "osm:node/926507815",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "二本木稲荷神社",
       "lat": 37.4899849,
       "lng": 139.9008033,
@@ -204,6 +225,9 @@
       "id": "osm:node/1345581289",
       "category": "food",
       "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "白木屋",
       "lat": 37.507386,
       "lng": 139.9317032,
@@ -219,6 +243,9 @@
       "id": "osm:node/932143755",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "長福寺",
       "lat": 37.4992604,
       "lng": 139.9207657,
@@ -234,6 +261,9 @@
       "id": "osm:node/926507835",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "新城寺",
       "lat": 37.4894983,
       "lng": 139.9006032,
@@ -249,6 +279,9 @@
       "id": "osm:node/921185025",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "西蓮寺",
       "lat": 37.4989259,
       "lng": 139.9206144,
@@ -264,6 +297,9 @@
       "id": "osm:node/1310094469",
       "category": "food",
       "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "カフェ&バー ウノ",
       "lat": 37.4997423,
       "lng": 139.923174,
@@ -279,6 +315,9 @@
       "id": "osm:node/847415230",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "古峯神社",
       "lat": 37.4923131,
       "lng": 139.9114486,
@@ -294,6 +333,9 @@
       "id": "osm:node/926437877",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "熊野神社",
       "lat": 37.4876666,
       "lng": 139.8999961,
@@ -309,6 +351,9 @@
       "id": "osm:node/1943618554",
       "category": "food",
       "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "中華飯店　大川",
       "lat": 37.5030304,
       "lng": 139.930487,
@@ -324,6 +369,9 @@
       "id": "osm:node/959095505",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "古峯神社",
       "lat": 37.4907326,
       "lng": 139.9099599,
@@ -339,6 +387,9 @@
       "id": "osm:node/983908135",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "崖薬師",
       "lat": 37.492288,
       "lng": 139.914185,
@@ -354,6 +405,9 @@
       "id": "osm:node/1255572385",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "二之鳥居",
       "lat": 37.6301557,
       "lng": 139.8334697,
@@ -369,6 +423,9 @@
       "id": "osm:node/880532817",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "日蓮宗 大法寺",
       "lat": 37.4907866,
       "lng": 139.9133968,
@@ -384,6 +441,9 @@
       "id": "osm:node/853934904",
       "category": "tourism",
       "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
       "name": "小館稲荷神社",
       "lat": 37.4933836,
       "lng": 139.9189782,
@@ -399,6 +459,9 @@
       "id": "osm:node/1943630755",
       "category": "food",
       "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
       "name": "洋食屋マーティン",
       "lat": 37.4996962,
       "lng": 139.92902,
@@ -414,6 +477,9 @@
       "id": "osm:node/1943634135",
       "category": "food",
       "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
       "name": "焙煎屋珈琲店",
       "lat": 37.4992339,
       "lng": 139.9288243,
@@ -429,6 +495,9 @@
       "id": "osm:node/1943637281",
       "category": "food",
       "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
       "name": null,
       "lat": 37.4985823,
       "lng": 139.928528,
@@ -444,6 +513,9 @@
       "id": "osm:node/968281616",
       "category": "food",
       "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
       "name": "原田飴本舗",
       "lat": 37.491366,
       "lng": 139.917226,
@@ -454,6 +526,24 @@
       "distanceM": 8719,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/968281616"
+    },
+    {
+      "id": "osm:node/910509831",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "会津駄菓子 長門屋",
+      "lat": 37.490037,
+      "lng": 139.915302,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8752,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/910509831"
     }
   ]
 }

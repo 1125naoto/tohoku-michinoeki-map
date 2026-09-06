@@ -46,7 +46,16 @@ export interface Poi {
   /** `osm:<node|way|relation>/<id>` 形式の一意ID */
   id: string;
   category: PoiCategory;
+  /** 表示・アイコン・滞在時間既定値に使う代表サブカテゴリ（従来通り単一） */
   subcategory: PoiSubcategory;
+  /**
+   * 絞り込み用の所属サブカテゴリ一覧（1件以上、必ずsubcategoryを含む）。
+   * 例: 天然温泉の日帰り入浴施設は「日帰り温泉」を代表表示にしつつ、
+   * 「温泉」細分類での絞り込みにも該当させたいため両方を持つ。
+   * localStorageに保存された旧データ（このフィールドが無い）を読む箇所は、
+   * 必ず `p.subcategories ?? [p.subcategory]` の形でフォールバックすること。
+   */
+  subcategories: PoiSubcategory[];
   /** OSMにname タグが無い場合は null（名称不明として扱い、断定表示しない） */
   name: string | null;
   lat: number;
@@ -246,8 +255,43 @@ export interface OsmElement {
   tags?: Record<string, string>;
 }
 
+/**
+ * 飲食のジャンル細分類。cuisineタグを最優先し、cuisineが無い/どれにも
+ * 一致しない場合のみ、店名の高精度なキーワード（ラーメン/寿司/焼肉。誤検出が
+ * ほぼ無い語だけに限定）で補う。日本のOSMデータはcuisineタグが付いていない
+ * 飲食店が非常に多く、cuisineだけに頼ると実在するラーメン店・寿司店等が
+ * 軒並み「その他の飲食店」に埋もれてしまうため（実データ監査で確認済み）。
+ */
+function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
+  if (cuisine.includes('ramen')) return 'ramen';
+  if (cuisine.includes('sushi')) return 'sushi';
+  if (cuisine.includes('yakiniku') || cuisine.includes('korean')) return 'yakiniku';
+  if (cuisine.includes('italian')) return 'italian';
+  if (cuisine.includes('izakaya')) return 'izakaya';
+  if (cuisine.includes('western')) return 'yoshoku';
+  if (cuisine.includes('japanese')) return 'shokudo';
+  if (cuisine.includes('dessert') || cuisine.includes('cake')) return 'sweets';
+  if (/ラーメン|らーめん|らあめん|中華そば/.test(name)) return 'ramen';
+  if (/寿司|すし|鮨/.test(name)) return 'sushi';
+  if (/焼肉|焼き肉/.test(name)) return 'yakiniku';
+  return null;
+}
+
+/**
+ * public_bath/spaが実際に温泉由来かどうかの判定。bath:typeタグが最も確実だが、
+ * 実データ（ライブAPIで確認）では大半の温泉施設にbath:typeが付いていないため、
+ * 「amenity=public_bath等の入浴施設と既に確定した上で」店名に「温泉」を含む、
+ * という高精度な補助シグナルも使う（ホテル等の名前判定とは違い、対象が
+ * 既に入浴施設と確定しているため誤って無関係なカテゴリを増やす心配が無い）。
+ */
+function isOnsenFacility(tags: Record<string, string>, name: string): boolean {
+  return tags['bath:type'] === 'onsen' || name.includes('温泉');
+}
+
 /** OSMタグから分類する。判定できない要素は null（呼び出し側で除外する） */
-export function classify(tags: Record<string, string>): { category: PoiCategory; subcategory: PoiSubcategory } | null {
+export function classify(
+  tags: Record<string, string>,
+): { category: PoiCategory; subcategory: PoiSubcategory; subcategories: PoiSubcategory[] } | null {
   const amenity = tags.amenity;
   const tourism = tags.tourism;
   const leisure = tags.leisure;
@@ -256,51 +300,55 @@ export function classify(tags: Record<string, string>): { category: PoiCategory;
   const highway = tags.highway;
   const cuisine = (tags.cuisine ?? '').toLowerCase();
   const religion = tags.religion;
+  const name = tags['name:ja'] ?? tags.name ?? '';
+
+  const single = (category: PoiCategory, subcategory: PoiSubcategory) => ({ category, subcategory, subcategories: [subcategory] });
 
   // ---- 温泉・休憩 ----
-  if (natural === 'hot_spring') return { category: 'onsen', subcategory: 'onsen' };
-  if (amenity === 'public_bath') return { category: 'onsen', subcategory: 'higaeri_onsen' };
-  if (leisure === 'spa') return { category: 'onsen', subcategory: 'onyoku_shisetsu' };
-  if (amenity === 'foot_bath') return { category: 'onsen', subcategory: 'ashiyu' };
+  if (natural === 'hot_spring') return single('onsen', 'onsen');
+  if (amenity === 'public_bath') {
+    return isOnsenFacility(tags, name)
+      ? { category: 'onsen', subcategory: 'higaeri_onsen', subcategories: ['higaeri_onsen', 'onsen'] }
+      : single('onsen', 'higaeri_onsen');
+  }
+  if (leisure === 'spa') {
+    return isOnsenFacility(tags, name)
+      ? { category: 'onsen', subcategory: 'onyoku_shisetsu', subcategories: ['onyoku_shisetsu', 'onsen'] }
+      : single('onsen', 'onyoku_shisetsu');
+  }
+  if (amenity === 'foot_bath') return single('onsen', 'ashiyu');
   if (highway === 'rest_area' || tourism === 'picnic_site' || amenity === 'shelter') {
-    return { category: 'onsen', subcategory: 'kyukei' };
+    return single('onsen', 'kyukei');
   }
 
   // ---- 食べる ----
-  if (amenity === 'cafe') return { category: 'food', subcategory: 'cafe' };
-  if (amenity === 'fast_food') return { category: 'food', subcategory: 'fastfood' };
-  if (shop === 'confectionery' || shop === 'pastry') return { category: 'food', subcategory: 'sweets' };
-  if (amenity === 'restaurant' || amenity === 'bar' || amenity === 'pub') {
-    if (cuisine.includes('ramen')) return { category: 'food', subcategory: 'ramen' };
-    if (cuisine.includes('sushi')) return { category: 'food', subcategory: 'sushi' };
-    if (cuisine.includes('yakiniku') || cuisine.includes('korean')) return { category: 'food', subcategory: 'yakiniku' };
-    if (cuisine.includes('italian')) return { category: 'food', subcategory: 'italian' };
-    if (cuisine.includes('izakaya')) return { category: 'food', subcategory: 'izakaya' };
-    if (cuisine.includes('western')) return { category: 'food', subcategory: 'yoshoku' };
-    if (cuisine.includes('japanese')) return { category: 'food', subcategory: 'shokudo' };
-    if (cuisine.includes('dessert') || cuisine.includes('cake')) return { category: 'food', subcategory: 'sweets' };
-    return { category: 'food', subcategory: 'food_other' };
+  if (amenity === 'cafe') return single('food', 'cafe');
+  if (shop === 'confectionery' || shop === 'pastry') return single('food', 'sweets');
+  if (amenity === 'fast_food' || amenity === 'restaurant' || amenity === 'bar' || amenity === 'pub') {
+    const genre = classifyFoodGenre(cuisine, name);
+    if (genre) return single('food', genre);
+    return single('food', amenity === 'fast_food' ? 'fastfood' : 'food_other');
   }
 
   // ---- 観光 ----
   if (amenity === 'place_of_worship' && (religion === 'shinto' || religion === 'buddhist')) {
-    return { category: 'tourism', subcategory: 'jinja_tera' };
+    return single('tourism', 'jinja_tera');
   }
-  if (leisure === 'park') return { category: 'tourism', subcategory: 'koen' };
-  if (tourism === 'museum') return { category: 'tourism', subcategory: 'hakubutsukan' };
-  if (tourism === 'viewpoint') return { category: 'tourism', subcategory: 'tenbo' };
-  if (tourism === 'zoo' || tourism === 'aquarium') return { category: 'tourism', subcategory: 'doubutsuen_suizokukan' };
-  if (tourism === 'camp_site') return { category: 'tourism', subcategory: 'camp' };
+  if (leisure === 'park') return single('tourism', 'koen');
+  if (tourism === 'museum') return single('tourism', 'hakubutsukan');
+  if (tourism === 'viewpoint') return single('tourism', 'tenbo');
+  if (tourism === 'zoo' || tourism === 'aquarium') return single('tourism', 'doubutsuen_suizokukan');
+  if (tourism === 'camp_site') return single('tourism', 'camp');
   if (natural === 'beach' || natural === 'waterfall' || natural === 'peak' || natural === 'cliff') {
-    return { category: 'tourism', subcategory: 'keishou' };
+    return single('tourism', 'keishou');
   }
-  if (tourism === 'attraction') return { category: 'tourism', subcategory: 'meisho' };
-  if (tourism === 'artwork' || tourism === 'gallery') return { category: 'tourism', subcategory: 'tourism_other' };
+  if (tourism === 'attraction') return single('tourism', 'meisho');
+  if (tourism === 'artwork' || tourism === 'gallery') return single('tourism', 'tourism_other');
 
   // ---- 宿泊 ----
-  if (tourism === 'hotel' || tourism === 'motel') return { category: 'lodging', subcategory: 'hotel' };
-  if (tourism === 'guest_house') return { category: 'lodging', subcategory: 'guesthouse' };
-  if (tourism === 'hostel') return { category: 'lodging', subcategory: 'hostel' };
+  if (tourism === 'hotel' || tourism === 'motel') return single('lodging', 'hotel');
+  if (tourism === 'guest_house') return single('lodging', 'guesthouse');
+  if (tourism === 'hostel') return single('lodging', 'hostel');
 
   return null;
 }
@@ -328,6 +376,7 @@ export function normalizeOsmElement(el: OsmElement, origin: { lat: number; lng: 
     id: `osm:${typeKey}/${el.id}`,
     category: cls.category,
     subcategory: cls.subcategory,
+    subcategories: cls.subcategories,
     // 日本語名（name:ja / name:ja-Hira等）があれば優先し、無ければ汎用のnameを使う
     name: tags['name:ja'] ?? tags.name ?? null,
     lat,

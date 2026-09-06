@@ -24,6 +24,7 @@ Overpassへ再検証をかける（stale-while-revalidateと同じ考え方を
 import argparse
 import json
 import math
+import re
 import sys
 import time
 import urllib.error
@@ -69,8 +70,50 @@ def build_query(lat, lng, radius_m):
     )
 
 
+RAMEN_NAME_RE = re.compile("ラーメン|らーめん|らあめん|中華そば")
+SUSHI_NAME_RE = re.compile("寿司|すし|鮨")
+YAKINIKU_NAME_RE = re.compile("焼肉|焼き肉")
+
+
+def classify_food_genre(cuisine, name):
+    """src/lib/poi.ts の classifyFoodGenre() と同一ロジック。
+    cuisineタグを最優先し、無い/一致しない場合のみ高精度な店名キーワードで補う
+    （日本のOSMは飲食店にcuisineタグが付いていないことが非常に多いため）。
+    """
+    if "ramen" in cuisine:
+        return "ramen"
+    if "sushi" in cuisine:
+        return "sushi"
+    if "yakiniku" in cuisine or "korean" in cuisine:
+        return "yakiniku"
+    if "italian" in cuisine:
+        return "italian"
+    if "izakaya" in cuisine:
+        return "izakaya"
+    if "western" in cuisine:
+        return "yoshoku"
+    if "japanese" in cuisine:
+        return "shokudo"
+    if "dessert" in cuisine or "cake" in cuisine:
+        return "sweets"
+    if RAMEN_NAME_RE.search(name):
+        return "ramen"
+    if SUSHI_NAME_RE.search(name):
+        return "sushi"
+    if YAKINIKU_NAME_RE.search(name):
+        return "yakiniku"
+    return None
+
+
+def is_onsen_facility(tags, name):
+    """src/lib/poi.ts の isOnsenFacility() と同一ロジック。"""
+    return tags.get("bath:type") == "onsen" or "温泉" in name
+
+
 def classify(tags):
-    """src/lib/poi.ts の classify() と同一ロジック（category, subcategory）。"""
+    """src/lib/poi.ts の classify() と同一ロジック。
+    戻り値は (category, subcategory, subcategories) の3要素タプル。
+    """
     amenity = tags.get("amenity")
     tourism = tags.get("tourism")
     leisure = tags.get("leisure")
@@ -79,68 +122,61 @@ def classify(tags):
     highway = tags.get("highway")
     cuisine = (tags.get("cuisine") or "").lower()
     religion = tags.get("religion")
+    name = tags.get("name:ja") or tags.get("name") or ""
+
+    def single(category, subcategory):
+        return (category, subcategory, [subcategory])
 
     if natural == "hot_spring":
-        return ("onsen", "onsen")
+        return single("onsen", "onsen")
     if amenity == "public_bath":
-        return ("onsen", "higaeri_onsen")
+        if is_onsen_facility(tags, name):
+            return ("onsen", "higaeri_onsen", ["higaeri_onsen", "onsen"])
+        return single("onsen", "higaeri_onsen")
     if leisure == "spa":
-        return ("onsen", "onyoku_shisetsu")
+        if is_onsen_facility(tags, name):
+            return ("onsen", "onyoku_shisetsu", ["onyoku_shisetsu", "onsen"])
+        return single("onsen", "onyoku_shisetsu")
     if amenity == "foot_bath":
-        return ("onsen", "ashiyu")
+        return single("onsen", "ashiyu")
     if highway == "rest_area" or tourism == "picnic_site" or amenity == "shelter":
-        return ("onsen", "kyukei")
+        return single("onsen", "kyukei")
 
     if amenity == "cafe":
-        return ("food", "cafe")
-    if amenity == "fast_food":
-        return ("food", "fastfood")
+        return single("food", "cafe")
     if shop in ("confectionery", "pastry"):
-        return ("food", "sweets")
-    if amenity in ("restaurant", "bar", "pub"):
-        if "ramen" in cuisine:
-            return ("food", "ramen")
-        if "sushi" in cuisine:
-            return ("food", "sushi")
-        if "yakiniku" in cuisine or "korean" in cuisine:
-            return ("food", "yakiniku")
-        if "italian" in cuisine:
-            return ("food", "italian")
-        if "izakaya" in cuisine:
-            return ("food", "izakaya")
-        if "western" in cuisine:
-            return ("food", "yoshoku")
-        if "japanese" in cuisine:
-            return ("food", "shokudo")
-        if "dessert" in cuisine or "cake" in cuisine:
-            return ("food", "sweets")
-        return ("food", "food_other")
+        return single("food", "sweets")
+    if amenity in ("fast_food", "restaurant", "bar", "pub"):
+        genre = classify_food_genre(cuisine, name)
+        if genre:
+            return single("food", genre)
+        return single("food", "fastfood" if amenity == "fast_food" else "food_other")
 
     if amenity == "place_of_worship" and religion in ("shinto", "buddhist"):
-        return ("tourism", "jinja_tera")
+        return single("tourism", "jinja_tera")
     if leisure == "park":
-        return ("tourism", "koen")
+        return single("tourism", "koen")
     if tourism == "museum":
-        return ("tourism", "hakubutsukan")
+        return single("tourism", "hakubutsukan")
     if tourism == "viewpoint":
-        return ("tourism", "tenbo")
+        return single("tourism", "tenbo")
     if tourism in ("zoo", "aquarium"):
-        return ("tourism", "doubutsuen_suizokukan")
+        return single("tourism", "doubutsuen_suizokukan")
     if tourism == "camp_site":
-        return ("tourism", "camp")
+        return single("tourism", "camp")
     if natural in ("beach", "waterfall", "peak", "cliff"):
-        return ("tourism", "keishou")
+        return single("tourism", "keishou")
     if tourism == "attraction":
-        return ("tourism", "meisho")
+        return single("tourism", "meisho")
     if tourism in ("artwork", "gallery"):
-        return ("tourism", "tourism_other")
+        return single("tourism", "tourism_other")
 
     if tourism in ("hotel", "motel"):
-        return ("lodging", "hotel")
+        return single("lodging", "hotel")
     if tourism == "guest_house":
-        return ("lodging", "guesthouse")
+        return single("lodging", "guesthouse")
     if tourism == "hostel":
-        return ("lodging", "hostel")
+        return single("lodging", "hostel")
 
     return None
 
@@ -171,7 +207,7 @@ def normalize_element(el, origin_lat, origin_lng):
     cls = classify(tags)
     if not cls:
         return None
-    category, subcategory = cls
+    category, subcategory, subcategories = cls
     lat = el.get("lat")
     lng = el.get("lon")
     if lat is None or lng is None:
@@ -185,6 +221,7 @@ def normalize_element(el, origin_lat, origin_lng):
         "id": f"osm:{type_key}/{el['id']}",
         "category": category,
         "subcategory": subcategory,
+        "subcategories": subcategories,
         "name": tags.get("name:ja") or tags.get("name"),
         "lat": lat,
         "lng": lng,

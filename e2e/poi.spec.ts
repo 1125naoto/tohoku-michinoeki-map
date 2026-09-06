@@ -854,3 +854,107 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
   });
 });
+
+/**
+ * 実地テストで報告された不具合の回帰: 「表示されているPOIが、細分類を押すと消える」問題。
+ * 表示されているPOIの数だけでなく、地図マーカーの増減・復元も併せて確認する。
+ * @smoke を付け、iphone(全件)に加えandroid/tablet/desktopでも実行する。
+ */
+test.describe('周辺スポット検索: 細分類フィルター', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  function mockGenreFixture(page: Page) {
+    return page.route('**/api/interpreter', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          elements: [
+            // 食べる: ラーメン(cuisine由来) + ラーメン(店名のみ、cuisineタグ無し) + カフェ
+            { type: 'node', id: 201, lat: 40.7171, lon: 141.1553, tags: { amenity: 'fast_food', cuisine: 'ramen', name: 'テスト屋台ラーメン' } },
+            { type: 'node', id: 202, lat: 40.7172, lon: 141.1554, tags: { amenity: 'restaurant', name: 'らーめん花子' } },
+            { type: 'node', id: 203, lat: 40.7173, lon: 141.1555, tags: { amenity: 'cafe', name: 'テストカフェ' } },
+            // 温泉・休憩: 温泉由来の日帰り温泉(bath:type=onsen) + 温泉由来を示さない一般公衆浴場 + 足湯
+            { type: 'node', id: 204, lat: 40.7174, lon: 141.1556, tags: { amenity: 'public_bath', 'bath:type': 'onsen', name: 'テスト温泉' } },
+            { type: 'node', id: 205, lat: 40.7175, lon: 141.1557, tags: { amenity: 'public_bath', name: 'テスト浴場センター' } },
+            { type: 'node', id: 206, lat: 40.7176, lon: 141.1558, tags: { amenity: 'foot_bath', name: 'テスト足湯' } },
+            // 宿泊: ホテル
+            { type: 'node', id: 207, lat: 40.7177, lon: 141.1559, tags: { tourism: 'hotel', name: 'テストホテル' } },
+          ],
+        }),
+      }),
+    );
+  }
+
+  test('食べる/温泉・休憩/宿泊の各細分類で、該当するPOIが正しく残る（データ上あるのに0件になる問題が無い）@smoke', async ({ page }) => {
+    await mockGenreFixture(page);
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    const legend = page.getByTestId('legend-panel');
+    if (await legend.isVisible().catch(() => false)) await page.getByTestId('legend-toggle').click();
+    await page.getByTestId('btn-search-nearby').click();
+
+    const resultCount = page.getByTestId('poi-result-count');
+    const markers = page.locator('.poi-marker');
+
+    // 5. 「すべて」で7件（食べる3・温泉3・宿泊1）
+    await expect(resultCount).toContainText('7件見つけました', { timeout: 10000 });
+    await expect(markers).toHaveCount(7);
+
+    // 食べるカテゴリ: 3件（ラーメン2・カフェ1）
+    await page.getByTestId('poi-category-food').click();
+    await expect(resultCount).toContainText('3件見つけました');
+    await expect(markers).toHaveCount(3);
+
+    // 6. ラーメン: cuisine由来・店名由来の両方が残る（2件）
+    await page.getByTestId('poi-subcategory-ramen').click();
+    await expect(resultCount).toContainText('2件見つけました');
+    await expect(page.getByTestId('poi-result-row')).toHaveCount(2);
+    await expect(page.getByTestId('poi-result-row')).toContainText(['テスト屋台ラーメン', 'らーめん花子']);
+    await expect(markers).toHaveCount(2);
+
+    // 7. カフェ: 1件
+    await page.getByTestId('poi-subcategory-cafe').click();
+    await expect(resultCount).toContainText('1件見つけました');
+    await expect(markers).toHaveCount(1);
+
+    // 12. 細分類→すべてへ戻す（食べるカテゴリ内の「すべて」チップ。カテゴリ全体の
+    // 「すべて」ボタン(poi-category-all)と文言が同じため、細分類チップの範囲内に限定する）
+    await page.getByTestId('poi-subcategory-chips').getByRole('button', { name: 'すべて', exact: true }).click();
+    await expect(resultCount).toContainText('3件見つけました');
+    await expect(markers).toHaveCount(3);
+
+    // 13. カテゴリをまたいで温泉・休憩へ切り替え: 3件
+    await page.getByTestId('poi-category-onsen').click();
+    await expect(resultCount).toContainText('3件見つけました');
+    await expect(markers).toHaveCount(3);
+
+    // 8. 温泉: bath:type=onsenの1件のみ（温泉由来を示さない公衆浴場は含まれない）
+    await page.getByTestId('poi-subcategory-onsen').click();
+    await expect(resultCount).toContainText('1件見つけました');
+    await expect(page.getByTestId('poi-result-row')).toContainText('テスト温泉');
+    await expect(markers).toHaveCount(1);
+
+    // 9. 日帰り温泉: 公衆浴場2件とも残る（温泉由来かどうかに関わらず日帰り温泉としては両方該当）
+    await page.getByTestId('poi-subcategory-higaeri_onsen').click();
+    await expect(resultCount).toContainText('2件見つけました');
+    await expect(page.getByTestId('poi-result-row')).toHaveCount(2);
+    await expect(markers).toHaveCount(2);
+
+    // 10. 足湯: 1件
+    await page.getByTestId('poi-subcategory-ashiyu').click();
+    await expect(resultCount).toContainText('1件見つけました');
+    await expect(markers).toHaveCount(1);
+
+    // 11. 宿泊: カテゴリをまたいで切り替え、1件
+    await page.getByTestId('poi-category-lodging').click();
+    await expect(resultCount).toContainText('1件見つけました');
+    await expect(page.getByTestId('poi-result-row')).toContainText('テストホテル');
+    await expect(markers).toHaveCount(1);
+
+    // カテゴリの「すべて」に戻すと全7件に復元される
+    await page.getByTestId('poi-category-all').click();
+    await expect(resultCount).toContainText('7件見つけました');
+    await expect(markers).toHaveCount(7);
+  });
+});

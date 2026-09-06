@@ -32,7 +32,7 @@ import {
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory } from './lib/poi';
+import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
 import {
   searchNearbyPoisAuto,
   peekCachedPois,
@@ -212,10 +212,12 @@ export default function App() {
     let list = poiRawResults;
     if (poiCategory) {
       list = list.filter((p) => p.category === poiCategory);
+      // subcategoriesはlocalStorage経由の旧データに無いことがあるため、
+      // 常に subcategory（単数）へフォールバックしてから判定する
       if (poiSubcategory === '__rainy__') {
-        list = list.filter((p) => RAINY_DAY_SUBCATEGORIES.includes(p.subcategory));
+        list = list.filter((p) => (p.subcategories ?? [p.subcategory]).some((s) => RAINY_DAY_SUBCATEGORIES.includes(s)));
       } else if (poiSubcategory !== 'all') {
-        list = list.filter((p) => p.subcategory === poiSubcategory);
+        list = list.filter((p) => (p.subcategories ?? [p.subcategory]).includes(poiSubcategory as PoiSubcategory));
       }
     }
     return list;
