@@ -463,6 +463,69 @@ test.describe('フィルターと達成率', () => {
     await page.getByTestId('filter-all').click();
   });
 
+  /**
+   * 実機テストで報告された不具合の回帰: 「県別・状態フィルターを押しただけで
+   * 道の駅一覧が全面展開され地図を隠す」問題。県別・状態フィルターは地図マーカーの
+   * 絞り込みだけに徹し、一覧は駅名・市町村検索のときだけ表示されることを確認する。
+   */
+  test('県別・状態フィルターは地図マーカーを絞り込むだけで、一覧を自動表示しない（検索欄のときだけ一覧を出す）@smoke', async ({
+    page,
+  }) => {
+    const FUKUSHIMA_STATION = 'mne-19862'; // 猪苗代（福島県）
+    const AOMORI_STATION = 'mne-18904'; // 青森県
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. 東北全体: 一覧は表示されない
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toBeVisible();
+
+    // 2. 福島 → 福島県の道の駅だけ地図表示、一覧は開かない
+    await page.getByTestId('chip-福島県').click();
+    await expect(page.getByTestId('chip-福島県')).toHaveClass(/active/);
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toHaveCount(0);
+
+    // 4. 福島 → 未訪問: 条件どおり絞り込まれ、一覧は開かない
+    await page.getByTestId('filter-none').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+
+    // 5. 福島 → 行きたい: 条件どおり絞り込まれる（未訪問なので0件になり得るが落ちない）
+    await page.getByTestId('filter-want').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await page.getByTestId('filter-all').click();
+
+    // 3. 青森 → 青森県だけに切り替わる、一覧は開かない
+    await page.getByTestId('chip-青森県').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toHaveCount(0);
+    await page.getByTestId('chip-tohoku').click();
+
+    // 6. 検索欄に「会津」→ 候補一覧は表示してよい
+    await page.getByTestId('station-search-input').fill('会津');
+    await expect(page.getByTestId('station-result-list')).toBeVisible();
+    const rowCount = await page.locator('.station-result-row').count().catch(() => 0);
+    expect(rowCount).toBeGreaterThan(0);
+
+    // 7. 検索欄をクリア → 候補一覧が消える
+    await page.getByTestId('station-search-clear').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+
+    // 8. 候補を選択 → 該当道の駅の詳細へ正しく移動する
+    await page.getByTestId('station-search-input').fill('猪苗代');
+    await expect(page.getByTestId(`station-result-${FUKUSHIMA_STATION}`)).toBeVisible();
+    await page.getByTestId(`station-result-${FUKUSHIMA_STATION}`).click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await expect(page.getByTestId('station-sheet')).toContainText('猪苗代');
+  });
+
   test('状態フィルターが排他状態と連動する（訪問済み⇔行きたいの移動）', async ({ page }) => {
     await gotoStation(page);
     await page.getByTestId('btn-visited').click(); // 詳細から訪問済みへ

@@ -582,7 +582,10 @@ export default function App() {
     () => filterStations(STATIONS, visits, prefFilter, statusFilter, stationQuery),
     [prefFilter, statusFilter, stationQuery, visits],
   );
-  const stationListActive = prefFilter !== null || statusFilter !== 'all' || stationQuery.trim() !== '';
+  // 県別・状態フィルターは「地図マーカーを絞り込む」専用（従来のシンプルな挙動）。
+  // 一覧の自動展開は駅名・市町村検索が入力されているときだけ（県/状態を押しただけで
+  // 一覧が全面展開され地図を隠してしまう問題の修正）。
+  const stationListActive = stationQuery.trim() !== '';
   const activeSaved = trip ? (savedRoutes.find((r) => r.id === trip.savedRouteId) ?? null) : null;
 
   useEffect(() => {
