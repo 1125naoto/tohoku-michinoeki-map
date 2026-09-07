@@ -41,6 +41,7 @@ import {
   type SearchRadiusM,
 } from './lib/overpass';
 import { loadStaticPoiCache } from './lib/poiStaticCache';
+import { describeGeolocationError } from './lib/geolocation';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import {
@@ -188,6 +189,8 @@ export default function App() {
   const [poiRadius, setPoiRadius] = useState<SearchRadiusM>(DEFAULT_RADIUS_M);
   /** 現在地取得の状態（Overpass通信の状態とは完全に分離する） */
   const [geolocationStatus, setGeolocationStatus] = useState<'idle' | 'requesting' | 'denied' | 'ok'>('idle');
+  /** 現在地取得失敗時の案内文（権限拒否/取得不可/タイムアウト/Secure Context制限を区別する） */
+  const [poiGeoErrorMessage, setPoiGeoErrorMessage] = useState<string | null>(null);
   /** Overpass検索リクエストの状態 */
   const [poiRequestStatus, setPoiRequestStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   /** 表示中の結果が新鮮なキャッシュ/前回成功時の保存結果である間true */
@@ -205,7 +208,6 @@ export default function App() {
   const setPoiOrigin = setSearchOrigin;
   const poiLoading = poiRequestStatus === 'loading';
   const poiFailed = poiRequestStatus === 'error';
-  const poiGeoFailed = geolocationStatus === 'denied';
 
   // カテゴリ/サブカテゴリでの絞り込みはクライアント側で行う（同じ地点+半径ならAPIへ再検索しない）
   const poiSearchResults = useMemo(() => {
@@ -325,8 +327,10 @@ export default function App() {
   /** 「現在地」を検索地点として選ぶ。権限拒否・失敗してもパネルは閉じず、他の方法へ誘導する */
   const usePoiCurrentLocation = useCallback(() => {
     setGeolocationStatus('requesting');
+    setPoiGeoErrorMessage(null);
     if (!('geolocation' in navigator)) {
       setGeolocationStatus('denied');
+      setPoiGeoErrorMessage('この端末では位置情報を使えません。道の駅を選んで検索してください。');
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -337,7 +341,11 @@ export default function App() {
       // 現在地の取得失敗はOverpass通信の失敗とは別原因（権限拒否・タイムアウト等）。
       // 同じ「検索に失敗しました」表示にすると、実際には検索すら始まっていないのに
       // Googleマップへ誘導してしまい、アプリ内検索が機能しないという誤解を生む。
-      () => setGeolocationStatus('denied'),
+      // さらに権限拒否/取得不可/タイムアウトを区別し、原因に応じた案内文にする。
+      (err) => {
+        setGeolocationStatus('denied');
+        setPoiGeoErrorMessage(`${describeGeolocationError(err)} 道の駅を選んで検索してください。`);
+      },
       { timeout: 10000 },
     );
   }, []);
@@ -360,6 +368,7 @@ export default function App() {
     setIsPoiPanelOpen(false);
     setPoiRequestStatus('idle');
     setGeolocationStatus('idle');
+    setPoiGeoErrorMessage(null);
     setPoiOriginMode('station');
     setPoiRawResults([]);
     setPoiOrigin(null);
@@ -1242,7 +1251,7 @@ export default function App() {
               onSearch={runPoiSearchNow}
               loading={poiLoading}
               failed={poiFailed}
-              geoFailed={poiGeoFailed}
+              geoErrorMessage={poiGeoErrorMessage}
               searched={poiRequestStatus !== 'idle'}
               resultCount={poiSearchResults.length}
               totalRawCount={poiRawResults.length}

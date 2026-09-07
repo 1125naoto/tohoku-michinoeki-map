@@ -44,10 +44,14 @@ function mockOverpassResponse(page: Page) {
           {
             type: 'node',
             id: 3,
-            // 既存2件のすぐ近くに置く（離しすぎるとfitBoundsのズームが変わり、
-            // 狭いiPhone幅ではマーカーが検索パネルの下に隠れてクリックできなくなるため）
-            lat: 40.7185,
-            lon: 141.1565,
+            // 既存2件の近くに置く（離しすぎるとfitBoundsのズームが変わり、
+            // 狭いiPhone幅ではマーカーが検索パネルの下に隠れてクリックできなくなるため）。
+            // ただしnode1とnode2のちょうど中点（旧: 40.7185, 141.1565）だと、全件並列実行時の
+            // 負荷でfitBoundsの着地が微妙にずれた際にnode1のマーカーと視覚的に重なり、
+            // クリックがnode3側に奪われて不安定になることを実際に確認したため、
+            // node1からの距離を離して重ならないようにする。
+            lat: 40.7195,
+            lon: 141.1575,
             tags: { tourism: 'viewpoint', name: 'テスト展望台' },
           },
         ],
@@ -710,7 +714,9 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('poi-origin-mode-current').click();
     await page.getByTestId('poi-origin-current').click();
     await expect(page.getByTestId('poi-geo-failed')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByTestId('poi-geo-failed')).toContainText('現在地を取得できませんでした');
+    // code:1(PERMISSION_DENIED)かつSecure Context(127.0.0.1は例外扱い)のため、
+    // 「許可されていません」という権限拒否専用の案内文になる
+    await expect(page.getByTestId('poi-geo-failed')).toContainText('位置情報の利用が許可されていません');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-google-fallback')).toHaveCount(0);
     // 「地図で指定」は廃止済みのため、代替導線は「もう一度試す」「道の駅を選ぶ」のみ
@@ -722,6 +728,46 @@ test.describe('周辺スポット検索', () => {
     // 現在地拒否後、道の駅を選ぶ方法へ切り替えて検索を続けられる
     await page.getByTestId('poi-geo-use-station').click();
     await expect(page.getByTestId('poi-origin-station-select')).toBeVisible();
+  });
+
+  test('現在地取得: POSITION_UNAVAILABLE(code:2)は権限拒否とは異なる「電波状況」の案内になる', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (_ok: unknown, err: (e: { code: number; message: string }) => void) =>
+            setTimeout(() => err({ code: 2, message: 'Position unavailable' }), 50),
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-mode-current').click();
+    await page.getByTestId('poi-origin-current').click();
+    await expect(page.getByTestId('poi-geo-failed')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('poi-geo-failed')).toContainText('電波状況の良い場所');
+  });
+
+  test('現在地取得: TIMEOUT(code:3)は権限拒否とは異なる「時間がかかっています」の案内になる', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (_ok: unknown, err: (e: { code: number; message: string }) => void) =>
+            setTimeout(() => err({ code: 3, message: 'Timeout expired' }), 50),
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await closeBanners(page);
+    await page.getByTestId('poi-search-open').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-mode-current').click();
+    await page.getByTestId('poi-origin-current').click();
+    await expect(page.getByTestId('poi-geo-failed')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('poi-geo-failed')).toContainText('時間がかかっています');
   });
 
   test('公開版と同じ手順: ボタンを1回タップ→通信前にパネル表示→道の駅を選んで検索→アプリ内に実データ表示（Google未経由）', async ({ page }) => {

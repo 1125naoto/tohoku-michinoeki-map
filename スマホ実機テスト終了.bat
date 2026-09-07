@@ -1,7 +1,8 @@
 @echo off
 rem ============================================================
 rem  道の駅ナビ スマホ実機テスト終了スクリプト (Windows)
-rem  「スマホ実機テスト開始.bat」で起動したプレビューサーバーを停止します。
+rem  「スマホ実機テスト開始.bat」で起動したプレビューサーバーと
+rem  HTTPSトンネル(Cloudflare Tunnel)を停止します。
 rem ============================================================
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -25,7 +26,14 @@ if defined FOUND_PID (
   )
 ) else (
   echo  起動中のプレビューサーバーは見つかりませんでした。
-  echo  （すでに停止しているか、「スマホ実機テスト開始.bat」のウィンドウを閉じてすでに終了している可能性があります）
+  echo  ^(すでに停止しているか、「スマホ実機テスト開始.bat」のウィンドウがすでに閉じている可能性があります^)
+)
+
+taskkill /F /IM cloudflared.exe >nul 2>nul
+if errorlevel 1 (
+  echo  起動中のHTTPSトンネルは見つかりませんでした。
+) else (
+  echo  HTTPSトンネルを停止しました。
 )
 
 echo.

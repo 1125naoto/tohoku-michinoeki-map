@@ -661,6 +661,45 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(link).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&origin=/);
   });
 
+  test('コース作成: 現在地取得成功→現在地を出発地点としてルート計算まで進む', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (ok: (p: { coords: { latitude: number; longitude: number } }) => void) =>
+            setTimeout(() => ok({ coords: { latitude: 38.2688, longitude: 140.8721 } }), 50), // 仙台市付近
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await goToAutoPlanner(page);
+    // 既定タブが「現在地」のため、タブ切替なしでそのまま使えることも合わせて確認
+    await expect(page.getByTestId('origin-mode-geo')).toHaveClass(/active/);
+    await page.getByTestId('origin-geo-use').click();
+    await expect(page.getByTestId('origin-label')).toContainText('現在地');
+    await page.getByTestId('plan-submit').click();
+    await expect(page.getByTestId('route-card-max')).toBeVisible({ timeout: 40000 });
+  });
+
+  test('コース作成: 現在地取得エラーはPOSITION_UNAVAILABLE/TIMEOUTで異なる案内文になる（POI検索と同じ共通処理）', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (_ok: unknown, err: (e: { code: number; message: string }) => void) =>
+            setTimeout(() => err({ code: 2, message: 'Position unavailable' }), 50),
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await goToAutoPlanner(page);
+    await page.getByTestId('origin-geo-use').click();
+    await expect(page.getByTestId('origin-geo-error')).toBeVisible();
+    await expect(page.getByTestId('origin-geo-error')).toContainText('電波状況の良い場所');
+  });
+
   test('地図の「コースを作る」ボタンから設定画面へ入れる @smoke', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);

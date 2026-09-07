@@ -2,18 +2,10 @@ import { useState } from 'react';
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory } from '../lib/poi';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
+import { isDiagnosticsHost } from '../lib/geolocation';
 
 export type PoiSortMode = 'distance' | 'name' | 'category';
 export type PoiOriginMode = 'station' | 'current' | 'route';
-
-/**
- * 診断表示（接続先・HTTPステータス・タイムアウト等）を出してよい環境か。
- * 一般公開中のGitHub Pages本番URLでは絶対に出さない（ローカル/LANプレビュー/開発時のみ）。
- */
-function isDiagnosticsHost(): boolean {
-  if (typeof location === 'undefined') return false;
-  return location.hostname !== '1125naoto.github.io';
-}
 
 const OUTCOME_LABEL: Record<EndpointAttemptLog['outcome'], string> = {
   ok: 'OK',
@@ -74,8 +66,8 @@ interface Props {
   onSearch: () => void;
   loading: boolean;
   failed: boolean;
-  /** 現在地の取得に失敗（Overpass通信の失敗とは別扱い。検索自体は始まっていない） */
-  geoFailed: boolean;
+  /** 現在地の取得に失敗した場合の案内文（Overpass通信の失敗とは別扱い。検索自体は始まっていない） */
+  geoErrorMessage: string | null;
   /** 一度でも検索を実行したか（まだ一度もしていなければ結果0件でも「見つかりませんでした」は出さない） */
   searched: boolean;
   resultCount: number;
@@ -129,7 +121,7 @@ export default function PoiSearchPanel({
   onSearch,
   loading,
   failed,
-  geoFailed,
+  geoErrorMessage,
   searched,
   resultCount,
   totalRawCount,
@@ -243,9 +235,9 @@ export default function PoiSearchPanel({
               現在地を確認しています…
             </p>
           )}
-          {geoFailed && (
+          {geoErrorMessage && (
             <div className="msg warn" style={{ marginTop: 6 }} data-testid="poi-geo-failed">
-              現在地を取得できませんでした。道の駅を選んで検索してください。
+              {geoErrorMessage}
               <div className="btn-grid" style={{ marginTop: 6 }}>
                 <button onClick={onUseCurrentLocation} data-testid="poi-geo-retry">
                   📍 もう一度試す

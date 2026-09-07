@@ -1,9 +1,12 @@
 @echo off
 rem ============================================================
 rem  道の駅ナビ スマホ実機テスト開始スクリプト (Windows)
-rem  ダブルクリックするだけで、最新版をビルドしてスマホから
-rem  確認できる状態にします。
-rem  終了するときは、このウィンドウを閉じてください（サーバーも止まります）。
+rem  ダブルクリックするだけで、最新でビルドしてスマホから
+rem  確認できる状態にします。HTTPS実機テスト用URL(Cloudflare Tunnel
+rem  経由・アカウント不要)も自動で用意します。
+rem  現在地機能はHTTPS接続でのみ動作します。HTTP接続ではブラウザの
+rem  Secure Context制限により位置情報機能自体が使えないためです。
+rem  終了するときは「スマホ実機テスト終了.bat」を実行してください。
 rem ============================================================
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -26,8 +29,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-rem ---- 1. 既存のプレビューサーバー(4173番ポート)を停止 ----
-echo  [1/4] 既存のプレビューサーバーを確認しています...
+rem ---- 1. 既存のプレビューサーバー(4173番ポート)とHTTPSトンネルを停止 ----
+echo  [1/5] 既存のプレビューサーバーを確認しています...
 set FOUND_PID=
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":4173" ^| findstr "LISTENING"') do set FOUND_PID=%%p
 if defined FOUND_PID (
@@ -37,67 +40,89 @@ if defined FOUND_PID (
 ) else (
   echo    起動中のプレビューサーバーはありませんでした。
 )
+taskkill /F /IM cloudflared.exe >nul 2>nul
 echo.
 
 rem ---- 2. ビルド ----
-echo  [2/4] 最新版をビルドしています...^(数十秒かかります^)
+echo  [2/5] 最新でビルドしています...^(数十秒かかります^)
 echo.
 call npm run build
 if errorlevel 1 (
   echo.
   echo  [エラー] ビルドに失敗しました。
-  echo  原因: 上に表示されたエラー内容を確認してください^(コードの記述ミスの可能性があります^)。
-  echo  次にやること: エラー内容をコピーしてClaude Codeに伝え、修正を依頼してください。
+  echo  次にやること: 上に表示されたエラー内容を確認してください^(コードの記述ミスの可能性があります^)。
+  echo  もしくは: エラー内容をコピーしてClaude Codeに伝え、修正を依頼してください。
   echo.
   pause
   exit /b 1
 )
 echo.
-echo    ビルド成功。
+echo    ビルド完了。
 echo.
 
-rem ---- 3. LAN IPv4アドレスの取得 ----
-echo  [3/4] このPCのLAN IPアドレスを確認しています...
+rem ---- 3. LAN IPv4アドレスの取得(HTTPSが使えない場合の予備) ----
+echo  [3/5] このPCのLAN IPアドレスを確認しています...
 set LAN_IP=
 for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notmatch '^169\.254\.' -and $_.IPAddress -notmatch '^127\.' -and $_.InterfaceAlias -notmatch 'Loopback|vEthernet|WSL' } | Select-Object -First 1 -ExpandProperty IPAddress)" 2^>nul`) do set LAN_IP=%%i
 if not defined LAN_IP (
-  echo    [警告] LAN IPアドレスを自動取得できませんでした。
-  echo    原因: PCがWi-Fi/LANに接続されていないか、取得方法が環境に合わなかった可能性があります。
-  echo    次にやること: コマンドプロンプトで「ipconfig」を実行し、IPv4アドレスをご自身で確認してください。
   set LAN_IP=このPCのIPアドレス
 ) else (
   echo    見つかりました: !LAN_IP!
 )
 echo.
 
-rem ---- 4. プレビューサーバー起動 ----
-echo  [4/4] プレビューサーバーを起動します...
+rem ---- 4. プレビューサーバーを別ウィンドウで起動 ----
+echo  [4/5] プレビューサーバーを起動しています...
+start "michinoeki-preview" /min npm run preview
+timeout /t 3 /nobreak >nul
+echo    起動しました。
 echo.
+
+rem ---- 5. HTTPS実機テスト用URL(Cloudflare Tunnel)を用意 ----
+echo  [5/5] HTTPS実機テスト用のURLを準備しています...^(10秒ほどかかります^)
+set CF_LOG=%TEMP%\michinoeki_cloudflared_log.txt
+if exist "%CF_LOG%" del /f /q "%CF_LOG%" >nul 2>nul
+set HTTPS_URL=
+where cloudflared >nul 2>nul
+if errorlevel 1 (
+  echo    [注意] cloudflaredが見つからないため、HTTPS URLは準備できませんでした。
+  echo    現在地機能を試すにはHTTPS接続が必要です。下のLAN URLでは現在地機能は使えません。
+) else (
+  start "michinoeki-tunnel" /min cloudflared tunnel --url http://localhost:4173 --logfile "%CF_LOG%"
+  set /a WAIT_COUNT=0
+  :WAIT_TUNNEL
+  set /a WAIT_COUNT+=1
+  timeout /t 1 /nobreak >nul
+  if exist "%CF_LOG%" (
+    for /f "usebackq delims=" %%u in (`powershell -NoProfile -Command "$m = Select-String -Path '%CF_LOG%' -Pattern 'https://[a-z0-9-]+\.trycloudflare\.com' -ErrorAction SilentlyContinue | Select-Object -First 1; if ^($m^) { $m.Matches[0].Value }"`) do set HTTPS_URL=%%u
+  )
+  if not defined HTTPS_URL (
+    if !WAIT_COUNT! LSS 25 goto WAIT_TUNNEL
+  )
+)
+echo.
+
 echo  ============================================
-echo    スマホ実機テスト準備完了
+echo   スマホ実機テストの準備ができました
 echo  ============================================
 echo.
-echo    スマホでこちらを開いてください:
+if defined HTTPS_URL (
+  echo    スマホでこちらを開いてください ^(現在地機能もこちらでのみ動作^):
+  echo.
+  echo    !HTTPS_URL!
+  echo.
+  echo    ^(Wi-Fiが違うスマホからでも開けます^)
+) else (
+  echo    [注意] HTTPS URLの準備に時間がかかっているか、失敗しました。
+  echo    しばらくしてからこのファイルをもう一度実行してください。
+)
+echo.
+echo    同じWi-Fi内であればこちらも使えます^(現在地機能は使えません^):
 echo.
 echo    http://!LAN_IP!:4173/
 echo.
-echo    ※PCとスマホを同じWi-Fiに接続してください
-echo    ※このウィンドウを閉じるとテストが終了します
+echo    終了するときは「スマホ実機テスト終了.bat」を実行してください。
+echo    ^(このウィンドウを閉じてもサーバーは動き続けます^)
 echo  ============================================
 echo.
-
-call npm run preview
-if errorlevel 1 (
-  echo.
-  echo  [エラー] プレビューサーバーの起動に失敗しました。
-  echo  原因: 4173番ポートが他のアプリで使用中の可能性があります。
-  echo  次にやること: 「スマホ実機テスト終了.bat」を実行してから、もう一度お試しください。
-  echo  それでも解決しない場合はPCを再起動してからお試しください。
-  echo.
-  pause
-  exit /b 1
-)
-
-echo.
-echo  プレビューサーバーが終了しました。
 pause

@@ -8,6 +8,7 @@ import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
 import { matchesFilter } from '../lib/ui';
+import { describeGeolocationError } from '../lib/geolocation';
 
 interface Props {
   stations: Station[];
@@ -756,9 +757,9 @@ export default function MapView({
           }).addTo(map);
         map.setView(ll, Math.max(map.getZoom(), 12));
       },
-      () => {
-        setLocMsg('現在地を取得できませんでした');
-        setTimeout(() => setLocMsg(null), 3000);
+      (err) => {
+        setLocMsg(describeGeolocationError(err));
+        setTimeout(() => setLocMsg(null), 5000);
       },
       { timeout: 10000 },
     );

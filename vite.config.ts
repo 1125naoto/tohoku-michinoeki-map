@@ -80,4 +80,11 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  preview: {
+    // 実機テスト用のLAN/HTTPSトンネル（Cloudflare Tunnel等）はランダムなホスト名で
+    // アクセスしてくるため、DNSリバインディング対策のHostチェックを無効化する。
+    // vite previewはローカルの実機テスト専用で、本番のGitHub Pages配信（静的ビルド出力を
+    // そのまま配信するだけ）には一切関与しないため安全。
+    allowedHosts: true,
+  },
 });
