@@ -98,6 +98,44 @@ describe('カテゴリ分類（OSMタグから）', () => {
         subcategories: ['ramen'],
       });
     });
+    it('実データ監査（仙台/盛岡/山形）で確認したラーメン店名パターンを分類する', () => {
+      const ramenNames = [
+        'らぁめん花月',
+        '拉麺 三國志',
+        '仙台中華蕎麦 仁屋',
+        '支那そば 龍軒',
+        'つけ麺おんのじ 仙台本店',
+        '油そば 春日亭',
+        '麺屋政宗',
+        '麺処 誠',
+        '麺房おおはら',
+        '麺工房 大地',
+        'RAMEN JIRO',
+        '一蘭',
+        '町田商店',
+      ];
+      for (const name of ramenNames) {
+        expect(classify({ amenity: 'restaurant', name })?.subcategory).toBe('ramen');
+      }
+    });
+    it('cuisine=noodleや「麺」を含む名前でも、実際は非ラーメン店（そば/うどん/パスタ/麻辣湯）は誤分類しない', () => {
+      // cuisine=noodle は実データ上そば/うどん/麻辣湯にも付与されているため、
+      // それ自体では ramen 判定しない（店名側の高精度キーワードが無ければ null のまま）。
+      expect(classify({ amenity: 'restaurant', cuisine: 'noodle', name: 'そばの神田 東一屋' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      expect(classify({ amenity: 'fast_food', cuisine: 'noodle', name: '丸亀製麺' })?.subcategory).not.toBe('ramen');
+      expect(classify({ amenity: 'restaurant', cuisine: 'chinese', name: '七宝麻辣湯' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      // 「麺屋」は店名の先頭にある場合のみラーメンとみなす。先頭以外（洋麺屋＝パスタ店）は誤分類しない。
+      expect(classify({ amenity: 'restaurant', cuisine: 'pasta', name: '洋麺屋五右衛門' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      expect(classify({ amenity: 'restaurant', cuisine: 'soba', name: '生そば 福はら' })?.subcategory).not.toBe(
+        'ramen',
+      );
+    });
     it('cuisineタグが無くても、店名に「寿司」を含むrestaurantは寿司に分類される', () => {
       expect(classify({ amenity: 'restaurant', name: '想い出寿司' })).toEqual({
         category: 'food',

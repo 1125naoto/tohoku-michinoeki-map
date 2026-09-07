@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchServedBuildInfo, forceRefreshToLatest, runningBuildInfo, type BuildInfo } from '../lib/buildInfo';
-import { describeGeolocationError } from '../lib/geolocation';
+import { describeGeolocationError, getBestCurrentPosition, type GeolocationAttemptLog } from '../lib/geolocation';
 
 /** 動作診断パネルに渡す、周辺スポット検索の現在状態 */
 export interface PoiDiagnostics {
@@ -12,6 +12,10 @@ export interface PoiDiagnostics {
   subcategory: string;
   filteredCount: number;
   fromStaticCache: boolean;
+  /** 検索に使われた範囲(m)。B7: 半径バグ(m/km変換等)を診断画面から確認できるように */
+  radiusM: number | null;
+  /** 直近のOverpass生取得件数（分類前）。0件ならcoverage問題、totalCountとの差が大きければ分類漏れの疑い */
+  rawOverpassCount: number | null;
 }
 
 interface Props {
@@ -28,6 +32,7 @@ interface SwState {
 interface GeoResult {
   kind: 'idle' | 'running' | 'ok' | 'error';
   text: string;
+  attempts: GeolocationAttemptLog[];
 }
 
 function displayMode(): string {
@@ -48,7 +53,7 @@ export default function DiagnosticsPanel({ poi }: Props) {
   const [served, setServed] = useState<BuildInfo | null | 'loading'>('loading');
   const [sw, setSw] = useState<SwState>({ supported: false, controlled: false, scope: null, state: '未確認' });
   const [permission, setPermission] = useState<string>('不明');
-  const [geo, setGeo] = useState<GeoResult>({ kind: 'idle', text: '' });
+  const [geo, setGeo] = useState<GeoResult>({ kind: 'idle', text: '', attempts: [] });
   const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -103,24 +108,26 @@ export default function DiagnosticsPanel({ poi }: Props) {
   }, []);
 
   const tryGeolocation = () => {
-    setGeo({ kind: 'running', text: '現在地を取得しています…' });
+    setGeo({ kind: 'running', text: '現在地を取得しています…（高精度→低精度の順に最大2回試行）', attempts: [] });
     if (!('geolocation' in navigator)) {
-      setGeo({ kind: 'error', text: 'この端末では位置情報APIを使えません' });
+      setGeo({ kind: 'error', text: 'この端末では位置情報APIを使えません', attempts: [] });
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
+    void getBestCurrentPosition().then(({ position, error, attempts }) => {
+      if (position) {
         setGeo({
           kind: 'ok',
-          text: `取得成功: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}（精度 約${Math.round(pos.coords.accuracy)}m）`,
-        }),
-      (err) =>
-        setGeo({
-          kind: 'error',
-          text: `${describeGeolocationError(err)} [code=${err.code} message=${err.message}]`,
-        }),
-      { timeout: 15000 },
-    );
+          text: `取得成功: ${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}（精度 約${Math.round(position.coords.accuracy)}m）`,
+          attempts,
+        });
+        return;
+      }
+      setGeo({
+        kind: 'error',
+        text: `${describeGeolocationError(error ?? { code: 2 })} [code=${error?.code ?? '?'} message=${error?.message ?? '?'}]`,
+        attempts,
+      });
+    });
   };
 
   const isSecure = typeof window !== 'undefined' ? window.isSecureContext : false;
@@ -153,6 +160,11 @@ export default function DiagnosticsPanel({ poi }: Props) {
     ['周辺スポット 検索地点', poi.originLabel ?? '未選択'],
     ['周辺スポット 駅ID', poi.stationId ?? '—'],
     ['周辺スポット データ源', poi.fromStaticCache ? '事前キャッシュ/前回結果' : 'ライブ取得 or 未検索'],
+    ['周辺スポット 検索半径', poi.radiusM != null ? `${poi.radiusM}m` : '—'],
+    [
+      '周辺スポット Overpass生件数',
+      poi.rawOverpassCount != null ? `${poi.rawOverpassCount}件（分類後 ${poi.totalCount}件）` : '—',
+    ],
     ['周辺スポット 総件数', String(poi.totalCount)],
     ['周辺スポット カテゴリ', `${poi.category ?? 'すべて'}（${poi.categoryCount}件）`],
     ['周辺スポット 細分類', `${poi.subcategory}（表示中 ${poi.filteredCount}件）`],
@@ -217,6 +229,16 @@ export default function DiagnosticsPanel({ poi }: Props) {
         <p className={`msg ${geo.kind === 'error' ? 'warn' : 'info'}`} style={{ marginTop: 8 }} data-testid="diagnostics-geo-result">
           {geo.text}
         </p>
+      )}
+      {geo.attempts.length > 0 && (
+        <ul style={{ fontSize: 11, marginTop: 4, paddingLeft: 18 }} data-testid="diagnostics-geo-attempts">
+          {geo.attempts.map((a, i) => (
+            <li key={i}>
+              試行{i + 1}（{a.accuracy === 'high' ? '高精度' : '低精度'}）: {a.ok ? '成功' : `失敗 code=${a.code} ${a.message ?? ''}`}
+              　{a.elapsedMs}ms
+            </li>
+          ))}
+        </ul>
       )}
     </details>
   );

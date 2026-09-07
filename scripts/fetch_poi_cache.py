@@ -70,7 +70,19 @@ def build_query(lat, lng, radius_m):
     )
 
 
-RAMEN_NAME_RE = re.compile("ラーメン|らーめん|らあめん|中華そば")
+# 実データ監査(仙台/盛岡/山形、restaurant/fast_food計718件)で確認した、
+# ラーメン以外に使われない語のみを追加。cuisine=noodleそのものや「麺」単独は
+# そば/うどん/麻辣湯/パスタ店にも付与されているため使わない
+# (例: 「洋麺屋五右衛門」はパスタ店、「丸亀製麺」はうどん店、
+#  「そばの神田」「生そば 福はら」はそば店、「七宝麻辣湯」は麻辣湯店)。
+RAMEN_NAME_RE = re.compile(
+    "ラーメン|らーめん|らぁめん|らあめん|拉麺|中華そば|中華蕎麦|支那そば"
+    "|つけ麺|油そば|^麺屋|^麺処|^麺房|^麺工房|ramen",
+    re.IGNORECASE,
+)
+# 全国チェーンで店名・cuisineタグにラーメンを示す語が現れないことを実データで
+# 確認した店。チェーン名が一意なため誤分類リスクが無い。
+RAMEN_CHAIN_RE = re.compile("一蘭|町田商店")
 SUSHI_NAME_RE = re.compile("寿司|すし|鮨")
 YAKINIKU_NAME_RE = re.compile("焼肉|焼き肉")
 
@@ -97,6 +109,8 @@ def classify_food_genre(cuisine, name):
     if "dessert" in cuisine or "cake" in cuisine:
         return "sweets"
     if RAMEN_NAME_RE.search(name):
+        return "ramen"
+    if RAMEN_CHAIN_RE.search(name):
         return "ramen"
     if SUSHI_NAME_RE.search(name):
         return "sushi"

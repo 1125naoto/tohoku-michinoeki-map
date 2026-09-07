@@ -33,15 +33,9 @@ import {
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
-import {
-  searchNearbyPoisAuto,
-  peekCachedPois,
-  DEFAULT_RADIUS_M,
-  type EndpointAttemptLog,
-  type SearchRadiusM,
-} from './lib/overpass';
-import { loadStaticPoiCache } from './lib/poiStaticCache';
-import { describeGeolocationError } from './lib/geolocation';
+import { peekCachedPois, DEFAULT_RADIUS_M, type EndpointAttemptLog, type SearchRadiusM } from './lib/overpass';
+import { StaticOsmPoiProvider, OverpassPoiProvider } from './lib/poiProvider';
+import { describeGeolocationError, getBestCurrentPosition } from './lib/geolocation';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import DiagnosticsPanel from './components/DiagnosticsPanel';
@@ -232,6 +226,12 @@ export default function App() {
     () => (poiCategory ? poiRawResults.filter((p) => p.category === poiCategory).length : 0),
     [poiRawResults, poiCategory],
   );
+  // 動作診断用: 直近の成功したOverpass試行の生要素数（分類前）。キャッシュ表示時はnull
+  // （coverage不足=そもそも生取得が少ない、と分類漏れ=生取得は多いのに分類後が少ない、を区別するため）
+  const poiRawOverpassCount = useMemo(() => {
+    const ok = [...poiAttemptLog].reverse().find((a) => a.outcome === 'ok' && a.elementCount != null);
+    return ok?.elementCount ?? null;
+  }, [poiAttemptLog]);
   const [poiSort, setPoiSort] = useState<PoiSortMode>('distance');
   const sortedPoiResults = useMemo(() => sortPois(poiSearchResults, poiSort), [poiSearchResults, poiSort]);
 
@@ -268,12 +268,14 @@ export default function App() {
       // ローカルキャッシュが無く、道の駅起点の検索なら、事前生成された静的キャッシュを試す。
       // 同一オリジンの静的ファイル（GitHub Pages配信）のため、Overpass公開ミラーの
       // 瞬間的な不調とは無関係に読める。「毎回Overpassに直接依存する」構造そのものを避ける。
+      // 現在地起点の検索（o.stationIdが無い）はここを通らず、必ず下のOverpassPoiProviderで
+      // その場のlat/lngを中心にライブ検索する（駅中心の静的データを現在地検索に流用しない）。
       if (!hadCache && o.stationId) {
-        const staticCache = await loadStaticPoiCache(o.stationId);
+        const staticResult = await new StaticOsmPoiProvider(o.stationId).search(o, radius);
         if (ctrl.signal.aborted) return;
-        if (staticCache && staticCache.pois.length > 0) {
+        if (!staticResult.failed && staticResult.pois.length > 0) {
           hadCache = true;
-          setPoiRawResults(staticCache.pois);
+          setPoiRawResults(staticResult.pois);
           setPoiRequestStatus('ok');
           setPoiFromCache(true);
           setPoiRevalidating(true);
@@ -281,7 +283,7 @@ export default function App() {
       }
 
       try {
-        const res = await searchNearbyPoisAuto(o.lat, o.lng, radius, ctrl.signal);
+        const res = await new OverpassPoiProvider().search(o, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
         setPoiRevalidating(false);
         setPoiAttemptLog(res.attemptLog);
@@ -341,21 +343,21 @@ export default function App() {
       setPoiGeoErrorMessage('この端末では位置情報を使えません。道の駅を選んで検索してください。');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    void getBestCurrentPosition().then(({ position, error }) => {
+      if (position) {
         setGeolocationStatus('ok');
-        setSearchOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' });
-      },
+        setSearchOrigin({ lat: position.coords.latitude, lng: position.coords.longitude, label: '現在地' });
+        return;
+      }
+      setGeolocationStatus('denied');
       // 現在地の取得失敗はOverpass通信の失敗とは別原因（権限拒否・タイムアウト等）。
       // 同じ「検索に失敗しました」表示にすると、実際には検索すら始まっていないのに
       // Googleマップへ誘導してしまい、アプリ内検索が機能しないという誤解を生む。
       // さらに権限拒否/取得不可/タイムアウトを区別し、原因に応じた案内文にする。
-      (err) => {
-        setGeolocationStatus('denied');
-        setPoiGeoErrorMessage(`${describeGeolocationError(err)} 道の駅を選んで検索してください。`);
-      },
-      { timeout: 10000 },
-    );
+      setPoiGeoErrorMessage(
+        `${describeGeolocationError(error ?? { code: 2 })} 道の駅を選んで検索してください。`,
+      );
+    });
   }, []);
 
   /**
@@ -1512,6 +1514,8 @@ export default function App() {
                 subcategory: poiSubcategory,
                 filteredCount: poiSearchResults.length,
                 fromStaticCache: poiFromCache,
+                radiusM: searchOrigin ? poiRadius : null,
+                rawOverpassCount: poiFromCache ? null : poiRawOverpassCount,
               }}
             />
           </div>

@@ -8,7 +8,7 @@ import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
 import { matchesFilter } from '../lib/ui';
-import { describeGeolocationError } from '../lib/geolocation';
+import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 
 interface Props {
   stations: Station[];
@@ -741,11 +741,11 @@ export default function MapView({
       setTimeout(() => setLocMsg(null), 3000);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    void getBestCurrentPosition().then(({ position, error }) => {
+      if (position) {
         const map = mapRef.current;
         if (!map) return;
-        const ll: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        const ll: [number, number] = [position.coords.latitude, position.coords.longitude];
         if (meMarkerRef.current) meMarkerRef.current.setLatLng(ll);
         else
           meMarkerRef.current = L.circleMarker(ll, {
@@ -756,13 +756,11 @@ export default function MapView({
             fillOpacity: 1,
           }).addTo(map);
         map.setView(ll, Math.max(map.getZoom(), 12));
-      },
-      (err) => {
-        setLocMsg(describeGeolocationError(err));
-        setTimeout(() => setLocMsg(null), 5000);
-      },
-      { timeout: 10000 },
-    );
+        return;
+      }
+      setLocMsg(describeGeolocationError(error ?? { code: 2 }));
+      setTimeout(() => setLocMsg(null), 5000);
+    });
   };
   const locateRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {

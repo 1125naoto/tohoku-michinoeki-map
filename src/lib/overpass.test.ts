@@ -10,6 +10,7 @@ import {
   searchNearbyPois,
   searchNearbyPoisAuto,
 } from './overpass';
+import { POI_SCHEMA_VERSION } from './poi';
 
 const LAT = 37.4004;
 const LNG = 140.3597;
@@ -387,7 +388,7 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
       await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
       const raw = JSON.parse(localStorage.getItem('tohoku-me:poi-last-ok:v2')!) as { v: string; entries: Record<string, unknown> };
       expect(typeof raw.v).toBe('string');
-      expect(raw.v).toMatch(/^2:/); // POI_SCHEMA_VERSION=2 + 静的POIデータ版
+      expect(raw.v).toMatch(new RegExp(`^${POI_SCHEMA_VERSION}:`)); // POI_SCHEMA_VERSION + 静的POIデータ版
       expect(Object.keys(raw.entries)).toContain(key);
       expect(peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M)?.length).toBe(2);
     });

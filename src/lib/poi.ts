@@ -18,8 +18,10 @@ export type PoiCategory = 'food' | 'tourism' | 'onsen' | 'lodging';
  *   新ビルドでも優先的に表示され続け、静的キャッシュの正しい分類が使われず
  *   「ラーメン0件」になる不具合の根本原因だったため）
  *  v2: subcategories[] の追加、cuisine/店名による飲食ジャンル判定、温泉の多重所属
+ *  v3: ラーメン店名判定の実データ監査による拡充（つけ麺/油そば/中華蕎麦/
+ *      拉麺/支那そば/麺屋・麺処・麺房・麺工房(先頭一致)/一蘭・町田商店）
  */
-export const POI_SCHEMA_VERSION = 2;
+export const POI_SCHEMA_VERSION = 3;
 
 export type FoodSub =
   | 'ramen'
@@ -273,6 +275,19 @@ export interface OsmElement {
  * ほぼ無い語だけに限定）で補う。日本のOSMデータはcuisineタグが付いていない
  * 飲食店が非常に多く、cuisineだけに頼ると実在するラーメン店・寿司店等が
  * 軒並み「その他の飲食店」に埋もれてしまうため（実データ監査で確認済み）。
+ *
+ * 注意: cuisine=noodle は実データ上ラーメン/そば/うどん/つけ麺/麻辣湯まで
+ * 横断して付与されており（仙台駅周辺の実測: 584件中26件がcuisine=noodleで、
+ * 内訳はラーメン系だけでなく「そばの神田」「生そば 福はら」等の純粋なそば店、
+ * 「丸亀製麺」等のうどん店、「七宝麻辣湯」等の中華麻辣湯まで含む）、
+ * cuisine=noodleそのものをラーメン扱いにはしない。店名側も「麺」単独では
+ * 判定しない（実データで「洋麺屋五右衛門」というパスタ店が存在し、
+ * 単純な部分一致では誤分類するため）。ここに追加した語は仙台/盛岡/山形の
+ * 実データ監査で確認した「ラーメン以外に使われない」語のみ:
+ * らぁめん/拉麺/支那そば/中華蕎麦（中華そばの異表記）/つけ麺・油そば
+ * （そばを含むがラーメン派生食のため除外しない）/麺屋・麺処・麺房・麺工房
+ * （店名の先頭にある場合のみ。先頭以外だと「洋麺屋」のような非ラーメン店に
+ * 誤爆するため^で先頭固定）。
  */
 function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
   if (cuisine.includes('ramen')) return 'ramen';
@@ -283,7 +298,17 @@ function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
   if (cuisine.includes('western')) return 'yoshoku';
   if (cuisine.includes('japanese')) return 'shokudo';
   if (cuisine.includes('dessert') || cuisine.includes('cake')) return 'sweets';
-  if (/ラーメン|らーめん|らあめん|中華そば/.test(name)) return 'ramen';
+  if (
+    /ラーメン|らーめん|らぁめん|らあめん|拉麺|中華そば|中華蕎麦|支那そば|つけ麺|油そば|^麺屋|^麺処|^麺房|^麺工房|ramen/i.test(
+      name,
+    )
+  ) {
+    return 'ramen';
+  }
+  // 全国チェーンで店名・cuisineタグのどちらにもラーメンを示す語が
+  // 現れないことが実データで確認された店（一蘭・町田商店）。
+  // ラーメン専門チェーンとして名称が一意なため誤分類リスクが無い。
+  if (/一蘭|町田商店/.test(name)) return 'ramen';
   if (/寿司|すし|鮨/.test(name)) return 'sushi';
   if (/焼肉|焼き肉/.test(name)) return 'yakiniku';
   return null;
