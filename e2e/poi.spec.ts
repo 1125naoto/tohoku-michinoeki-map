@@ -499,6 +499,47 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-empty-google-fallback')).toBeVisible();
   });
 
+  test('実機で報告された不具合の回帰: 細分類(ラーメン)が0件でも「食べる」自体が0件と誤表示しない', async ({ page }) => {
+    // 食べる3件（すべてカフェ。ラーメンは無し）+ 温泉1件、を用意する。
+    // 「ラーメン」を選ぶと0件になるが、「食べる」自体には3件あるため、
+    // 「「食べる」では見つかりませんでした」という誤った表示にならないことを確認する。
+    await page.route('**/api/interpreter', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          elements: [
+            { type: 'node', id: 1, lat: 40.7171, lon: 141.1553, tags: { amenity: 'cafe', name: 'カフェA' } },
+            { type: 'node', id: 2, lat: 40.7172, lon: 141.1554, tags: { amenity: 'cafe', name: 'カフェB' } },
+            { type: 'node', id: 3, lat: 40.7173, lon: 141.1555, tags: { amenity: 'cafe', name: 'カフェC' } },
+            { type: 'node', id: 4, lat: 40.7174, lon: 141.1556, tags: { natural: 'hot_spring', name: 'テスト温泉' } },
+          ],
+        }),
+      }),
+    );
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('4件見つけました', { timeout: 10000 });
+
+    await page.getByTestId('poi-category-food').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました');
+    await page.getByTestId('poi-subcategory-ramen').click();
+
+    await expect(page.getByTestId('poi-empty')).toBeVisible({ timeout: 10000 });
+    // 「「食べる」では見つかりませんでした」という誤った表示にならないこと
+    await expect(page.getByTestId('poi-empty')).not.toContainText('「食べる」では見つかりませんでした');
+    // 正しくは「ラーメン」が見つからなかった旨と、「食べる」内の他ジャンルには3件ある旨
+    await expect(page.getByTestId('poi-empty')).toContainText('「ラーメン」では見つかりませんでした');
+    await expect(page.getByTestId('poi-empty')).toContainText('「食べる」の他の絞り込みでは3件見つかっています');
+
+    // 「「食べる」の他のジャンルを見る」ボタンで細分類だけがリセットされ、3件（カテゴリ全体）に戻る
+    await page.getByTestId('poi-show-all-subcategories').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました');
+    await expect(page.getByTestId('poi-category-food')).toHaveClass(/active/);
+  });
+
   test('検索結果一覧が表示され、並び替えができる', async ({ page }) => {
     await page.route('**/api/interpreter', (route) =>
       route.fulfill({

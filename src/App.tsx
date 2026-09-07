@@ -224,6 +224,13 @@ export default function App() {
     }
     return list;
   }, [poiRawResults, poiCategory, poiSubcategory]);
+  // 細分類（例:ラーメン）が0件のとき「カテゴリ自体(食べる)が0件」と誤表示しないための、
+  // カテゴリのみで絞った件数（実機で「ラーメン0件」なのに「食べるが見つかりません」と
+  // 出て紛らわしいと判明したため区別する）
+  const poiCategoryRawCount = useMemo(
+    () => (poiCategory ? poiRawResults.filter((p) => p.category === poiCategory).length : 0),
+    [poiRawResults, poiCategory],
+  );
   const [poiSort, setPoiSort] = useState<PoiSortMode>('distance');
   const sortedPoiResults = useMemo(() => sortPois(poiSearchResults, poiSort), [poiSearchResults, poiSort]);
 
@@ -1255,6 +1262,7 @@ export default function App() {
               searched={poiRequestStatus !== 'idle'}
               resultCount={poiSearchResults.length}
               totalRawCount={poiRawResults.length}
+              categoryRawCount={poiCategoryRawCount}
               autoExpanded={poiAutoExpanded}
               fromCache={poiFromCache}
               attemptLog={poiAttemptLog}

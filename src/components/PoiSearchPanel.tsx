@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory } from '../lib/poi';
+import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
 import { isDiagnosticsHost } from '../lib/geolocation';
@@ -73,6 +73,8 @@ interface Props {
   resultCount: number;
   /** カテゴリ絞り込み前の総件数（0件がカテゴリ絞り込みのせいか、本当に周辺に無いのかの判定用） */
   totalRawCount: number;
+  /** 現在のカテゴリのみで絞った件数（細分類だけが0件なのか、カテゴリ自体が0件なのかの判定用） */
+  categoryRawCount: number;
   /** 結果が少なく自動的に検索範囲を広げた場合true */
   autoExpanded: boolean;
   /** 新鮮なキャッシュまたは前回成功時の保存結果を表示している間true */
@@ -125,6 +127,7 @@ export default function PoiSearchPanel({
   searched,
   resultCount,
   totalRawCount,
+  categoryRawCount,
   autoExpanded,
   fromCache,
   revalidating,
@@ -351,7 +354,13 @@ export default function PoiSearchPanel({
       )}
       {!loading && !failed && searched && resultCount === 0 && (
         <div className="msg info" style={{ marginTop: 8 }} data-testid="poi-empty">
-          {category && totalRawCount > 0 ? (
+          {/* 実機で「ラーメン」等の細分類が0件のとき「食べる自体が0件」と誤表示され紛らわしいと
+              判明したため、細分類だけが0件のケース（カテゴリ自体には結果がある）を区別する */}
+          {category && subcategory !== 'all' && categoryRawCount > 0 ? (
+            <>
+              {`「${subcategory === '__rainy__' ? '雨の日向け' : SUBCATEGORY_LABEL[subcategory as PoiSubcategory]}」では見つかりませんでした。「${CATEGORY_LABEL[category]}」の他の絞り込みでは${categoryRawCount}件見つかっています。`}
+            </>
+          ) : category && totalRawCount > 0 ? (
             <>
               「{CATEGORY_LABEL[category]}」では見つかりませんでした。他のカテゴリでは{totalRawCount}
               件見つかっています。
@@ -360,6 +369,11 @@ export default function PoiSearchPanel({
             <>この範囲では周辺スポットが見つかりませんでした。</>
           )}
           <div className="btn-grid" style={{ marginTop: 6 }}>
+            {category && subcategory !== 'all' && categoryRawCount > 0 && (
+              <button onClick={() => onChangeSubcategory('all')} data-testid="poi-show-all-subcategories">
+                🔎 「{CATEGORY_LABEL[category]}」の他のジャンルを見る
+              </button>
+            )}
             {category && totalRawCount > 0 && (
               <button onClick={() => onChangeCategory(null)} data-testid="poi-show-all-categories">
                 🔎 すべてのカテゴリを見る
