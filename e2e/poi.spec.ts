@@ -499,6 +499,53 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-empty-google-fallback')).toBeVisible();
   });
 
+  test('実機で報告された不具合の回帰: 旧ビルドが端末に保存した旧分類の前回結果があっても、新ビルドでは静的キャッシュの正しい分類でラーメンが表示される', async ({
+    page,
+  }) => {
+    // 根本原因の再現: 旧ビルド(subcategoriesなし・ラーメン店がfood_other分類)が
+    // localStorage('tohoku-me:poi-last-ok:v1')に保存した前回結果が、新ビルドでも
+    // 静的キャッシュより優先され、Overpassが失敗すると「すべては出るがラーメンは0件」になっていた。
+    // 検証は実際の静的キャッシュ(mne-18900: ラーメン2件)を使う。
+    await page.addInitScript(() => {
+      const key = '40.7168,141.1553:3000'; // しちのへ(40.7168253,141.1552503)・既定3km
+      const oldPoi = (id: number, name: string) => ({
+        id: `osm:node/${id}`,
+        category: 'food',
+        subcategory: 'food_other', // 旧分類（実際はラーメン店）
+        name,
+        lat: 40.717,
+        lng: 141.155,
+        address: null,
+        openingHoursRaw: null,
+        phone: null,
+        website: null,
+        distanceM: 100,
+        source: 'overpass',
+        sourceUrl: `https://www.openstreetmap.org/node/${id}`,
+      });
+      localStorage.setItem(
+        'tohoku-me:poi-last-ok:v1',
+        JSON.stringify({ [key]: { at: Date.now(), pois: [oldPoi(1, 'けいじ'), oldPoi(2, 'ラーメンの里 るんるん'), oldPoi(3, '想い出寿司')] } }),
+      );
+    });
+    await page.route('**/api/interpreter', (route) => route.abort()); // 実機と同じくOverpass失敗
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toBeVisible({ timeout: 10000 });
+
+    await page.getByTestId('poi-category-food').click();
+    await page.getByTestId('poi-subcategory-ramen').click();
+    // 旧結果(v1)は読まずに破棄され、静的キャッシュ(正しい分類)が使われるため、ラーメンが出る
+    await expect(page.getByTestId('poi-result-row')).toHaveCount(2, { timeout: 10000 });
+    await expect(page.getByTestId('poi-result-row')).toContainText(['けいじ', 'ラーメンの里 るんるん']);
+    await expect(page.locator('.poi-marker')).toHaveCount(2);
+    // 旧キーは削除されている
+    const legacy = await page.evaluate(() => localStorage.getItem('tohoku-me:poi-last-ok:v1'));
+    expect(legacy).toBeNull();
+  });
+
   test('実機で報告された不具合の回帰: 細分類(ラーメン)が0件でも「食べる」自体が0件と誤表示しない', async ({ page }) => {
     // 食べる3件（すべてカフェ。ラーメンは無し）+ 温泉1件、を用意する。
     // 「ラーメン」を選ぶと0件になるが、「食べる」自体には3件あるため、

@@ -8,7 +8,7 @@
  * 実装する。失敗してもアプリ全体を落とさず、呼び出し側でGoogleマップ検索へ
  * フォールバックできるようにする。
  */
-import { dedupePois, normalizeOsmElement, type OsmElement, type Poi } from './poi';
+import { dedupePois, normalizeOsmElement, POI_SCHEMA_VERSION, type OsmElement, type Poi } from './poi';
 
 /**
  * OpenStreetMap Wikiが案内する公開Overpassインスタンス（いずれもCORS対応・実接続確認済み、2026-09時点）。
@@ -50,7 +50,25 @@ const CACHE_TTL_MS = 30 * 60 * 1000; // 同一条件の新鮮なキャッシュ:
  * 短期間で大きく変わるものではないため、7日程度は実用上問題にならない）。
  */
 const STALE_FALLBACK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const STALE_FALLBACK_KEY = 'tohoku-me:poi-last-ok:v1';
+/**
+ * 端末保存の前回成功結果。v2からは保存形式が {v, entries} になり、
+ * 書き込んだ時点の「Poiスキーマ版 + 静的POIデータ版」が現在と一致する場合だけ再利用する。
+ * （旧ビルドが保存した旧分類の結果が、新ビルドでも静的キャッシュより優先されて
+ *   表示され続ける不具合を防ぐ。旧キー 'tohoku-me:poi-last-ok:v1' は読まずに削除する）
+ */
+const STALE_FALLBACK_KEY = 'tohoku-me:poi-last-ok:v2';
+const STALE_FALLBACK_LEGACY_KEYS = ['tohoku-me:poi-last-ok:v1'];
+
+/** 保存済み結果を再利用してよい版。Poiスキーマ版と静的POIデータ版（ビルド時に埋め込み）の組 */
+export function poiCacheVersion(): string {
+  const data = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__.poiDataVersion : 'dev';
+  return `${POI_SCHEMA_VERSION}:${data}`;
+}
+
+/** 旧ビルド由来のPoi（subcategoriesが無い）を現行の形へ補正する（表示側のフォールバックに加えた二重の安全策） */
+function normalizeStoredPoi(p: Poi): Poi {
+  return p.subcategories ? p : { ...p, subcategories: [p.subcategory] };
+}
 /** Overpass側の出力上限（サーバー負荷を抑える）。表示件数の上限は呼び出し側でさらに絞る */
 const OVERPASS_ELEMENT_LIMIT = 80;
 /** アプリで実際に表示する件数の上限 */
@@ -91,6 +109,7 @@ export function clearPoiCache(): void {
   cache.clear();
   try {
     localStorage.removeItem(STALE_FALLBACK_KEY);
+    for (const k of STALE_FALLBACK_LEGACY_KEYS) localStorage.removeItem(k);
   } catch {
     /* localStorageが無い環境（テスト等）では何もしない */
   }
@@ -119,27 +138,42 @@ function buildQuery(lat: number, lng: number, radiusM: number): string {
   );
 }
 
-function readStaleFallback(key: string): Poi[] | null {
+interface StaleFallbackStore {
+  v: string;
+  entries: Record<string, { at: number; pois: Poi[] }>;
+}
+
+/** 現在の版と一致する保存済みストアだけを返す。旧形式・版違いは破棄する（読まない） */
+function readStaleStore(): StaleFallbackStore | null {
   try {
+    for (const k of STALE_FALLBACK_LEGACY_KEYS) localStorage.removeItem(k);
     const raw = localStorage.getItem(STALE_FALLBACK_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, { at: number; pois: Poi[] }>;
-    const hit = parsed[key];
-    if (!hit || Date.now() - hit.at > STALE_FALLBACK_TTL_MS) return null;
-    return hit.pois;
+    const parsed = JSON.parse(raw) as Partial<StaleFallbackStore>;
+    if (!parsed || parsed.v !== poiCacheVersion() || typeof parsed.entries !== 'object' || parsed.entries === null) {
+      localStorage.removeItem(STALE_FALLBACK_KEY);
+      return null;
+    }
+    return parsed as StaleFallbackStore;
   } catch {
     return null;
   }
 }
 
+function readStaleFallback(key: string): Poi[] | null {
+  const store = readStaleStore();
+  const hit = store?.entries[key];
+  if (!hit || Date.now() - hit.at > STALE_FALLBACK_TTL_MS) return null;
+  return hit.pois.map(normalizeStoredPoi);
+}
+
 function writeStaleFallback(key: string, pois: Poi[]): void {
   try {
-    const raw = localStorage.getItem(STALE_FALLBACK_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, { at: number; pois: Poi[] }>) : {};
-    parsed[key] = { at: Date.now(), pois };
+    const store = readStaleStore() ?? { v: poiCacheVersion(), entries: {} };
+    store.entries[key] = { at: Date.now(), pois };
     // 際限なく増やさない（最新10件のみ保持）
-    const entries = Object.entries(parsed).sort((a, b) => b[1].at - a[1].at).slice(0, 10);
-    localStorage.setItem(STALE_FALLBACK_KEY, JSON.stringify(Object.fromEntries(entries)));
+    const entries = Object.entries(store.entries).sort((a, b) => b[1].at - a[1].at).slice(0, 10);
+    localStorage.setItem(STALE_FALLBACK_KEY, JSON.stringify({ v: store.v, entries: Object.fromEntries(entries) }));
   } catch {
     /* localStorageが使えない/容量超過等は無視（劣化フォールバックが効かないだけで致命的ではない） */
   }

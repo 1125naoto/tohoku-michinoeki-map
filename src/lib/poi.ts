@@ -9,6 +9,18 @@
 
 export type PoiCategory = 'food' | 'tourism' | 'onsen' | 'lodging';
 
+/**
+ * Poiの形・分類ロジックのスキーマ版。
+ * classify() の判定や Poi のフィールド構成を変えたら必ず上げること。
+ * 端末に保存された過去の検索結果（localStorageの劣化フォールバック）は、
+ * 書き込んだ時点のスキーマ版と一致する場合だけ再利用する。
+ * （実機で、旧ビルドが保存した「subcategoriesの無い/旧分類の」結果が
+ *   新ビルドでも優先的に表示され続け、静的キャッシュの正しい分類が使われず
+ *   「ラーメン0件」になる不具合の根本原因だったため）
+ *  v2: subcategories[] の追加、cuisine/店名による飲食ジャンル判定、温泉の多重所属
+ */
+export const POI_SCHEMA_VERSION = 2;
+
 export type FoodSub =
   | 'ramen'
   | 'shokudo'

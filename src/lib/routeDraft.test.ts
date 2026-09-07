@@ -115,4 +115,22 @@ describe('周辺スポット(POI)の選択・滞在時間上書き', () => {
     expect(loaded?.stayOverrides.good).toBe(30);
     expect(loaded?.stayOverrides.bad).toBeUndefined();
   });
+
+  it('宿泊(lodging)の周辺スポットを含む下書きが再読み込みで欠落しない（データ消失の回帰）', () => {
+    // 'lodging' カテゴリの追加後、下書き復元の検証リストに追加漏れがあり、
+    // ホテル等を含む下書きが黙って欠落していた
+    const hotel = normalizeOsmElement(
+      { type: 'node', id: 2, lat: 37.41, lon: 140.37, tags: { tourism: 'hotel', name: 'テストホテル' } },
+      { lat: 37.4, lng: 140.36 },
+    )!;
+    expect(hotel.category).toBe('lodging');
+    saveRouteDraft({
+      ...DEFAULT_ROUTE_DRAFT,
+      selectedIds: [hotel.id],
+      selectedPois: { [hotel.id]: hotel },
+      inProgress: true,
+    });
+    const loaded = loadRouteDraft();
+    expect(loaded?.selectedPois[hotel.id]?.name).toBe('テストホテル');
+  });
 });

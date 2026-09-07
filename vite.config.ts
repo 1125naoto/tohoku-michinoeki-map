@@ -1,20 +1,85 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // GitHub Pages（プロジェクトページ）ではサブパス配信になるため、ビルド時の環境変数で切り替える。
 // ローカルのプレビュー/開発サーバーでは未設定=ルート('/')のまま。
 const DEPLOY_BASE = process.env.DEPLOY_BASE ?? '/';
 const iconPath = (p: string) => `${DEPLOY_BASE}${p}`.replace(/\/{2,}/g, '/');
 
+/**
+ * ビルド識別情報（BUILD ID）。
+ * 「検証したビルド」と「実機が実際に動かしているビルド」が同一であることを
+ * 端末画面（動作診断）と配信URL（/build-info.json）の両方から証明するために埋め込む。
+ * 実機テストで何度もREADY判定と実機挙動が食い違った根本原因が
+ * 「どのビルドを見ているか証明できなかったこと」にあったため。
+ */
+function gitOutput(cmd: string): string {
+  try {
+    return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
+function poiDataVersion(): { version: string; files: number } {
+  // public/data/poi/*.json の内容ハッシュ。アプリJSの分類ロジックとデータの
+  // 版が食い違っていないかを診断画面から突き合わせられるようにする。
+  try {
+    const dir = join(process.cwd(), 'public', 'data', 'poi');
+    const files = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .sort();
+    const h = createHash('sha1');
+    for (const f of files) h.update(f).update(readFileSync(join(dir, f)));
+    return { version: h.digest('hex').slice(0, 12), files: files.length };
+  } catch {
+    return { version: 'unknown', files: 0 };
+  }
+}
+const poi = poiDataVersion();
+const BUILD_INFO = {
+  branch: gitOutput('git rev-parse --abbrev-ref HEAD'),
+  commit: gitOutput('git rev-parse --short=12 HEAD'),
+  dirty: gitOutput('git status --porcelain') !== '',
+  buildTime: new Date().toISOString(),
+  poiDataVersion: poi.version,
+  poiDataFiles: poi.files,
+};
+// 短いBUILD ID（画面表示・突き合わせ用）: commit + ビルド時刻(秒)
+const BUILD_ID = `${BUILD_INFO.commit}${BUILD_INFO.dirty ? '+dirty' : ''}@${BUILD_INFO.buildTime.replace(/[-:]/g, '').slice(0, 15)}`;
+
+/** dist直下に build-info.json を出力する（HTTPS配信先からcurlで配信中ビルドを検証するため） */
+function buildInfoPlugin(): Plugin {
+  return {
+    name: 'michinoeki-build-info',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'build-info.json',
+        source: JSON.stringify({ buildId: BUILD_ID, ...BUILD_INFO }, null, 2),
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: DEPLOY_BASE,
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __BUILD_INFO__: JSON.stringify(BUILD_INFO),
+  },
   test: {
     // E2E (Playwright) は vitest の対象外
     include: ['src/**/*.test.ts'],
   },
   plugins: [
     react(),
+    buildInfoPlugin(),
     VitePWA({
       // 新しいビルドを検知したら自動更新（古い道の駅データが永久に残らない）
       registerType: 'autoUpdate',

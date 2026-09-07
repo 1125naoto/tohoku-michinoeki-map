@@ -345,6 +345,53 @@ describe('前回成功結果の劣化フォールバック（全接続先失敗�
     expect(second.fromCache).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  describe('実機で報告された不具合の回帰: 旧ビルドが保存した結果を新ビルドで再利用しない', () => {
+    // 旧ビルド（subcategoriesが無い/旧分類）が端末に保存した前回結果が、新ビルドでも
+    // 静的キャッシュより優先されて表示され続け、「ラーメン0件」になっていた。
+    const key = `${LAT.toFixed(4)},${LNG.toFixed(4)}:${DEFAULT_RADIUS_M}`;
+    const oldPoi = {
+      id: 'osm:node/1',
+      category: 'food',
+      subcategory: 'food_other', // 旧分類: 実際はラーメン店だが cuisine が無く food_other に落ちていた
+      name: 'ラーメン太郎',
+      lat: LAT,
+      lng: LNG,
+      address: null,
+      openingHoursRaw: null,
+      phone: null,
+      website: null,
+      distanceM: 10,
+      source: 'overpass',
+      sourceUrl: 'https://www.openstreetmap.org/node/1',
+    };
+
+    it('旧キー(v1)に保存された結果は読まずに削除する', () => {
+      localStorage.setItem('tohoku-me:poi-last-ok:v1', JSON.stringify({ [key]: { at: Date.now(), pois: [oldPoi] } }));
+      expect(peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M)).toBeNull();
+      expect(localStorage.getItem('tohoku-me:poi-last-ok:v1')).toBeNull();
+    });
+
+    it('版(v)が現在と異なるストアは読まずに削除する', () => {
+      localStorage.setItem(
+        'tohoku-me:poi-last-ok:v2',
+        JSON.stringify({ v: '1:oldPoiData', entries: { [key]: { at: Date.now(), pois: [oldPoi] } } }),
+      );
+      expect(peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M)).toBeNull();
+      expect(localStorage.getItem('tohoku-me:poi-last-ok:v2')).toBeNull();
+    });
+
+    it('現在の版で保存した結果は再利用でき、保存形式は{v, entries}になっている', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+      vi.stubGlobal('fetch', fetchMock);
+      await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+      const raw = JSON.parse(localStorage.getItem('tohoku-me:poi-last-ok:v2')!) as { v: string; entries: Record<string, unknown> };
+      expect(typeof raw.v).toBe('string');
+      expect(raw.v).toMatch(/^2:/); // POI_SCHEMA_VERSION=2 + 静的POIデータ版
+      expect(Object.keys(raw.entries)).toContain(key);
+      expect(peekCachedPois(LAT, LNG, DEFAULT_RADIUS_M)?.length).toBe(2);
+    });
+  });
 });
 
 describe('peekCachedPois（stale-while-revalidate用の同期プレビュー）', () => {

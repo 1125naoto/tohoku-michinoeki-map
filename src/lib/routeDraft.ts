@@ -49,7 +49,9 @@ function isOrigin(v: unknown): v is RouteDraft['origin'] {
   return typeof o.lat === 'number' && typeof o.lng === 'number' && typeof o.label === 'string';
 }
 
-const POI_CATEGORIES: PoiCategory[] = ['food', 'tourism', 'onsen'];
+// 'lodging' の追加漏れがあり、宿泊の周辺スポットを含む下書きが再読み込み時に
+// 黙って欠落していた（データ消失）。カテゴリ追加時はここも必ず更新すること。
+const POI_CATEGORIES: PoiCategory[] = ['food', 'tourism', 'onsen', 'lodging'];
 
 function isPoi(v: unknown): v is Poi {
   if (typeof v !== 'object' || v === null) return false;

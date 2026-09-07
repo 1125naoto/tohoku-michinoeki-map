@@ -44,6 +44,7 @@ import { loadStaticPoiCache } from './lib/poiStaticCache';
 import { describeGeolocationError } from './lib/geolocation';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
+import DiagnosticsPanel from './components/DiagnosticsPanel';
 import {
   DEFAULT_ROUTE_DRAFT,
   clearRouteDraft,
@@ -1500,6 +1501,18 @@ export default function App() {
               onExportBackup={exportBackup}
               onReadBackupFile={readBackupFile}
               onApplyRestore={applyRestore}
+            />
+            <DiagnosticsPanel
+              poi={{
+                originLabel: searchOrigin?.label ?? null,
+                stationId: searchOrigin?.stationId ?? null,
+                totalCount: poiRawResults.length,
+                category: poiCategory ? CATEGORY_LABEL[poiCategory] : null,
+                categoryCount: poiCategory ? poiCategoryRawCount : poiRawResults.length,
+                subcategory: poiSubcategory,
+                filteredCount: poiSearchResults.length,
+                fromStaticCache: poiFromCache,
+              }}
             />
           </div>
         )}
