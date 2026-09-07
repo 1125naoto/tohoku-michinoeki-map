@@ -54,7 +54,10 @@ REQUEST_HEADERS = {
 
 
 def build_query(lat, lng, radius_m):
-    """src/lib/overpass.ts の buildQuery() と同一内容。"""
+    """src/lib/overpass.ts の buildFoodQuery()+buildOtherQuery()を1本にまとめた内容
+    (静的キャッシュは10km半径・道の駅中心のため都市部ほど密集せず、80件上限に
+    到達しにくい。ライブ検索側(現在地検索)のみfood/otherを分離して上限を独立させた。
+    こちらも将来的に都市部の道の駅で同様の問題が出れば分離を検討する)。"""
     around = f"(around:{radius_m},{lat},{lng})"
     return (
         "[out:json][timeout:25];"

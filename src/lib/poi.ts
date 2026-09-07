@@ -289,6 +289,20 @@ export interface OsmElement {
  * （店名の先頭にある場合のみ。先頭以外だと「洋麺屋」のような非ラーメン店に
  * 誤爆するため^で先頭固定）。
  */
+/**
+ * ラーメン判定の店名パターン（正規表現ソース文字列）。classifyFoodGenre()と
+ * Overpassのtargeted query（overpass.ts）の両方がこれを参照し、二重管理による
+ * 乖離を防ぐ。RE2(Overpass側)・JS RegExp(アプリ側)の両方で解釈できる
+ * 構文（Unicode文字の直接記述・^アンカー・|選言）のみを使うこと。
+ */
+export const RAMEN_NAME_PATTERN_SOURCE =
+  'ラーメン|らーめん|らぁめん|らあめん|拉麺|中華そば|中華蕎麦|支那そば|つけ麺|油そば|^(麺屋|麺処|麺房|麺工房)|ramen';
+/** 店名・cuisineタグのどちらにもラーメンを示す語が現れない全国チェーン（実データ監査で確認済み） */
+export const RAMEN_CHAIN_PATTERN_SOURCE = '一蘭|町田商店';
+
+const RAMEN_NAME_RE = new RegExp(RAMEN_NAME_PATTERN_SOURCE, 'i');
+const RAMEN_CHAIN_RE = new RegExp(RAMEN_CHAIN_PATTERN_SOURCE);
+
 function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
   if (cuisine.includes('ramen')) return 'ramen';
   if (cuisine.includes('sushi')) return 'sushi';
@@ -298,17 +312,11 @@ function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
   if (cuisine.includes('western')) return 'yoshoku';
   if (cuisine.includes('japanese')) return 'shokudo';
   if (cuisine.includes('dessert') || cuisine.includes('cake')) return 'sweets';
-  if (
-    /ラーメン|らーめん|らぁめん|らあめん|拉麺|中華そば|中華蕎麦|支那そば|つけ麺|油そば|^麺屋|^麺処|^麺房|^麺工房|ramen/i.test(
-      name,
-    )
-  ) {
-    return 'ramen';
-  }
+  if (RAMEN_NAME_RE.test(name)) return 'ramen';
   // 全国チェーンで店名・cuisineタグのどちらにもラーメンを示す語が
   // 現れないことが実データで確認された店（一蘭・町田商店）。
   // ラーメン専門チェーンとして名称が一意なため誤分類リスクが無い。
-  if (/一蘭|町田商店/.test(name)) return 'ramen';
+  if (RAMEN_CHAIN_RE.test(name)) return 'ramen';
   if (/寿司|すし|鮨/.test(name)) return 'sushi';
   if (/焼肉|焼き肉/.test(name)) return 'yakiniku';
   return null;

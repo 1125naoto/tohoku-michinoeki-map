@@ -69,9 +69,23 @@ export function poiCacheVersion(): string {
 function normalizeStoredPoi(p: Poi): Poi {
   return p.subcategories ? p : { ...p, subcategories: [p.subcategory] };
 }
-/** Overpass側の出力上限（サーバー負荷を抑える）。表示件数の上限は呼び出し側でさらに絞る */
+/**
+ * 飲食(food)以外のカテゴリ（観光・温泉・宿泊等）の出力上限。実データ監査(仙台/盛岡/山形/
+ * 泉中央)ではこちらが上限に達したことは無かったため、従来の値のまま維持する。
+ */
 const OVERPASS_ELEMENT_LIMIT = 80;
-/** アプリで実際に表示する件数の上限 */
+/**
+ * 飲食(amenity=restaurant/cafe/fast_food/bar/pub)専用の出力上限。
+ * 以前はfoodも観光等と同じ1本のクエリ・同じ80件上限を共有しており、都市部では
+ * 観光施設等に押し出されてラーメン等の実在店舗がそもそもOverpassの応答に含まれない
+ * ことが実データ監査で確認された(仙台駅3km圏内で80件上限に到達、食べる64件中
+ * ラーメンはわずか2件)。foodを独立したクエリ・独立した上限にすることで、
+ * 「取得はできたが分類で漏れる」ではなく「そもそも取得できていない」問題を解消する。
+ * 上げすぎるとOverpass応答が遅くなり接続先タイムアウト(TIMEOUT_MS)に抵触するため
+ * (実測: 100件で約5秒・150件で約12秒)、実用上安全な範囲に留める。
+ */
+const FOOD_ELEMENT_LIMIT = 100;
+/** アプリで実際に表示する件数の上限（「すべて」表示のみに適用。カテゴリ/細分類を選んだ場合は絞り込み後の全件を出す） */
 export const POI_RESULT_LIMIT = 30;
 
 export type SearchRadiusM = 1000 | 3000 | 5000 | 10000 | 15000;
@@ -121,13 +135,26 @@ let inFlightController: AbortController | null = null;
 /**
  * node・way・relationのすべてを対象にする（nwr）。建物や敷地として登録された
  * 施設（way/relation）も座標(center)から取得できるようにするため、node限定にしない。
+ *
+ * 飲食(food)とそれ以外(other)を別クエリに分ける（下記2関数）。理由は
+ * FOOD_ELEMENT_LIMITのコメントを参照。2クエリは呼び出し側で並行実行するため、
+ * 体感速度は「遅い方のクエリ」に律速され、直列実行のような2倍化はしない。
  */
-function buildQuery(lat: number, lng: number, radiusM: number): string {
+function buildFoodQuery(lat: number, lng: number, radiusM: number): string {
+  const around = `(around:${radiusM},${lat},${lng})`;
+  return (
+    `[out:json][timeout:8];` +
+    `nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub)$"]${around};` +
+    `out center body ${FOOD_ELEMENT_LIMIT};`
+  );
+}
+
+function buildOtherQuery(lat: number, lng: number, radiusM: number): string {
   const around = `(around:${radiusM},${lat},${lng})`;
   return (
     `[out:json][timeout:8];` +
     `(` +
-    `nwr["amenity"~"^(restaurant|cafe|fast_food|bar|pub|public_bath|foot_bath|shelter|place_of_worship)$"]${around};` +
+    `nwr["amenity"~"^(public_bath|foot_bath|shelter|place_of_worship)$"]${around};` +
     `nwr["tourism"~"^(attraction|viewpoint|museum|zoo|aquarium|camp_site|artwork|gallery|picnic_site|hotel|guest_house|hostel|motel)$"]${around};` +
     `nwr["leisure"~"^(park|spa)$"]${around};` +
     `nwr["natural"~"^(hot_spring|beach|waterfall|peak|cliff)$"]${around};` +
@@ -356,33 +383,41 @@ export async function searchNearbyPois(
   const onOuterAbort = () => ctrl.abort();
   signal?.addEventListener('abort', onOuterAbort);
 
-  const query = buildQuery(lat, lng, radiusM);
+  const foodQuery = buildFoodQuery(lat, lng, radiusM);
+  const otherQuery = buildOtherQuery(lat, lng, radiusM);
   try {
-    const raced = await raceEndpoints(query, radiusM, ctrl.signal);
-    const elements = raced.elements;
-    const attemptLog = raced.attemptLog;
+    // food/otherを並行実行する（直列にすると単純に2倍遅くなるため）。
+    const [foodRaced, otherRaced] = await Promise.all([
+      raceEndpoints(foodQuery, radiusM, ctrl.signal),
+      raceEndpoints(otherQuery, radiusM, ctrl.signal),
+    ]);
+    const attemptLog = [...foodRaced.attemptLog, ...otherRaced.attemptLog];
 
-    if (elements !== null) {
-      const origin = { lat, lng };
-      const pois = dedupePois(
-        elements.map((el) => normalizeOsmElement(el, origin)).filter((p): p is Poi => p !== null),
-      )
-        .sort((a, b) => a.distanceM - b.distanceM)
-        .slice(0, POI_RESULT_LIMIT);
-      cache.set(key, { at: Date.now(), pois });
-      // 際限なく増やさない
-      if (cache.size > 40) {
-        const oldest = [...cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
-        if (oldest) cache.delete(oldest[0]);
-      }
-      writeStaleFallback(key, pois);
-      return { pois, failed: false, fromCache: false, attemptLog };
+    // 「今回の検索」自体を失敗扱いにするのは両方全滅した場合のみ。
+    // 片方だけ成功していれば、それだけでも表示する（部分的なデータ＞何も出さない）。
+    if (foodRaced.elements === null && otherRaced.elements === null) {
+      const stale = readStaleFallback(key);
+      if (stale) return { pois: stale, failed: false, fromCache: true, attemptLog };
+      return { pois: [], failed: true, fromCache: false, attemptLog };
     }
 
-    // 全接続先が失敗: 前回成功時の結果があればそれを劣化フォールバックとして返す
-    const stale = readStaleFallback(key);
-    if (stale) return { pois: stale, failed: false, fromCache: true, attemptLog };
-    return { pois: [], failed: true, fromCache: false, attemptLog };
+    const elements = [...(foodRaced.elements ?? []), ...(otherRaced.elements ?? [])];
+    const origin = { lat, lng };
+    // ここではPOI_RESULT_LIMITで絞らない。カテゴリ/細分類（例:ラーメン）ごとの
+    // 絞り込みは呼び出し側（App.tsx）がこの後クライアント側で行うため、ここで
+    // 全カテゴリ横断の距離順上位N件に絞ってしまうと、絞り込み前に候補が
+    // 消えてしまう（実際にラーメン0件の原因の一つだったため廃止した）。
+    const pois = dedupePois(
+      elements.map((el) => normalizeOsmElement(el, origin)).filter((p): p is Poi => p !== null),
+    ).sort((a, b) => a.distanceM - b.distanceM);
+    cache.set(key, { at: Date.now(), pois });
+    // 際限なく増やさない
+    if (cache.size > 40) {
+      const oldest = [...cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
+      if (oldest) cache.delete(oldest[0]);
+    }
+    writeStaleFallback(key, pois);
+    return { pois, failed: false, fromCache: false, attemptLog };
   } finally {
     signal?.removeEventListener('abort', onOuterAbort);
     if (inFlightController === ctrl) inFlightController = null;

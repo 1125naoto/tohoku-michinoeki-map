@@ -411,61 +411,50 @@ test.describe('周辺スポット検索', () => {
   });
 
   test('1つ目のOverpass接続先が429でも、2つ目の接続先へ切り替えて成功する', async ({ page }) => {
-    let calls = 0;
+    // 現在地検索はfood/otherを並行した別クエリで取得するため(overpass.ts参照)、
+    // 「1本目失敗→2本目成功」の判定は呼び出し順ではなく接続先(URL)ごとに行う
+    // （呼び出し順で判定するとfood/otherどちらの1本目かが原理的に確定できず壊れやすい）。
+    const okBody = JSON.stringify({
+      elements: [
+        { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+        { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+        { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+      ],
+    });
     await page.route('**/api/interpreter', async (route) => {
-      calls++;
-      if (calls === 1) {
+      if (route.request().url().includes('private.coffee')) {
         await route.fulfill({ status: 429, contentType: 'text/plain', body: 'rate limited' });
         return;
       }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        // MIN_AUTO_RESULTS(3)以上にして自動範囲拡張による追加リクエストを避ける
-        // （このテストの目的は「1接続先目の失敗→2接続先目への切替」を正確に2回で検証すること）
-        body: JSON.stringify({
-          elements: [
-            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
-            { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
-            { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
-          ],
-        }),
-      });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: okBody });
     });
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
-    expect(calls).toBe(2);
   });
 
   test('1つ目のOverpass接続先が504でも、2つ目の接続先へ切り替えて成功する', async ({ page }) => {
-    let calls = 0;
+    const okBody = JSON.stringify({
+      elements: [
+        { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
+        { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
+        { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
+      ],
+    });
     await page.route('**/api/interpreter', async (route) => {
-      calls++;
-      if (calls === 1) {
+      if (route.request().url().includes('private.coffee')) {
         await route.fulfill({ status: 504, contentType: 'text/plain', body: 'gateway timeout' });
         return;
       }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          elements: [
-            { type: 'node', id: 1, lat: 40.718, lon: 141.156, tags: { amenity: 'restaurant', name: 'テスト店1' } },
-            { type: 'node', id: 2, lat: 40.719, lon: 141.157, tags: { amenity: 'cafe', name: 'テスト店2' } },
-            { type: 'node', id: 3, lat: 40.72, lon: 141.158, tags: { amenity: 'fast_food', name: 'テスト店3' } },
-          ],
-        }),
-      });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: okBody });
     });
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
-    expect(calls).toBe(2);
   });
 
   test('すべての接続先が失敗した場合はGoogleマップ検索へフォールバックできる（もう一度試す・検索範囲を変更も表示）', async ({ page }) => {
@@ -648,7 +637,8 @@ test.describe('周辺スポット検索', () => {
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
-    expect(calls).toBe(1);
+    // 現在地/駅検索1回につきfood/otherの並行2クエリぶん呼ばれる
+    expect(calls).toBe(2);
 
     // 検索パネルを閉じる（起点情報も破棄される設計）→ 同じ駅のURLハッシュへ変更して開き直す
     // （hashchangeで駅シートが開く。page.goto()での再読み込みはページ内メモリキャッシュも消してしまうため使わない。
@@ -660,7 +650,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible({ timeout: 10000 });
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('前回取得した周辺スポットを表示しています', { timeout: 10000 });
-    expect(calls).toBe(1);
+    expect(calls).toBe(2);
   });
 
   test('stale-while-revalidate: 端末保存の前回成功結果があれば、今回の通信が全滅しても表示を維持する', async ({

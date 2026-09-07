@@ -33,7 +33,13 @@ import {
 import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
-import { peekCachedPois, DEFAULT_RADIUS_M, type EndpointAttemptLog, type SearchRadiusM } from './lib/overpass';
+import {
+  peekCachedPois,
+  DEFAULT_RADIUS_M,
+  POI_RESULT_LIMIT,
+  type EndpointAttemptLog,
+  type SearchRadiusM,
+} from './lib/overpass';
 import { StaticOsmPoiProvider, OverpassPoiProvider } from './lib/poiProvider';
 import { describeGeolocationError, getBestCurrentPosition } from './lib/geolocation';
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
@@ -216,6 +222,12 @@ export default function App() {
       } else if (poiSubcategory !== 'all') {
         list = list.filter((p) => (p.subcategories ?? [p.subcategory]).includes(poiSubcategory as PoiSubcategory));
       }
+    } else {
+      // 「すべて」表示のみ従来通り近い順の上限件数に絞る。カテゴリ/細分類を選んだ場合は
+      // 絞り込み後の全件を出す（poiRawResultsは既にoverpass.ts側で全カテゴリ横断の
+      // 距離順上位N件へ絞られておらず、ここで絞ると「ラーメン」等の細分類がその上位N件に
+      // 入らなかっただけで0件に見えてしまう不具合の原因だったため、絞り込み前には適用しない）
+      list = list.slice(0, POI_RESULT_LIMIT);
     }
     return list;
   }, [poiRawResults, poiCategory, poiSubcategory]);
@@ -229,8 +241,11 @@ export default function App() {
   // 動作診断用: 直近の成功したOverpass試行の生要素数（分類前）。キャッシュ表示時はnull
   // （coverage不足=そもそも生取得が少ない、と分類漏れ=生取得は多いのに分類後が少ない、を区別するため）
   const poiRawOverpassCount = useMemo(() => {
-    const ok = [...poiAttemptLog].reverse().find((a) => a.outcome === 'ok' && a.elementCount != null);
-    return ok?.elementCount ?? null;
+    // food/otherクエリを並行実行するため、成功した試行ぶんの件数を合算する
+    // （診断表示専用の概算値。検索範囲の自動拡張が起きた場合は直近の拡張分も含みうる）
+    const oks = poiAttemptLog.filter((a) => a.outcome === 'ok' && a.elementCount != null);
+    if (oks.length === 0) return null;
+    return oks.reduce((sum, a) => sum + (a.elementCount ?? 0), 0);
   }, [poiAttemptLog]);
   const [poiSort, setPoiSort] = useState<PoiSortMode>('distance');
   const sortedPoiResults = useMemo(() => sortPois(poiSearchResults, poiSort), [poiSearchResults, poiSort]);
