@@ -3,8 +3,8 @@ import type { Station, VisitMap } from '../types';
 import { filterSummary, filterStations, matchesFacilityFilter, matchesFilter, stationMatchesQuery } from './ui';
 
 describe('絞り込みサマリー', () => {
-  it('未選択時は「東北全体・すべて」', () => {
-    expect(filterSummary(null, 'all')).toBe('絞り込み：東北全体・すべて');
+  it('未選択時は「すべて・すべて」', () => {
+    expect(filterSummary(null, 'all')).toBe('絞り込み：すべて・すべて');
   });
   it('県と状態を反映する', () => {
     expect(filterSummary('宮城県', 'visited')).toBe('絞り込み：宮城県・訪問済み');
@@ -14,12 +14,12 @@ describe('絞り込みサマリー', () => {
     expect(filterSummary('福島県', 'none', '猪苗代')).toBe('絞り込み：福島県・未訪問・「猪苗代」');
   });
   it('検索文字列が空/空白のみなら反映しない', () => {
-    expect(filterSummary(null, 'all', '   ')).toBe('絞り込み：東北全体・すべて');
+    expect(filterSummary(null, 'all', '   ')).toBe('絞り込み：すべて・すべて');
   });
   it('設備フィルターを反映する', () => {
-    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: false })).toBe('絞り込み：東北全体・すべて・RVパークあり');
-    expect(filterSummary(null, 'all', '', { rvPark: false, onsen: true })).toBe('絞り込み：東北全体・すべて・温泉あり');
-    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: true })).toBe('絞り込み：東北全体・すべて・RVパーク+温泉あり');
+    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: false })).toBe('絞り込み：すべて・すべて・RVパークあり');
+    expect(filterSummary(null, 'all', '', { rvPark: false, onsen: true })).toBe('絞り込み：すべて・すべて・温泉あり');
+    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: true })).toBe('絞り込み：すべて・すべて・RVパーク+温泉あり');
   });
 });
 

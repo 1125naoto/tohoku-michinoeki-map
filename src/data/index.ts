@@ -20,7 +20,15 @@ export function countsByPref(): Record<Prefecture, number> {
   return out;
 }
 
-export const TOHOKU_BOUNDS: [[number, number], [number, number]] = [
-  [36.7, 139.0],
-  [41.7, 142.3],
-];
+/**
+ * 収録駅全体を包含する地図初期表示範囲。地域追加時にハードコードの範囲外へ
+ * 駅がはみ出さないよう、駅データから動的に算出する（固定の東北範囲を使わない）。
+ */
+export function stationsBounds(stations: Station[]): [[number, number], [number, number]] {
+  const lats = stations.map((s) => s.lat);
+  const lngs = stations.map((s) => s.lng);
+  return [
+    [Math.min(...lats), Math.min(...lngs)],
+    [Math.max(...lats), Math.max(...lngs)],
+  ];
+}

@@ -30,7 +30,7 @@ export function matchesFacilityFilter(st: Station, filter: FacilityFilter): bool
   return true;
 }
 
-/** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：東北全体・すべて」） */
+/** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：すべて・すべて」） */
 export function filterSummary(
   pref: Prefecture | null,
   status: StatusFilter,
@@ -42,7 +42,7 @@ export function filterSummary(
     (v): v is string => typeof v === 'string',
   );
   const facilityText = facilityLabels.length > 0 ? `・${facilityLabels.join('+')}あり` : '';
-  return `絞り込み：${pref ?? '東北全体'}・${STATUS_FILTER_LABEL[status]}${facilityText}${q ? `・「${q}」` : ''}`;
+  return `絞り込み：${pref ?? 'すべて'}・${STATUS_FILTER_LABEL[status]}${facilityText}${q ? `・「${q}」` : ''}`;
 }
 
 /**

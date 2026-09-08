@@ -71,13 +71,32 @@ export interface Station {
   facilities?: StationFacilities;
 }
 
-export const PREFECTURES = ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] as const;
+export const PREFECTURES = [
+  '北海道',
+  '青森県',
+  '岩手県',
+  '宮城県',
+  '秋田県',
+  '山形県',
+  '福島県',
+] as const;
 export type Prefecture = (typeof PREFECTURES)[number];
+
+/** 都道府県が属する地方。8エリア構造（今後の都道府県追加に合わせて拡張する）。 */
+export const AREA_BY_PREFECTURE: Record<Prefecture, string> = {
+  北海道: '北海道',
+  青森県: '東北',
+  岩手県: '東北',
+  宮城県: '東北',
+  秋田県: '東北',
+  山形県: '東北',
+  福島県: '東北',
+};
 
 export interface StationDataFile {
   meta: {
     verifiedAt: string;
-    /** 国土交通省の登録駅数（東北6県） */
+    /** 国土交通省の登録駅数（収録都道府県の合計） */
     registrationCount: number;
     /** 収録施設数（安達 上下線を2施設と数える） */
     facilityCount: number;
@@ -129,7 +148,7 @@ export interface PlanParams {
   returnToStart: boolean;
   roadPref: RoadPref;
   maxStops: number;
-  /** 対象県（空=東北6県すべて） */
+  /** 対象県（空=収録都道府県すべて） */
   prefs: Prefecture[];
   /** 県境を越えてよいか */
   crossPref: boolean;

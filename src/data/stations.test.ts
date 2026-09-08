@@ -3,10 +3,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { STATIONS, DATA_META, countsByPref } from './index';
-import { PREFECTURES } from '../types';
+import { PREFECTURES, AREA_BY_PREFECTURE } from '../types';
 import { haversineKm } from '../lib/geo';
 import { stationSearchUrl } from '../lib/gmaps';
 import { isRoutable } from '../lib/planner';
+import { toNationwideStation } from '../product/station/nationwideStation';
 
 describe('道の駅マスターデータ', () => {
   it('IDの重複がない', () => {
@@ -18,7 +19,7 @@ describe('道の駅マスターデータ', () => {
     for (const s of STATIONS) expect(s.name.trim().length, s.id).toBeGreaterThan(0);
   });
 
-  it('都道府県が東北6県のいずれか', () => {
+  it('都道府県が収録対象都道府県のいずれか', () => {
     for (const s of STATIONS) expect(PREFECTURES).toContain(s.pref);
   });
 
@@ -42,12 +43,19 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('東北地方から明らかに外れた座標がない', () => {
+  it('登録地方から明らかに外れた座標がない（都道府県ごとの想定範囲でチェック）', () => {
+    const REGION_BOUNDS: Record<string, { lat: [number, number]; lng: [number, number] }> = {
+      北海道: { lat: [41.3, 45.7], lng: [139.3, 146.0] },
+      東北: { lat: [36.7, 41.7], lng: [139.0, 142.3] },
+    };
     for (const s of STATIONS) {
-      expect(s.lat, `${s.name} lat`).toBeGreaterThan(36.7);
-      expect(s.lat, `${s.name} lat`).toBeLessThan(41.7);
-      expect(s.lng, `${s.name} lng`).toBeGreaterThan(139.0);
-      expect(s.lng, `${s.name} lng`).toBeLessThan(142.3);
+      const region = AREA_BY_PREFECTURE[s.pref];
+      const b = REGION_BOUNDS[region];
+      expect(b, `${s.pref}の想定範囲が未定義`).toBeDefined();
+      expect(s.lat, `${s.name} lat`).toBeGreaterThan(b.lat[0]);
+      expect(s.lat, `${s.name} lat`).toBeLessThan(b.lat[1]);
+      expect(s.lng, `${s.name} lng`).toBeGreaterThan(b.lng[0]);
+      expect(s.lng, `${s.name} lng`).toBeLessThan(b.lng[1]);
     }
   });
 
@@ -101,8 +109,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数181駅と施設数の関係が説明されている（安達上下線）', () => {
-    expect(DATA_META.registrationCount).toBe(181);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181登録+北海道128登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -189,15 +197,70 @@ describe('施設属性データ（RVパーク・温泉）の再発防止フィ�
     }
   });
 
-  it('facilitiesが未収録の駅は存在しない（全182施設に収録済み）', () => {
-    const missing = STATIONS.filter((s) => !s.facilities);
+  it('東北6県はfacilitiesが全駅収録済み（北海道は今回のデータ追加では未監査=unknown扱いのため対象外）', () => {
+    const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+    const missing = tohoku.filter((s) => !s.facilities);
     expect(missing.map((s) => s.id)).toEqual([]);
+    expect(tohoku.length).toBe(182);
   });
 
-  it('RV_PARK_COUNT=4・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（第3回監査後の確定値）', () => {
+  it('北海道はfacilities未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+    expect(hokkaido.length).toBe(128);
+    for (const s of hokkaido) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('RV_PARK_COUNT=4・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（第3回監査後の確定値、北海道追加後も東北分の値は不変）', () => {
     expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
     expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
     expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
     expect(STATIONS.filter((s) => s.facilities?.rvPark === 'unknown' || s.facilities?.onsen === 'unknown')).toHaveLength(0);
+  });
+});
+
+describe('北海道追加（販売版・全国展開Phase 1）', () => {
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+
+  it('北海道128駅・東北182駅が両方とも収録され、合計310駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(STATIONS.length).toBe(310);
+  });
+
+  it('北海道・東北で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('北海道の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of hokkaido) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('hokkaido');
+      expect(n.prefectureCode, s.name).toBe('01');
+    }
+  });
+
+  it('主要エリアの代表駅が正しく収録されている（札幌近郊・道央・道南・道北・道東）', () => {
+    const byName = new Map(hokkaido.map((s) => [s.name, s]));
+    // 札幌近郊
+    expect(byName.get('サーモンパーク千歳')?.city).toBe('千歳市');
+    expect(byName.get('花ロードえにわ')?.city).toBe('恵庭市');
+    // 道央
+    expect(byName.get('三笠')?.city).toBe('三笠市');
+    // 道南
+    expect(byName.get('江差')?.city).toBe('江差町');
+    expect(byName.get('北前船 松前')?.city).toBe('松前町');
+    // 道北
+    expect(byName.get('わっかない')?.city).toBe('稚内市');
+    // 道東
+    expect(byName.get('流氷街道網走')?.city).toBe('網走市');
+    expect(byName.get('スワン44ねむろ')?.city).toBe('根室市');
+  });
+
+  it('登録取消済み（足寄湖・まるせっぷ・フォーレスト276大滝）は収録しない', () => {
+    for (const name of ['足寄湖', 'まるせっぷ', 'フォーレスト276大滝']) {
+      expect(hokkaido.find((s) => s.name === name)).toBeUndefined();
+    }
   });
 });

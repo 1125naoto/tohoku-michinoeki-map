@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import type { Prefecture, Station, StatusFilter, VisitMap } from '../types';
-import { TOHOKU_BOUNDS } from '../data';
+import { stationsBounds } from '../data';
 import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
@@ -442,7 +442,7 @@ export default function MapView({
     if (!rootRef.current || mapRef.current) return;
     const map = L.map(rootRef.current, { zoomControl: false, attributionControl: true });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    map.fitBounds(TOHOKU_BOUNDS, { padding: [4, 4] });
+    map.fitBounds(stationsBounds(stations), { padding: [4, 4] });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -674,7 +674,7 @@ export default function MapView({
     const map = mapRef.current;
     if (!map) return;
     if (!prefFilter) {
-      map.fitBounds(TOHOKU_BOUNDS, { padding: [4, 4] });
+      map.fitBounds(stationsBounds(stations), { padding: [4, 4] });
       return;
     }
     const pts = stations.filter((s) => s.pref === prefFilter).map((s) => [s.lat, s.lng] as [number, number]);

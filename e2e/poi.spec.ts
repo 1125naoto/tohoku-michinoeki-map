@@ -110,7 +110,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.locator('.poi-marker .rs-route-num').first()).toHaveText('1');
 
     // 訪問記録は変化していない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／310駅');
 
     // 道の駅も追加して混合ルートを作成する
     await page.getByTestId('poi-detail-close').click();
@@ -280,7 +280,8 @@ test.describe('周辺スポット検索', () => {
 
     await page.getByTestId('poi-search-open').click();
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
-    // 「地図で指定」は廃止済みのため、道の駅選択（既定の都道府県=青森県）で検索地点を確定する
+    // 「地図で指定」は廃止済みのため、道の駅選択で検索地点を確定する（都道府県を明示的に選ぶ）
+    await page.getByTestId('poi-origin-pref-select').selectOption('青森県');
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     await expect(page.getByTestId('poi-search-origin')).toContainText('しちのへ');
     await page.getByTestId('poi-do-search').click();
@@ -353,10 +354,10 @@ test.describe('周辺スポット検索', () => {
         await expect(page.getByTestId('trip-poi-arrived')).toContainText('到着済み');
         await page.getByTestId('trip-poi-next').click();
         // 周辺スポットの到着は道の駅の達成率に影響しない
-        await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('0／310駅');
       } else if (await page.getByTestId('trip-arrived').isVisible().catch(() => false)) {
         await page.getByTestId('trip-arrived').click();
-        await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('1／310駅');
       }
     }
   });
@@ -890,6 +891,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-radius-10000')).toBeVisible();
 
     // 道の駅しちのへを選ぶ
+    await page.getByTestId('poi-origin-pref-select').selectOption('青森県');
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     expect(overpassCalls.length).toBe(0); // 地点選択だけでは通信しない
 
@@ -915,7 +917,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
 
     // POIで達成率が変わらない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／310駅');
   });
 
   test('全画面モードでも周辺スポット検索が使える', async ({ page }) => {
@@ -927,6 +929,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-search-open')).toBeVisible();
     await page.getByTestId('poi-search-open').click();
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+    await page.getByTestId('poi-origin-pref-select').selectOption('青森県');
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     await page.getByTestId('poi-do-search').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
@@ -947,6 +950,7 @@ test.describe('周辺スポット検索', () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
 
+    await page.getByTestId('poi-origin-pref-select').selectOption('青森県');
     await page.getByTestId('poi-origin-station-select').selectOption(STATION_ID);
     await page.getByTestId('poi-do-search').click();
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });

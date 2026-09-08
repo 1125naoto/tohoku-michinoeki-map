@@ -1051,9 +1051,9 @@ export default function App() {
           <button
             className={`chip${prefFilter === null ? ' active' : ''}`}
             onClick={() => setPrefFilter(null)}
-            data-testid="chip-tohoku"
+            data-testid="chip-all"
           >
-            東北全体
+            すべて
           </button>
           {stats.byPref.map((p) => (
             <button
