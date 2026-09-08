@@ -151,6 +151,18 @@ SavedRouteRef { userId, routeId, route: SavedRoute, syncedAt }
 ——スタンプ取得は訪問なしにはあり得ない、という現実の意味論をより正確に表現するための意図的な改善。
 既存記録の削除・改変ではなく、意味の明確化である（`migration.test.ts` で検証済み）。
 
+### localStorageキーの名前空間について
+
+既存キー（`tohoku-me:visits:v2` / `tohoku-me:routes:v1` / `tohoku-me:trip:v1` /
+`tohoku-me:poi-last-ok:v2` 等）はすべて`tohoku-me:`接頭辞済みで、`src/product/`側の
+Auth/CloudSync抽象化は現状すべてno-op実装（`authProvider.ts`はローカルのみ、
+`cloudSyncProvider.ts`は未接続）でlocalStorageキーを一切持たないため、**現時点で
+名前衝突は発生していない**。クラウド同期を実際に有効化する段階で、ユーザー単位の
+名前空間（例: `tohoku-me:user:<userId>:visits`）へ移行する設計にすれば、
+匿名ローカル利用者のデータを壊さずに済む（`migration.ts`の非破壊変換関数がその橋渡しを担う）。
+本ラウンドでは実際のキー再設計・書き込みは行っていない（Phase 2でクラウド同期を
+有効化するタイミングで実施する）。
+
 ---
 
 ## 5. 認証・クラウド 推奨方式: **Supabase**
@@ -341,6 +353,39 @@ Phase 1では大規模UI変更を行わないため、コンポーネント自�
 
 ---
 
+## 13a. Staging環境（実機テスト用の安定HTTPS URL）方針
+
+**現状**: `fix/pretest-ux`の実機テストはCloudflare Quick Tunnel（`scripts/pretest-start.ps1`）を
+使っており、起動のたびにURLがランダムに変わる。ビルドID突き合わせ機構
+（`vite.config.ts`のBUILD ID・`DiagnosticsPanel`）で「検証した版と実機が同一か」は証明できるが、
+「毎回同じURLをブックマークして使う」用途には向かない。
+
+**今回のスコープ**: 本ラウンドでは実際のstaging環境を作成・deployしない（merge/tag/release/
+deploy禁止のため）。以下は設計のみで、実行は次フェーズでユーザー判断のもと行う。
+
+**推奨案（費用・設定コストの低い順）**:
+
+1. **名前付きCloudflare Tunnel**（推奨）: 無料のCloudflareアカウント1つで、固定サブドメイン
+   （例: `staging.michinoeki-navi.example.com`）を発行できる。`cloudflared tunnel login`は
+   初回のみユーザー自身のブラウザ認証が必要（本ラウンドでは実施しない）。以後は
+   `scripts/pretest-start.ps1`と同じ「クリーンビルド→BUILD ID証明→URL表示」フローを
+   固定URLに対して回せる。追加の月額費用なし。
+2. **GitHub Pages 第二環境**: 現行の`main`ブランチpushで自動デプロイする`deploy.yml`とは別に、
+   `workflow_dispatch`（手動トリガーのみ、pushでは動かない）の第二ワークフローを用意し、
+   `feat/merge-nami-final`等の作業ブランチを別パス（例: `/staging/`）または別リポジトリの
+   GitHub Pagesへ配信する。無料だがGitHub Pages側の追加設定（Pages環境の作成）が要る。
+   なお本ラウンドではワークフローファイルの新規作成・実行は行っていない（deploy相当のため）。
+3. **Cloudflare Pages / Vercel等の無料枠**: アカウント作成が必要な点はTunnelと同様だが、
+   git pushだけで自動反映されるプレビュー機能を持つホスティングもあり、staging運用の
+   手間はさらに減る。ただしベンダーを1つ増やすことになる（13章の「ベンダー数を増やさない」
+   方針とはトレードオフ）。
+
+いずれの案も「BUILD ID証明」「PWA更新確認」の既存の仕組み（`buildInfo.ts`・
+`DiagnosticsPanel`・`verify_sw_update.cjs`）をそのまま流用できるよう設計されている
+（配信先が変わるだけで、検証ロジック自体は変更不要）。
+
+---
+
 ## 14. Phase 1で実装したもの（`src/product/` 配下、既存アプリからは未import）
 
 ```
@@ -361,6 +406,16 @@ src/product/
   config/productConfig.ts       上記すべてのデフォルト実装を束ねる合成ルート
   index.ts                      バレルexport
 ```
+
+**動作診断パネル（`DiagnosticsPanel.tsx`）について**: BUILD ID・POIデータ版・Service Worker状態・
+現在地取得の試行ログ・周辺スポットのraw件数等、開発・サポート対応に有用な情報を持つ。
+現状すでに(a)`<details>`で折りたたみ表示（明示的にタップしないと開かない）、
+(b)`isDiagnosticsHost()`により本番ホスト（`1125naoto.github.io`固定）では技術的な文言を
+出さない、という2段階で一般利用者への露出を抑えている。製品版ドメインが決まり次第、
+`isDiagnosticsHost()`のホスト名判定を更新する必要がある（未着手）。「設定→サポート情報→
+診断情報」のような専用導線への再配置はUX上望ましいが、本ラウンドでは現状維持とし、
+次フェーズの設定画面設計と合わせて検討する（現状でも「常時露出」ではないため、
+Phase 1 統合のブロッカーではないと判断した）。
 
 各モジュールに対応する `*.test.ts` を同階層に配置（15章参照）。
 **既存の `App.tsx` 等からはこれらを一切importしていない** — Phase 1は「安全な土台」までが目的であり、

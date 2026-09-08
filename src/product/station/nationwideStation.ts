@@ -12,6 +12,12 @@ export interface StationFacilities {
   parking: boolean | null;
   ev: boolean | null;
   onsen: boolean | null;
+  /**
+   * 日本RV協会(JRVA)認定RVパークの併設有無（onsite/integratedのみtrue）。
+   * 東北6県は実データ監査済み（tohoku-me-existing、data/facility-audit.json参照）。
+   * 他地域は未収集のためnull。
+   */
+  rvPark: boolean | null;
   restaurant: boolean | null;
   shop: boolean | null;
   stampAvailable: boolean | null;
@@ -21,10 +27,22 @@ export const UNKNOWN_FACILITIES: StationFacilities = {
   parking: null,
   ev: null,
   onsen: null,
+  rvPark: null,
   restaurant: null,
   shop: null,
   stampAvailable: null,
 };
+
+/**
+ * 既存Station.facilities（'yes'|'no'|'unknown'）を、全国化スキーマの
+ * boolean|null規約へ変換する。'unknown'およびfacilities未収録（=対象地域が
+ * まだ監査されていない）はnull（不明）とし、falseに丸めない。
+ */
+function toTriBool(status: 'yes' | 'no' | 'unknown' | undefined): boolean | null {
+  if (status === 'yes') return true;
+  if (status === 'no') return false;
+  return null; // 'unknown' または未収録
+}
 
 export interface NationwideStation {
   schemaVersion: typeof STATION_SCHEMA_VERSION;
@@ -85,7 +103,11 @@ export function toNationwideStation(s: Station): NationwideStation {
     infoUrl: s.infoUrl,
     phone: null,
     closedDays: null,
-    facilities: { ...UNKNOWN_FACILITIES },
+    facilities: {
+      ...UNKNOWN_FACILITIES,
+      onsen: toTriBool(s.facilities?.onsen),
+      rvPark: toTriBool(s.facilities?.rvPark),
+    },
     source: 'tohoku-me-existing',
     sourceUpdatedAt: null,
     lastVerifiedAt: s.verifiedAt,
