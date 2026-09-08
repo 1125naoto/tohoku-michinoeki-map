@@ -1,8 +1,8 @@
 {
   "meta": {
-    "verifiedAt": "2026-09-08",
-    "registrationCount": 439,
-    "facilityCount": 440,
+    "verifiedAt": "2026-09-09",
+    "registrationCount": 544,
+    "facilityCount": 545,
     "countsByPref": {
       "青森県": 28,
       "岩手県": 39,
@@ -17,7 +17,11 @@
       "埼玉県": 21,
       "千葉県": 29,
       "東京都": 1,
-      "神奈川県": 5
+      "神奈川県": 5,
+      "新潟県": 42,
+      "富山県": 16,
+      "石川県": 26,
+      "福井県": 21
     },
     "sources": [
       {
@@ -43,6 +47,10 @@
       {
         "name": "全国「道の駅」連絡会 都県別検索・個別駅ページ（関東7都県、座標・住所・公式サイト）",
         "url": "https://www.michi-no-eki.jp/stations/search/17/all/all"
+      },
+      {
+        "name": "全国「道の駅」連絡会 都県別検索・個別駅ページ（北陸4県、座標・住所・公式サイト）",
+        "url": "https://www.michi-no-eki.jp/stations/search/24/all/all"
       }
     ],
     "notes": [
@@ -51,7 +59,8 @@
       "「石川」（福島県石川町）は第64回登録・令和8年度オープン予定の開業前施設。座標は住所ジオコーディングによる概略値。",
       "営業時間・休館日は変わりやすいため収録しない。必ず各駅の公式情報を確認のこと。",
       "2026-09-08: 北海道128駅を追加（全国「道の駅」連絡会 stations/search/10 + 北の道の駅 地域公式一覧のクロス突合。座標は全国「道の駅」連絡会の個別駅ページ掲載値（東北6県と同一情報源・同一精度）。facilitiesは今回未監査のため全件unknown扱い）",
-      "2026-09-08: 関東7都県(茨城・栃木・群馬・埼玉・千葉・東京・神奈川)130駅を追加。全国「道の駅」連絡会 stations/search(都県コード17-23)の個別駅ページから座標・住所・公式サイトを直接取得（北海道追加時の住所ジオコーディング精度問題を踏まえ、東北・北海道と同じ一次情報源に統一）。facilitiesは今回未監査のため全件unknown扱い。"
+      "2026-09-08: 関東7都県(茨城・栃木・群馬・埼玉・千葉・東京・神奈川)130駅を追加。全国「道の駅」連絡会 stations/search(都県コード17-23)の個別駅ページから座標・住所・公式サイトを直接取得（北海道追加時の住所ジオコーディング精度問題を踏まえ、東北・北海道と同じ一次情報源に統一）。facilitiesは今回未監査のため全件unknown扱い。",
+      "2026-09-09: 北陸4県(新潟・富山・石川・福井)105駅を追加。全国「道の駅」連絡会 stations/search(都県コード24-27)の個別駅ページから座標・住所・公式サイトを直接取得（東北・北海道・関東と同一の一次情報源）。facilitiesは今回未監査のため全件unknown扱い。「さかい」（茨城県・福井県坂井市）は異なる実在施設の同音同名であり重複登録ではない。"
     ]
   },
   "stations": [
@@ -9340,6 +9349,1896 @@
       "verifiedAt": "2026-09-08",
       "sources": [
         "https://www.michi-no-eki.jp/stations/views/22687",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19199",
+      "name": "豊栄",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "新潟市",
+      "address": "新潟県新潟市北区木崎字切尾山3644-乙",
+      "lat": 37.957911,
+      "lng": 139.22301,
+      "status": "open",
+      "officialUrl": "http://www.niigata-kankou.or.jp/sys/data?page-id=7001",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19199",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19199",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19200",
+      "name": "加治川",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "新発田市",
+      "address": "新潟県新発田市横岡1147",
+      "lat": 38.0023437,
+      "lng": 139.3724223,
+      "status": "open",
+      "officialUrl": "https://www.m-kajikawa.com",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19200",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19200",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19201",
+      "name": "神林",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "村上市",
+      "address": "新潟県村上市九日市809",
+      "lat": 38.1724825,
+      "lng": 139.4610655,
+      "status": "open",
+      "officialUrl": "http://www.city.murakami.lg.jp/site/kanko/bussan-mitinoeki.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19201",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19201",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19202",
+      "name": "朝日",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "村上市",
+      "address": "新潟県村上市猿沢1215",
+      "lat": 38.2821299,
+      "lng": 139.5224236,
+      "status": "open",
+      "officialUrl": "http://www.asahimidori.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19202",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19202",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19203",
+      "name": "新潟ふるさと村",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "新潟市",
+      "address": "新潟県新潟市西区山田2307",
+      "lat": 37.866345,
+      "lng": 139.020212,
+      "status": "open",
+      "officialUrl": "https://www.hokuriku-michinoeki.jp/contents/station/?sta=000005",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19203",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19203",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19204",
+      "name": "能生",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "糸魚川市",
+      "address": "新潟県糸魚川市大字能生小泊3596-2",
+      "lat": 37.113566,
+      "lng": 138.003775,
+      "status": "open",
+      "officialUrl": "http://www.marine-dream.net/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19204",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19204",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19205",
+      "name": "みかわ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "東蒲原郡阿賀町",
+      "address": "新潟県東蒲原郡阿賀町岩谷2865",
+      "lat": 37.7177569,
+      "lng": 139.3600965,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19205",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19205",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19206",
+      "name": "関川",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "岩船郡関川村",
+      "address": "新潟県岩船郡関川村大字上関1252-1",
+      "lat": 38.091473,
+      "lng": 139.567001,
+      "status": "open",
+      "officialUrl": "http://www.sekikawa.org/road_st/road_st.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19206",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19206",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19207",
+      "name": "ちぢみの里おぢや",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "小千谷市",
+      "address": "新潟県小千谷市稗生甲1670-1",
+      "lat": 37.305143,
+      "lng": 138.822908,
+      "status": "open",
+      "officialUrl": "https://www.chijiminosato.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19207",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19207",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19208",
+      "name": "阿賀の里",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "東蒲原郡阿賀町",
+      "address": "新潟県東蒲原郡阿賀町石間4301",
+      "lat": 37.7380141,
+      "lng": 139.3071892,
+      "status": "open",
+      "officialUrl": "http://aganosato.web.fc2.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19208",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19208",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19209",
+      "name": "笹川流れ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "村上市",
+      "address": "新潟県村上市桑川891-1",
+      "lat": 38.3751788,
+      "lng": 139.4585211,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19209",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19209",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19210",
+      "name": "越後出雲崎　天領の里",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "三島郡出雲崎町",
+      "address": "新潟県三島郡出雲崎町大字尼瀬6-57",
+      "lat": 37.5388864,
+      "lng": 138.6787088,
+      "status": "open",
+      "officialUrl": "https://www.instagram.com/michinoeki_tenryo/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19210",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19210",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19211",
+      "name": "胎内",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "胎内市",
+      "address": "新潟県胎内市下赤谷387-1",
+      "lat": 38.0634898,
+      "lng": 139.4529738,
+      "status": "open",
+      "officialUrl": "http://www.tainai.info/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19211",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19211",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19212",
+      "name": "ゆのたに",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "魚沼市",
+      "address": "新潟県魚沼市吉田1144",
+      "lat": 37.2238403,
+      "lng": 138.9830342,
+      "status": "open",
+      "officialUrl": "https://www.iine-uonuma.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19212",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19212",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19213",
+      "name": "良寛の里　わしま",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "長岡市",
+      "address": "新潟県長岡市島崎5713-2",
+      "lat": 37.5816068,
+      "lng": 138.7590595,
+      "status": "open",
+      "officialUrl": "http://www.motenashiya.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19213",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19213",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19214",
+      "name": "まつだいふるさと会館",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "十日町市",
+      "address": "新潟県十日町市松代3816",
+      "lat": 37.1326116,
+      "lng": 138.6138286,
+      "status": "open",
+      "officialUrl": "https://furusato-kaikan.matsudai.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19214",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19214",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19215",
+      "name": "越後市振の関",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "糸魚川市",
+      "address": "新潟県糸魚川市大字市振1035-50",
+      "lat": 36.979982,
+      "lng": 137.644765,
+      "status": "open",
+      "officialUrl": "http://www.ichiburi-seki.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19215",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19215",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19216",
+      "name": "クロス10十日町",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "十日町市",
+      "address": "新潟県十日町市本町六の1-71-26",
+      "lat": 37.1384419,
+      "lng": 138.761379,
+      "status": "open",
+      "officialUrl": "http://cross10.or.jp",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19216",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19216",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19217",
+      "name": "漢学の里しただ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "三条市",
+      "address": "新潟県三条市大字庭月451-1",
+      "lat": 37.5418094,
+      "lng": 139.1020031,
+      "status": "open",
+      "officialUrl": "http://www.michinoeki-shitada.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19217",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19217",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19218",
+      "name": "風の丘米山（本館のみリニューアルのため休止中）",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "柏崎市",
+      "address": "新潟県柏崎市大字青海川175-1",
+      "lat": 37.3465151,
+      "lng": 138.4899212,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19218",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19218",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19219",
+      "name": "いりひろせ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "魚沼市",
+      "address": "新潟県魚沼市大栃山356-2",
+      "lat": 37.355921,
+      "lng": 139.057244,
+      "status": "open",
+      "officialUrl": "http://www.irihirose.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19219",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19219",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19220",
+      "name": "西山ふるさと公苑",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "柏崎市",
+      "address": "新潟県柏崎市西山町坂田717-4",
+      "lat": 37.4506748,
+      "lng": 138.6621316,
+      "status": "open",
+      "officialUrl": "https://www.hokuriku-michinoeki.jp/contents/station/?sta=000022",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19220",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19220",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19221",
+      "name": "あらい",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "妙高市",
+      "address": "新潟県妙高市大字猪野山58-1",
+      "lat": 37.0261176,
+      "lng": 138.2258864,
+      "status": "open",
+      "officialUrl": "http://www.eki-arai.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19221",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19221",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19222",
+      "name": "R290とちお",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "長岡市",
+      "address": "新潟県長岡市栃尾宮沢1764",
+      "lat": 37.4595997,
+      "lng": 139.0072657,
+      "status": "open",
+      "officialUrl": "http://r290tochio.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19222",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19222",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19223",
+      "name": "あいぽーと佐渡",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "佐渡市",
+      "address": "新潟県佐渡市両津夷384-11",
+      "lat": 38.08365874,
+      "lng": 138.4362432,
+      "status": "open",
+      "officialUrl": "https://www.city.sado.niigata.jp/site/i-port/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19223",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19223",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19224",
+      "name": "親不知ピアパーク",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "糸魚川市",
+      "address": "新潟県糸魚川市大字外波903-1",
+      "lat": 37.0031567,
+      "lng": 137.730284,
+      "status": "open",
+      "officialUrl": "http://e-oyasirazu.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19224",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19224",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19225",
+      "name": "瀬替えの郷せんだ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "十日町市",
+      "address": "新潟県十日町市中仙田甲826",
+      "lat": 37.1990419,
+      "lng": 138.6863544,
+      "status": "open",
+      "officialUrl": "http://kirari21.sakura.ne.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19225",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19225",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19226",
+      "name": "雪のふるさと　やすづか",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "上越市",
+      "address": "新潟県上越市安塚区樽田140",
+      "lat": 37.095594,
+      "lng": 138.470325,
+      "status": "open",
+      "officialUrl": "https://www.461888.jp",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19226",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19226",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19227",
+      "name": "じょんのびの里高柳",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "柏崎市",
+      "address": "新潟県柏崎市高柳町高尾10-1",
+      "lat": 37.2133616,
+      "lng": 138.6342079,
+      "status": "open",
+      "officialUrl": "http://www.jon-nobi.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19227",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19227",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19228",
+      "name": "花夢里にいつ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "新潟市",
+      "address": "新潟県新潟市川根438",
+      "lat": 37.7925908,
+      "lng": 139.078895,
+      "status": "open",
+      "officialUrl": "http://www.niigata-kankou.or.jp/sys/data?page-id=5595",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19228",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19228",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19229",
+      "name": "国上",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "燕市",
+      "address": "新潟県燕市国上5866-1",
+      "lat": 37.6628849,
+      "lng": 138.8251803,
+      "status": "open",
+      "officialUrl": "https://www.michinoeki-kugami.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19229",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19229",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19230",
+      "name": "越後川口",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "長岡市",
+      "address": "新潟県長岡市大字中山84-2",
+      "lat": 37.2608955,
+      "lng": 138.8676387,
+      "status": "open",
+      "officialUrl": "http://agrinosato.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19230",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19230",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19231",
+      "name": "よしかわ杜氏の郷",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "上越市",
+      "address": "新潟県上越市吉川区杜氏の郷1",
+      "lat": 37.2416518,
+      "lng": 138.3769706,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19231",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19231",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19232",
+      "name": "うみてらす名立",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "上越市",
+      "address": "新潟県上越市名立区名立大町4280-1",
+      "lat": 37.163533,
+      "lng": 138.0866912,
+      "status": "open",
+      "officialUrl": "https://www.umiterasu.co.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19232",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19232",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19233",
+      "name": "南魚沼",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "南魚沼市",
+      "address": "新潟県南魚沼市下一日市855",
+      "lat": 37.0030693,
+      "lng": 138.819214,
+      "status": "open",
+      "officialUrl": "https://www.hokuriku-michinoeki.jp/contents/station/?sta=000035",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19233",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19233",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19234",
+      "name": "パティオにいがた",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "見附市",
+      "address": "新潟県見附市今町一丁目3358",
+      "lat": 37.546709,
+      "lng": 138.883471,
+      "status": "open",
+      "officialUrl": "http://patio-niigata.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19234",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19234",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19235",
+      "name": "みつまた",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "南魚沼郡湯沢町",
+      "address": "新潟県南魚沼郡湯沢町大字三俣1000",
+      "lat": 36.8996915,
+      "lng": 138.777175,
+      "status": "open",
+      "officialUrl": "http://michieki-mitsumata.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19235",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19235",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19847",
+      "name": "燕三条地場産センター",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "三条市",
+      "address": "新潟県三条市須頃1-17",
+      "lat": 37.6492628,
+      "lng": 138.9334638,
+      "status": "open",
+      "officialUrl": "http://www.tsjiba.or.jp/michi/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19847",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19847",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19881",
+      "name": "庭園の郷 保内",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "三条市",
+      "address": "新潟県三条市下保内4035",
+      "lat": 37.647125,
+      "lng": 139.026294,
+      "status": "open",
+      "officialUrl": "http://honai-gardens.com",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19881",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19881",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19948",
+      "name": "たがみ",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "南蒲原郡田上町",
+      "address": "新潟県南蒲原郡田上町大字原ヶ崎新田3072番地1",
+      "lat": 37.698976,
+      "lng": 139.059131,
+      "status": "open",
+      "officialUrl": "https://michinoeki-tagami.jp",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19948",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19948",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19949",
+      "name": "ながおか花火館",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "長岡市",
+      "address": "新潟県長岡市喜多町707番地",
+      "lat": 37.455106,
+      "lng": 138.80447,
+      "status": "open",
+      "officialUrl": "https://nagaoka-hanabikan.niigata.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19949",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19949",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-21777",
+      "name": "あがの",
+      "kana": null,
+      "pref": "新潟県",
+      "city": "阿賀野市",
+      "address": "新潟県阿賀野市窪川原553番2",
+      "lat": 37.837074,
+      "lng": 139.164586,
+      "status": "open",
+      "officialUrl": "https://www.hokuriku-michinoeki.jp/contents/station/?sta=000084",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/21777",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/21777",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19236",
+      "name": "細入",
+      "kana": null,
+      "pref": "富山県",
+      "city": "富山市",
+      "address": "富山県富山市片掛3-5",
+      "lat": 36.4885782,
+      "lng": 137.2381219,
+      "status": "open",
+      "officialUrl": "http://www.tenkomori.info/rinrintop.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19236",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19236",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19237",
+      "name": "砺波",
+      "kana": null,
+      "pref": "富山県",
+      "city": "砺波市",
+      "address": "富山県砺波市宮沢町3-9",
+      "lat": 36.6414874,
+      "lng": 136.960092,
+      "status": "open",
+      "officialUrl": "http://www.tonami-kankou.org/michinoeki/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19237",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19237",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19238",
+      "name": "上平",
+      "kana": null,
+      "pref": "富山県",
+      "city": "南砺市",
+      "address": "富山県南砺市西赤尾町72-1",
+      "lat": 36.377491,
+      "lng": 136.871469,
+      "status": "open",
+      "officialUrl": "http://www2.tst.ne.jp/sasara/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19238",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19238",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19239",
+      "name": "利賀",
+      "kana": null,
+      "pref": "富山県",
+      "city": "南砺市",
+      "address": "富山県南砺市利賀村171",
+      "lat": 36.45801090491089,
+      "lng": 137.02651457602414,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19239",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19239",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19240",
+      "name": "井波",
+      "kana": null,
+      "pref": "富山県",
+      "city": "南砺市",
+      "address": "富山県南砺市北川730",
+      "lat": 36.5615091,
+      "lng": 136.977887,
+      "status": "open",
+      "officialUrl": "http://www.kibori.co.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19240",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19240",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19241",
+      "name": "福光",
+      "kana": null,
+      "pref": "富山県",
+      "city": "南砺市",
+      "address": "富山県南砺市中ノ江16",
+      "lat": 36.5664199,
+      "lng": 136.8618918,
+      "status": "open",
+      "officialUrl": "http://www.fukumitsu.net",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19241",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19241",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19242",
+      "name": "たいら",
+      "kana": null,
+      "pref": "富山県",
+      "city": "南砺市",
+      "address": "富山県南砺市東中江215",
+      "lat": 36.445401,
+      "lng": 136.9739623,
+      "status": "open",
+      "officialUrl": "http://gokayama-washinosato.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19242",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19242",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19243",
+      "name": "庄川",
+      "kana": null,
+      "pref": "富山県",
+      "city": "砺波市",
+      "address": "富山県砺波市庄川町示野437",
+      "lat": 36.5743326,
+      "lng": 136.9799087,
+      "status": "open",
+      "officialUrl": "https://michinoeki-shogawa.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19243",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19243",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19244",
+      "name": "うなづき",
+      "kana": null,
+      "pref": "富山県",
+      "city": "黒部市",
+      "address": "富山県黒部市宇奈月町下立686",
+      "lat": 36.8604263,
+      "lng": 137.5415592,
+      "status": "open",
+      "officialUrl": "https://www.unazuki-beer.jp/baiten/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19244",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19244",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19245",
+      "name": "まるごと射水",
+      "kana": null,
+      "pref": "富山県",
+      "city": "射水市",
+      "address": "富山県射水市鏡宮２９６",
+      "lat": 36.7520114,
+      "lng": 137.0849678,
+      "status": "open",
+      "officialUrl": "http://www.shinminato.co.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19245",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19245",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19246",
+      "name": "ウェーブパークなめりかわ",
+      "kana": null,
+      "pref": "富山県",
+      "city": "滑川市",
+      "address": "富山県滑川市中川原410",
+      "lat": 36.7743768,
+      "lng": 137.3444564,
+      "status": "open",
+      "officialUrl": "https://hotaruikamuseum.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19246",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19246",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19247",
+      "name": "氷見",
+      "kana": null,
+      "pref": "富山県",
+      "city": "氷見市",
+      "address": "富山県氷見市北大町25-5",
+      "lat": 36.864417,
+      "lng": 136.98721,
+      "status": "open",
+      "officialUrl": "http://himi-banya.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19247",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19247",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19248",
+      "name": "万葉の里　高岡",
+      "kana": null,
+      "pref": "富山県",
+      "city": "高岡市",
+      "address": "富山県高岡市蜂ヶ島131-1",
+      "lat": 36.7367136,
+      "lng": 136.9693519,
+      "status": "open",
+      "officialUrl": "http://www.manyonosato.com",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19248",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19248",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19249",
+      "name": "メルヘンおやべ",
+      "kana": null,
+      "pref": "富山県",
+      "city": "小矢部市",
+      "address": "富山県小矢部市桜町1535-1",
+      "lat": 36.6894706,
+      "lng": 136.8766877,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19249",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19249",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19909",
+      "name": "雨晴",
+      "kana": null,
+      "pref": "富山県",
+      "city": "高岡市",
+      "address": "富山県高岡市太田24-74",
+      "lat": 36.814906,
+      "lng": 137.041623,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19909",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19909",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19973",
+      "name": "KOKOくろべ",
+      "kana": null,
+      "pref": "富山県",
+      "city": "黒部市",
+      "address": "富山県黒部市堀切925番地1",
+      "lat": 36.87789572,
+      "lng": 137.4282285,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19973",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19973",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19250",
+      "name": "千枚田ポケットパーク",
+      "kana": null,
+      "pref": "石川県",
+      "city": "輪島市",
+      "address": "石川県輪島市白米町ハ部99-5",
+      "lat": 37.424166,
+      "lng": 136.997631,
+      "status": "open",
+      "officialUrl": "http://wajimanavi.lg.jp/www/view/detail.jsp?id=1577",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19250",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19250",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19251",
+      "name": "高松",
+      "kana": null,
+      "pref": "石川県",
+      "city": "かほく市",
+      "address": "石川県かほく市二ツ屋16-3",
+      "lat": 36.786301,
+      "lng": 136.724691,
+      "status": "open",
+      "officialUrl": "http://tak-rest.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19251",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19251",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19252",
+      "name": "いおり",
+      "kana": null,
+      "pref": "石川県",
+      "city": "七尾市",
+      "address": "石川県七尾市庵町笹ヶ谷内3-1",
+      "lat": 37.0288253,
+      "lng": 137.0465297,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19252",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19252",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19253",
+      "name": "桜峠",
+      "kana": null,
+      "pref": "石川県",
+      "city": "鳳珠郡能登町",
+      "address": "石川県鳳珠郡能登町字当目2-24-24",
+      "lat": 37.3313915,
+      "lng": 137.0112551,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19253",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19253",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19254",
+      "name": "しらやまさん",
+      "kana": null,
+      "pref": "石川県",
+      "city": "能美市",
+      "address": "石川県能美市和佐谷町200",
+      "lat": 36.436858,
+      "lng": 136.630473,
+      "status": "open",
+      "officialUrl": "https://michisirayama.wixsite.com/michisirayama",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19254",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19254",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19255",
+      "name": "なかじまロマン峠",
+      "kana": null,
+      "pref": "石川県",
+      "city": "七尾市",
+      "address": "石川県七尾市中島町中島二部1-19",
+      "lat": 37.130547,
+      "lng": 136.863246,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19255",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19255",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19256",
+      "name": "赤神",
+      "kana": null,
+      "pref": "石川県",
+      "city": "輪島市",
+      "address": "石川県輪島市門前町赤神壱110",
+      "lat": 37.2482394,
+      "lng": 136.7094471,
+      "status": "open",
+      "officialUrl": "http://wajimanavi.lg.jp/www/view/detail.jsp?id=988",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19256",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19256",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19257",
+      "name": "とぎ海街道",
+      "kana": null,
+      "pref": "石川県",
+      "city": "羽咋郡志賀町",
+      "address": "石川県羽咋郡志賀町富来領家町タ2-11",
+      "lat": 37.140177,
+      "lng": 136.724883,
+      "status": "open",
+      "officialUrl": "http://togi-michinoeki.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19257",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19257",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19258",
+      "name": "輪島",
+      "kana": null,
+      "pref": "石川県",
+      "city": "輪島市",
+      "address": "石川県輪島市河井町20-1-131",
+      "lat": 37.388618,
+      "lng": 136.905971,
+      "status": "open",
+      "officialUrl": "http://wajimanavi.lg.jp/www/view/detail.jsp?id=1660",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19258",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19258",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19259",
+      "name": "ころ柿の里しか",
+      "kana": null,
+      "pref": "石川県",
+      "city": "羽咋郡志賀町",
+      "address": "石川県羽咋郡志賀町末吉新保向10",
+      "lat": 37.0068731,
+      "lng": 136.780021,
+      "status": "open",
+      "officialUrl": "http://www.syunsaikan-shika.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19259",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19259",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19260",
+      "name": "瀬女",
+      "kana": null,
+      "pref": "石川県",
+      "city": "白山市",
+      "address": "石川県白山市瀬戸寅163-1",
+      "lat": 36.2881213,
+      "lng": 136.6493869,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19260",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19260",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19261",
+      "name": "一向一揆の里",
+      "kana": null,
+      "pref": "石川県",
+      "city": "白山市",
+      "address": "石川県白山市出合町甲36",
+      "lat": 36.3604418,
+      "lng": 136.5990833,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19261",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19261",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19262",
+      "name": "のと里山空港",
+      "kana": null,
+      "pref": "石川県",
+      "city": "輪島市",
+      "address": "石川県輪島市三井町洲衛10-11-1",
+      "lat": 37.2950414,
+      "lng": 136.9571283,
+      "status": "open",
+      "officialUrl": "http://www.noto-airport.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19262",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19262",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19263",
+      "name": "倶利伽羅　源平の郷",
+      "kana": null,
+      "pref": "石川県",
+      "city": "河北郡津幡町",
+      "address": "石川県河北郡津幡町字竹橋西239-14",
+      "lat": 36.662745,
+      "lng": 136.768516,
+      "status": "open",
+      "officialUrl": "http://kurikara.org",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19263",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19263",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19264",
+      "name": "山中温泉　ゆけむり健康村",
+      "kana": null,
+      "pref": "石川県",
+      "city": "加賀市",
+      "address": "石川県加賀市山中温泉こおろぎ町イ19",
+      "lat": 36.2377003,
+      "lng": 136.3675157,
+      "status": "open",
+      "officialUrl": "http://www.hot-ishikawa.jp/sys/data?page-id=6675",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19264",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19264",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19265",
+      "name": "のとじま",
+      "kana": null,
+      "pref": "石川県",
+      "city": "七尾市",
+      "address": "石川県七尾市能登島向田町122-14",
+      "lat": 37.1373588,
+      "lng": 136.9982406,
+      "status": "open",
+      "officialUrl": "https://notojima-michinoeki.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19265",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19265",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19266",
+      "name": "すず塩田村",
+      "kana": null,
+      "pref": "石川県",
+      "city": "珠洲市",
+      "address": "石川県珠洲市清水町1-58-1",
+      "lat": 37.486335,
+      "lng": 137.113786,
+      "status": "open",
+      "officialUrl": "https://enden.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19266",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19266",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19267",
+      "name": "内灘サンセットパーク",
+      "kana": null,
+      "pref": "石川県",
+      "city": "河北郡内灘町",
+      "address": "石川県河北郡内灘町字大学1-4-1",
+      "lat": 36.6591958,
+      "lng": 136.648897,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19267",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19267",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19268",
+      "name": "能登食祭市場",
+      "kana": null,
+      "pref": "石川県",
+      "city": "七尾市",
+      "address": "石川県七尾市府中町員外13-1",
+      "lat": 37.0489849,
+      "lng": 136.968984,
+      "status": "open",
+      "officialUrl": "http://www.shokusai.co.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19268",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19268",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19269",
+      "name": "こまつ木場潟",
+      "kana": null,
+      "pref": "石川県",
+      "city": "小松市",
+      "address": "石川県小松市蓮代寺町ケ2-2",
+      "lat": 36.3700059,
+      "lng": 136.4623598,
+      "status": "open",
+      "officialUrl": "http://www.michinoeki-kibagata.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19269",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19269",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19270",
+      "name": "狼煙",
+      "kana": null,
+      "pref": "石川県",
+      "city": "珠洲市",
+      "address": "石川県珠洲市狼煙町テ部11",
+      "lat": 37.525975,
+      "lng": 137.324423,
+      "status": "open",
+      "officialUrl": "https://noroshi.info",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19270",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19270",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19271",
+      "name": "すずなり",
+      "kana": null,
+      "pref": "石川県",
+      "city": "珠洲市",
+      "address": "石川県珠洲市野々江町シ-1",
+      "lat": 37.441561,
+      "lng": 137.269964,
+      "status": "open",
+      "officialUrl": "http://www.notohantou.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19271",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19271",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19272",
+      "name": "織姫の里なかのと",
+      "kana": null,
+      "pref": "石川県",
+      "city": "鹿島郡中能登町",
+      "address": "石川県鹿島郡中能登町井田ぬ部10-1",
+      "lat": 36.969954,
+      "lng": 136.904789,
+      "status": "open",
+      "officialUrl": "http://orihime-nakanoto.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19272",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19272",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19848",
+      "name": "あなみず",
+      "kana": null,
+      "pref": "石川県",
+      "city": "鳳珠郡穴水町",
+      "address": "石川県鳳珠郡穴水町字大町チ41-6",
+      "lat": 37.2283748,
+      "lng": 136.9056837,
+      "status": "open",
+      "officialUrl": "http://www.pref.ishikawa.jp/douken/page2/main27.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19848",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19848",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19882",
+      "name": "のと千里浜",
+      "kana": null,
+      "pref": "石川県",
+      "city": "羽咋市",
+      "address": "石川県羽咋市千里浜町夕1番地62",
+      "lat": 36.886027,
+      "lng": 136.768455,
+      "status": "open",
+      "officialUrl": "http://noto-chirihama.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19882",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19882",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19910",
+      "name": "めぐみ白山",
+      "kana": null,
+      "pref": "石川県",
+      "city": "白山市",
+      "address": "石川県白山市宮丸町2183",
+      "lat": 36.501457,
+      "lng": 136.546719,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19910",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19910",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19392",
+      "name": "河野",
+      "kana": null,
+      "pref": "福井県",
+      "city": "南条郡南越前町",
+      "address": "福井県南条郡南越前町大谷86-1-6",
+      "lat": 35.796725,
+      "lng": 136.091944,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19392",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19392",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19393",
+      "name": "九頭竜",
+      "kana": null,
+      "pref": "福井県",
+      "city": "大野市",
+      "address": "福井県大野市朝日26-30-1",
+      "lat": 35.904237,
+      "lng": 136.6614651,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19393",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19393",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19394",
+      "name": "パークイン丹生ヶ丘",
+      "kana": null,
+      "pref": "福井県",
+      "city": "丹生郡越前町",
+      "address": "福井県丹生郡越前町上川去45-1-7",
+      "lat": 35.969483,
+      "lng": 136.119514,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19394",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19394",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19395",
+      "name": "名田庄",
+      "kana": null,
+      "pref": "福井県",
+      "city": "大飯郡おおい町",
+      "address": "福井県大飯郡おおい町名田庄納田終109-4-1",
+      "lat": 35.3946307,
+      "lng": 135.5842232,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19395",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19395",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19396",
+      "name": "みくに",
+      "kana": null,
+      "pref": "福井県",
+      "city": "坂井市",
+      "address": "福井県坂井市三国町山岸67-3-1",
+      "lat": 36.1895672,
+      "lng": 136.1390707,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19396",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19396",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19397",
+      "name": "若狭熊川宿",
+      "kana": null,
+      "pref": "福井県",
+      "city": "三方上中郡若狭町",
+      "address": "福井県三方上中郡若狭町熊川11-1-1",
+      "lat": 35.440696,
+      "lng": 135.906077,
+      "status": "open",
+      "officialUrl": "https://www.kkr.mlit.go.jp/road/michi_no_eki/contents/fukui/wakasakumakawasyuku.html ",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19397",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19397",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19398",
+      "name": "さかい",
+      "kana": null,
+      "pref": "福井県",
+      "city": "坂井市",
+      "address": "福井県坂井市坂井町蔵垣内34-14-1",
+      "lat": 36.171016,
+      "lng": 136.2215746,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19398",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19398",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19399",
+      "name": "シーサイド高浜",
+      "kana": null,
+      "pref": "福井県",
+      "city": "高浜町",
+      "address": "福井県高浜町下車持46-10",
+      "lat": 35.48905157,
+      "lng": 135.5954964,
+      "status": "open",
+      "officialUrl": "https://peraichi.com/landing_pages/view/michinoeki-seasidetakahama",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19399",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19399",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19400",
+      "name": "若狭おばま",
+      "kana": null,
+      "pref": "福井県",
+      "city": "小浜市",
+      "address": "福井県小浜市和久里24-45-2",
+      "lat": 35.4919688,
+      "lng": 135.7630954,
+      "status": "open",
+      "officialUrl": "http://obamakankokyoku.com/station/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19400",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19400",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19401",
+      "name": "うみんぴあ大飯",
+      "kana": null,
+      "pref": "福井県",
+      "city": "大飯郡おおい町",
+      "address": "福井県大飯郡おおい町成海1-1-2",
+      "lat": 35.4812687,
+      "lng": 135.6299804,
+      "status": "open",
+      "officialUrl": "http://michinoeki-ohi.com/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19401",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19401",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19402",
+      "name": "西山公園",
+      "kana": null,
+      "pref": "福井県",
+      "city": "鯖江市",
+      "address": "福井県鯖江市桜町3-950",
+      "lat": 35.94866072,
+      "lng": 136.1806773,
+      "status": "open",
+      "officialUrl": "http://www.nishiyama-park.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19402",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19402",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19403",
+      "name": "越前",
+      "kana": null,
+      "pref": "福井県",
+      "city": "丹生郡越前町",
+      "address": "福井県丹生郡越前町厨71-335-1",
+      "lat": 35.91988,
+      "lng": 135.997047,
+      "status": "open",
+      "officialUrl": "http://www.echizen-kk.jp/michinoeki.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19403",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19403",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19404",
+      "name": "三方五湖",
+      "kana": null,
+      "pref": "福井県",
+      "city": "三方上中郡若狭町",
+      "address": "福井県三方上中郡若狭町鳥浜122-31-1",
+      "lat": 35.56019,
+      "lng": 135.894361,
+      "status": "open",
+      "officialUrl": "https://www.wakasa-mikatagoko.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19404",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19404",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19405",
+      "name": "一乗谷あさくら水の駅",
+      "kana": null,
+      "pref": "福井県",
+      "city": "福井市",
+      "address": "福井県福井市安波賀中島町1-1-1",
+      "lat": 36.020564,
+      "lng": 136.29458,
+      "status": "open",
+      "officialUrl": "https://www.kkr.mlit.go.jp/road/michi_no_eki/contents/fukui/ichijoudaniasakura.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19405",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19405",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19849",
+      "name": "禅の里",
+      "kana": null,
+      "pref": "福井県",
+      "city": "吉田郡永平寺町",
+      "address": "福井県吉田郡永平寺町清水2-21-1",
+      "lat": 36.0800489,
+      "lng": 136.3986545,
+      "status": "open",
+      "officialUrl": "https://www.instagram.com/michinoeki_zennosato/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19849",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19849",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19950",
+      "name": "恐竜渓谷かつやま",
+      "kana": null,
+      "pref": "福井県",
+      "city": "勝山市",
+      "address": "福井県勝山市荒土町松ヶ崎第1号17番地",
+      "lat": 36.071766,
+      "lng": 136.478992,
+      "status": "open",
+      "officialUrl": "http://katsuyama-navi.jp/michieki/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19950",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19950",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19967",
+      "name": "越前おおの荒島の郷",
+      "kana": null,
+      "pref": "福井県",
+      "city": "大野市",
+      "address": "福井県大野市蕨生第137号21番地1",
+      "lat": 35.97261867,
+      "lng": 136.5520817,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19967",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19967",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19968",
+      "name": "南えちぜん山海里",
+      "kana": null,
+      "pref": "福井県",
+      "city": "南条郡南越前町",
+      "address": "福井県南条郡南越前町牧谷39-2-2",
+      "lat": 35.8303474,
+      "lng": 136.2022951,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19968",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19968",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-21977",
+      "name": "越前たけふ",
+      "kana": null,
+      "pref": "福井県",
+      "city": "越前市",
+      "address": "福井県越前市大屋町第38号5番地の１",
+      "lat": 35.8950862,
+      "lng": 136.1981481,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/21977",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/21977",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-22057",
+      "name": "蓮如の里あわら",
+      "kana": null,
+      "pref": "福井県",
+      "city": "あわら市",
+      "address": "福井県あわら市吉崎1丁目801番地",
+      "lat": 36.288727,
+      "lng": 136.251555,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/22057",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/22057",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-22058",
+      "name": "若狭美浜はまびより",
+      "kana": null,
+      "pref": "福井県",
+      "city": "三方郡美浜町",
+      "address": "福井県三方郡美浜町松原第35号15番地の1",
+      "lat": 35.604546,
+      "lng": 135.935411,
+      "status": "open",
+      "officialUrl": "https://www.instagram.com/hama.biyori/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/22058",
+      "verifiedAt": "2026-09-09",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/22058",
         "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
       ]
     }

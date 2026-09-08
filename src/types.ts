@@ -86,11 +86,15 @@ export const PREFECTURES = [
   '千葉県',
   '東京都',
   '神奈川県',
+  '新潟県',
+  '富山県',
+  '石川県',
+  '福井県',
 ] as const;
 export type Prefecture = (typeof PREFECTURES)[number];
 
 /** 収録済みの地方（表示順）。今後の都道府県追加に合わせて増やす。 */
-export const AREAS = ['北海道', '東北', '関東'] as const;
+export const AREAS = ['北海道', '東北', '関東', '北陸'] as const;
 export type AreaName = (typeof AREAS)[number];
 
 /** 都道府県が属する地方。product/region/regions.ts の地方区分マスターと整合させる。 */
@@ -109,6 +113,10 @@ export const AREA_BY_PREFECTURE: Record<Prefecture, AreaName> = {
   千葉県: '関東',
   東京都: '関東',
   神奈川県: '関東',
+  新潟県: '北陸',
+  富山県: '北陸',
+  石川県: '北陸',
+  福井県: '北陸',
 };
 
 export interface StationDataFile {

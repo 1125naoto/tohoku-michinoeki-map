@@ -48,6 +48,7 @@ describe('道の駅マスターデータ', () => {
       北海道: { lat: [41.3, 45.7], lng: [139.3, 146.0] },
       東北: { lat: [36.7, 41.7], lng: [139.0, 142.3] },
       関東: { lat: [34.8, 37.2], lng: [138.5, 140.8] },
+      北陸: { lat: [35.2, 38.5], lng: [135.4, 139.7] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -69,14 +70,19 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('同一施設の重複登録がない（近接500m以内に同名駅なし）', () => {
+  it('同一施設の重複登録がない（近接150m以内、または同一都道府県内の同名駅なし）', () => {
+    // 全国化により「境(茨城)」「坂井(福井)」がどちらも「さかい」と読むような、
+    // 別地域・別実在施設の同音異字/同音同名は正当にあり得る（重複登録ではない）。
+    // 一方、同一都道府県内での同名は上下線等を除き基本的に想定しないため、
+    // 実際の二重登録を検出する目的では「同一都道府県内の同名」または
+    // 「近接150m以内」を重複の判定基準とする。
     for (let i = 0; i < STATIONS.length; i++) {
       for (let j = i + 1; j < STATIONS.length; j++) {
         const a = STATIONS[i];
         const b = STATIONS[j];
-        if (a.name === b.name) {
-          // 同名は不可（上下線は名称で区別されている前提）
-          expect(a.name, `重複名: ${a.id}/${b.id}`).not.toBe(b.name);
+        if (a.name === b.name && a.pref === b.pref) {
+          // 同一県内の同名は不可（上下線は名称で区別されている前提）
+          expect(a.name, `同一県内の重複名: ${a.id}/${b.id}`).not.toBe(b.name);
         }
         if (haversineKm(a, b) < 0.15) {
           throw new Error(`近接重複の疑い: ${a.name}(${a.id}) と ${b.name}(${b.id})`);
@@ -110,8 +116,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -266,11 +272,10 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
   const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
   const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
 
-  it('北海道128・東北182・関東130の3地域、合計440駅で共存する', () => {
+  it('北海道128・東北182・関東130がそれぞれ収録されている', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
-    expect(STATIONS.length).toBe(440);
   });
 
   it('関東は現在のproduct地方マスター定義どおり7都県（茨城・栃木・群馬・埼玉・千葉・東京・神奈川）', () => {
@@ -291,22 +296,6 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
       東京都: 1,
       神奈川県: 5,
     });
-  });
-
-  it('全440駅で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
-    const ids = STATIONS.map((s) => s.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('全440駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない）', () => {
-    const seen = new Map<string, string>();
-    for (const s of STATIONS) {
-      expect(Number.isFinite(s.lat), s.name).toBe(true);
-      expect(Number.isFinite(s.lng), s.name).toBe(true);
-      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
-      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
-      seen.set(key, s.name);
-    }
   });
 
   it('関東の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
@@ -337,5 +326,86 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
     // 山間部
     expect(byName.get('両神温泉薬師の湯')?.city).toBe('秩父郡小鹿野町');
     expect(byName.get('箱根峠')?.city).toBe('足柄下郡箱根町');
+  });
+});
+
+describe('北陸追加（販売版・全国展開Phase 3）', () => {
+  const HOKURIKU_PREFS = ['新潟県', '富山県', '石川県', '福井県'] as const;
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+
+  it('北海道128・東北182・関東130・北陸105の4地域、合計545駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(STATIONS.length).toBe(545);
+  });
+
+  it('北陸は現在のproduct地方マスター定義どおり4県（新潟・富山・石川・福井）', () => {
+    const prefsPresent = [...new Set(hokuriku.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...HOKURIKU_PREFS].sort());
+    for (const p of HOKURIKU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('北陸');
+  });
+
+  it('県別内訳: 新潟42・富山16・石川26・福井21', () => {
+    const counts: Record<string, number> = {};
+    for (const s of hokuriku) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      新潟県: 42,
+      富山県: 16,
+      石川県: 26,
+      福井県: 21,
+    });
+  });
+
+  it('全545駅で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('全545駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない）', () => {
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      expect(Number.isFinite(s.lat), s.name).toBe(true);
+      expect(Number.isFinite(s.lng), s.name).toBe(true);
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('「さかい」（茨城県境町・福井県坂井市）は異なる実在施設の同音同名であり、重複登録ではない', () => {
+    const sakai = STATIONS.filter((s) => s.name === 'さかい');
+    expect(sakai.length).toBe(2);
+    expect(sakai.map((s) => s.pref).sort()).toEqual(['福井県', '茨城県']);
+    expect(haversineKm(sakai[0], sakai[1])).toBeGreaterThan(10); // 別施設であることを距離でも確認
+  });
+
+  it('北陸の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of hokuriku) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('hokuriku');
+    }
+  });
+
+  it('北陸facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of hokuriku) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は北陸追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('4県の代表駅が正しく収録されている', () => {
+    const byName = new Map(hokuriku.map((s) => [s.name, s]));
+    expect(byName.get('うみてらす名立')?.pref).toBe('新潟県');
+    expect(byName.get('KOKOくろべ')?.pref).toBe('富山県');
+    expect(byName.get('めぐみ白山')?.pref).toBe('石川県');
+    expect(byName.get('若狭おばま')?.pref).toBe('福井県');
   });
 });
