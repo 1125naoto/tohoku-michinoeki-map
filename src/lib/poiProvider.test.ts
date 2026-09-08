@@ -1,0 +1,66 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ExternalPlacesProvider, OverpassPoiProvider, StaticOsmPoiProvider } from './poiProvider';
+import type { Poi } from './poi';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+const SAMPLE_POI: Poi = {
+  id: 'osm:node/1',
+  category: 'food',
+  subcategory: 'shokudo',
+  subcategories: ['shokudo'],
+  name: 'テスト食堂',
+  lat: 38.36,
+  lng: 140.39,
+  address: null,
+  openingHoursRaw: null,
+  phone: null,
+  website: null,
+  distanceM: 500,
+  source: 'overpass',
+  sourceUrl: 'https://www.openstreetmap.org/node/1',
+};
+
+describe('StaticOsmPoiProvider（道の駅起点の事前生成静的キャッシュ）', () => {
+  it('静的キャッシュにデータがあれば failed:false で返す', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ stationId: 'mne-1', lat: 38, lng: 140, radiusM: 10000, generatedAt: '2026', pois: [SAMPLE_POI] }),
+      }),
+    );
+    const result = await new StaticOsmPoiProvider('mne-1').search({ lat: 38, lng: 140 }, 3000);
+    expect(result.failed).toBe(false);
+    expect(result.fromCache).toBe(true);
+    expect(result.pois).toHaveLength(1);
+  });
+
+  it('静的キャッシュ未生成(404)やpois空はfailed:trueとし、呼び出し側が次のproviderへ進めるようにする', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+    const result = await new StaticOsmPoiProvider('mne-unknown').search({ lat: 38, lng: 140 }, 3000);
+    expect(result.failed).toBe(true);
+    expect(result.pois).toEqual([]);
+  });
+});
+
+describe('OverpassPoiProvider（ライブ検索。現在地検索は必ずこれを使う）', () => {
+  it('search()に渡したorigin座標がそのままOverpassクエリに使われる（駅中心の静的データを流用しない）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: [] }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await new OverpassPoiProvider().search({ lat: 12.3456, lng: 65.4321 }, 3000);
+    const body = fetchMock.mock.calls[0][1].body as string;
+    const decoded = decodeURIComponent(body);
+    expect(decoded).toContain('12.3456');
+    expect(decoded).toContain('65.4321');
+  });
+});
+
+describe('ExternalPlacesProvider（Phase 2プレースホルダー。今回は未実装で明示的に例外）', () => {
+  it('呼び出すと明示的に例外を投げる（無言でOSM相当の空結果にフォールバックしない）', () => {
+    expect(() => new ExternalPlacesProvider().search()).toThrow(/not implemented/);
+  });
+});

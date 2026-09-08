@@ -149,12 +149,14 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).toContainText('道の駅の件数');
     await page.getByTestId('setting-marker-all').click();
     await expect(panel).not.toContainText('道の駅の件数');
-    // 新しい操作説明（押すたびに1段階循環）
-    await expect(panel).toContainText('未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問');
-    // 旧・時間差判定の案内を残さない
+    // 操作説明: タップは詳細を開くだけで、状態は変えない
+    await expect(panel).toContainText('道の駅マークを押すと詳細が開きます（訪問状態は変わりません）');
+    await expect(panel).toContainText('詳細内のボタンから行えます');
+    // 旧・タップで状態循環する仕様の案内を残さない
     await expect(panel).not.toContainText('2タップ');
     await expect(panel).not.toContainText('ダブルクリック');
     await expect(panel).not.toContainText('素早く');
+    await expect(panel).not.toContainText('押すたびに');
     // 凡例の「訪問済み」サンプルが赤（旧・緑の定義が残っていない）
     const visitedSample = panel.locator('.rs-marker.visited');
     expect(await visitedSample.innerHTML()).toContain('#d83a34');
@@ -228,7 +230,9 @@ test.describe('詳細カードの操作', () => {
       return rect ? { attr: rect.getAttribute('fill'), computed: getComputedStyle(rect).fill } : null;
     }, sid);
 
-  test('タップするたびに1段階循環し、色・達成数・スタンプ数・保存が即時反映される', async ({ page }) => {
+  test('マーカータップは詳細シートを開くだけで状態を変えない。シート内ボタンで状態変更すると色・達成数・スタンプ数・保存が即時反映される', async ({
+    page,
+  }) => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('sheet-x').click();
@@ -238,17 +242,25 @@ test.describe('詳細カードの操作', () => {
     // 初期状態: 青 #1a4f9e
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
 
-    // 1回目: 赤・訪問済み
+    // マーカーをタップ→詳細シートが開くだけで色・達成数は変わらず、トーストも出ない
     await marker.click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await expect(page.getByTestId('station-sheet')).toContainText(STATION_NAME);
+    await page.waitForTimeout(300);
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
+
+    // シート内「✓ 訪問済みにする」: 赤・訪問済み
+    await page.getByTestId('btn-visited').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
     await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
 
-    // 2回目: オレンジ・行きたい（達成数から外れる）
-    await page.waitForTimeout(500);
-    await marker.click();
+    // シート内「★ 行きたいにする」: オレンジ・行きたい（達成数から外れる）。シートは開いたまま
+    await page.getByTestId('btn-want').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('行きたいに変更しました');
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
     await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
@@ -260,29 +272,23 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
 
-    // 赤→オレンジ→紫: スタンプ取得済み（達成数+スタンプ数に加算）
-    await page.waitForTimeout(500);
-    await marker.click(); // → wishlist
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    await page.waitForTimeout(500);
-    await marker.click(); // → stamped
+    // シート内「印 スタンプ取得済みにする」: 訪問済みから直接スタンプへ（達成数+スタンプ数に加算）
+    await page.getByTestId('btn-stamp').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('スタンプ取得済みに変更しました');
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('1');
     await expect(page.locator(`.rs-marker.stamp[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#6a3ab2');
 
-    // 4回目: 青・未訪問へ戻る（達成数・スタンプ数から外れる）
-    await page.waitForTimeout(500);
-    await marker.click();
+    // シート内「未訪問に戻す」: 青・未訪問へ戻る（達成数・スタンプ数から外れる）
+    await page.getByTestId('btn-reset').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('未訪問に戻しました');
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('0');
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
 
-    // もう1周目の先頭へ: 赤に戻り、再読み込み後も維持される
-    await page.waitForTimeout(500);
-    await marker.click();
+    // 再度「訪問済みにする」→ 再読み込み後も維持される
+    await page.getByTestId('btn-visited').click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
     await page.reload();
     await expect(page.getByTestId('stats-visited')).toContainText('1／182駅');
@@ -291,7 +297,10 @@ test.describe('詳細カードの操作', () => {
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
   });
 
-  test('連打でも1タップ=1段階（タップ間隔に依存しない・タップ回数で公式HPは開かない）', async ({ page, context }) => {
+  test('マーカーを連打しても状態は変わらない（詳細シートを開くだけ・誤タップでの色変化を防ぐ）', async ({
+    page,
+    context,
+  }) => {
     let popups = 0;
     context.on('page', () => popups++);
     await page.goto(`/#station=${STATION_ID}`);
@@ -299,26 +308,22 @@ test.describe('詳細カードの操作', () => {
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    // 素早めの連続2タップ → ちょうど2段階進む（未訪問→訪問済み→行きたい）
-    await marker.click();
-    await page.waitForTimeout(250);
-    await marker.click();
-    await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
-    // さらに2タップ → 紫→青（1周完了）
-    await page.waitForTimeout(250);
-    await marker.click();
-    await page.waitForTimeout(250);
-    await marker.click();
-    await page.waitForTimeout(600);
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+    // 何度連打しても、開くだけで状態は一切変わらない（旧仕様なら4回で1周してしまうはずの回数）
+    for (let i = 0; i < 4; i++) {
+      await marker.click();
+      await page.waitForTimeout(150);
+    }
+    await page.waitForTimeout(400);
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
     await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('0');
-    // タップ回数では公式HPを開かない
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
     expect(popups).toBe(0);
   });
 
-  test('別の駅を連続タップしても、それぞれ独立に1段階だけ進む', async ({ page, context }) => {
+  test('別の駅を連続タップしても、それぞれ独立に詳細シートが開くだけで状態は変わらない', async ({ page, context }) => {
     let popups = 0;
     context.on('page', () => popups++);
     // 安達 上り線/下り線（約1km・同一ズームで両方DOMに存在）
@@ -335,10 +340,16 @@ test.describe('詳細カードの操作', () => {
     await b.dispatchEvent('click');
     await page.waitForTimeout(600);
     expect(popups).toBe(0);
-    await expect(page.getByTestId('stats-visited')).toContainText('2／182駅'); // 両方とも1段階（訪問済み）
+    // どちらも状態は変わらず、最後にタップした駅の詳細シートが開いている
+    await expect(page.getByTestId('stats-visited')).toContainText('0／182駅');
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
   });
 
-  test('実ポインター操作: 青→赤→オレンジ→紫→青のフルサイクルとトーストの公式HP @smoke', async ({ page, context }, testInfo) => {
+  test('実ポインター操作: 詳細シートは色を変えず、シート内ボタンで青→赤→オレンジ→紫→青のフルサイクルとトーストの公式HP @smoke', async ({
+    page,
+    context,
+  }, testInfo) => {
     const isTouch = testInfo.project.name !== 'desktop';
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
@@ -352,6 +363,13 @@ test.describe('詳細カードの操作', () => {
     // 実デバイス相当の入力（座標指定）: スマホ=touchscreen.tap / PC=mouse.click
     const tap = async () => (isTouch ? page.touchscreen.tap(cx, cy) : page.mouse.click(cx, cy));
 
+    // 実ポインターでのマーカータップ: 詳細シートが開くだけで色は変わらない
+    await tap();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await page.waitForTimeout(400);
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
+
     const expectStage = async (attr: string, computed: string, stats: string, stamped: string) => {
       await page.waitForTimeout(600);
       const fill = await markerFill(page, STATION_ID);
@@ -361,19 +379,18 @@ test.describe('詳細カードの操作', () => {
       await expect(page.getByTestId('stats-stamped')).toContainText(stamped);
     };
 
-    await tap(); // 1回目: 青→赤
+    // シート内ボタンで色を変える（青→赤→オレンジ→紫→青）
+    await page.getByTestId('btn-visited').click();
     await expectStage('#d83a34', 'rgb(216, 58, 52)', '1／182駅', '0');
-    await tap(); // 2回目: 赤→オレンジ
+    await page.getByTestId('btn-want').click();
     await expectStage('#d9640a', 'rgb(217, 100, 10)', '0／182駅', '0');
-    await tap(); // 3回目: オレンジ→紫
+    await page.getByTestId('btn-stamp').click();
     await expectStage('#6a3ab2', 'rgb(106, 58, 178)', '1／182駅', '1');
-    await tap(); // 4回目: 紫→青
+    await page.getByTestId('btn-reset').click();
     await expectStage('#1a4f9e', 'rgb(26, 79, 158)', '0／182駅', '0');
 
-    // touchend/click二重発火があれば1タップで2段階進むはず → 上の各段階検証がそれを排除している
-
     // トーストの「公式HP」ボタン → 中間画面なしで公式ページを直接開き、状態は変わらない
-    await tap(); // → 訪問済み(赤)・トースト表示
+    await page.getByTestId('btn-visited').click(); // → 訪問済み(赤)・トースト表示
     await page.waitForTimeout(400);
     await expect(page.getByTestId('tap-toast')).toBeVisible();
     const lsBefore = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
@@ -397,24 +414,21 @@ test.describe('詳細カードの操作', () => {
     expect(lsAfter).toBe(lsBefore);
   });
 
-  test('1タップ後のポップアップの「詳細」から既存の詳細カードを開ける', async ({ page }) => {
+  test('マーカーを1回タップすると直接詳細シートが開く（トースト経由不要）', async ({ page }) => {
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     await page.locator(`[data-sid="${STATION_ID}"]`).click();
-    await expect(page.getByTestId('tap-toast')).toBeVisible();
-    // トーストには公式HP・詳細・元に戻すの独立ボタンがある
-    await expect(page.getByTestId('tap-toast-official')).toBeVisible();
-    await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
-    await page.getByTestId('tap-toast-detail').click();
     const sheet = page.getByTestId('station-sheet');
     await expect(sheet).toBeVisible();
     await expect(sheet).toContainText(STATION_NAME);
-    // 詳細カード内の行きたい・スタンプ・リンク等の既存操作が維持されている
-    await expect(sheet.getByTestId('btn-stamp')).toBeVisible();
+    await expect(page.getByTestId('tap-toast')).toBeHidden();
+    // 詳細カード内の状態変更ボタン・リンク・周辺スポット導線等が使える
+    await expect(sheet.getByTestId('btn-visited')).toBeVisible();
     await expect(sheet.getByTestId('link-official')).toBeVisible();
     await expect(sheet.getByTestId('link-gmap')).toBeVisible();
+    await expect(sheet.getByTestId('btn-search-nearby')).toBeVisible();
   });
 
   test('地図の何もない場所をタップすると詳細カードが閉じる', async ({ page }) => {
@@ -449,6 +463,160 @@ test.describe('フィルターと達成率', () => {
     await page.getByTestId('filter-all').click();
   });
 
+  /**
+   * 実機テストで報告された不具合の回帰: 「県別・状態フィルターを押しただけで
+   * 道の駅一覧が全面展開され地図を隠す」問題。県別・状態フィルターは地図マーカーの
+   * 絞り込みだけに徹し、一覧は駅名・市町村検索のときだけ表示されることを確認する。
+   */
+  test('県別・状態フィルターは地図マーカーを絞り込むだけで、一覧を自動表示しない（検索欄のときだけ一覧を出す）@smoke', async ({
+    page,
+  }) => {
+    const FUKUSHIMA_STATION = 'mne-19862'; // 猪苗代（福島県）
+    const AOMORI_STATION = 'mne-18904'; // 青森県
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. 東北全体: 一覧は表示されない
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toBeVisible();
+
+    // 2. 福島 → 福島県の道の駅だけ地図表示、一覧は開かない
+    await page.getByTestId('chip-福島県').click();
+    await expect(page.getByTestId('chip-福島県')).toHaveClass(/active/);
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toHaveCount(0);
+
+    // 4. 福島 → 未訪問: 条件どおり絞り込まれ、一覧は開かない
+    await page.getByTestId('filter-none').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+
+    // 5. 福島 → 行きたい: 条件どおり絞り込まれる（未訪問なので0件になり得るが落ちない）
+    await page.getByTestId('filter-want').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await page.getByTestId('filter-all').click();
+
+    // 3. 青森 → 青森県だけに切り替わる、一覧は開かない
+    await page.getByTestId('chip-青森県').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toHaveCount(0);
+    await page.getByTestId('chip-tohoku').click();
+
+    // 6. 検索欄に「会津」→ 候補一覧は表示してよい
+    await page.getByTestId('station-search-input').fill('会津');
+    await expect(page.getByTestId('station-result-list')).toBeVisible();
+    const rowCount = await page.locator('.station-result-row').count().catch(() => 0);
+    expect(rowCount).toBeGreaterThan(0);
+
+    // 7. 検索欄をクリア → 候補一覧が消える
+    await page.getByTestId('station-search-clear').click();
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+
+    // 8. 候補を選択 → 該当道の駅の詳細へ正しく移動する
+    await page.getByTestId('station-search-input').fill('猪苗代');
+    await expect(page.getByTestId(`station-result-${FUKUSHIMA_STATION}`)).toBeVisible();
+    await page.getByTestId(`station-result-${FUKUSHIMA_STATION}`).click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await expect(page.getByTestId('station-sheet')).toContainText('猪苗代');
+  });
+
+  test('設備（RVパーク・温泉）フィルターで地図マーカーを絞り込める。県・状態との複合、0件、解除も正しく動く', async ({
+    page,
+  }) => {
+    const BOTH_STATION = 'mne-19039'; // きらら289（福島県・RVパーク+温泉）
+    const NARAHA_STATION = 'mne-19022'; // ならは（福島県・RVパーク+温泉）
+    const INAWASHIRO_STATION = 'mne-19862'; // 猪苗代（福島県・RVパークのみ）
+    const MITAKIDO_STATION = 'mne-19842'; // 三滝堂（宮城県・RVパークライト。第3回監査で追加）
+    const ONSEN_ONLY_STATION = 'mne-18914'; // 浅虫温泉（青森県・温泉のみ）
+    const NEITHER_STATION = 'mne-18900'; // しちのへ（青森県・どちらもなし）
+    const NEITHER_FUKUSHIMA_STATION = 'mne-19877'; // 国見 あつかしの郷（福島県・どちらもなし）
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. 初期状態: 設備フィルターは非選択、件数表示も出ない
+    await expect(page.getByTestId('facility-filter-rvpark')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toHaveCount(0);
+
+    // 2. 温泉のみ: 温泉ありの駅だけ表示、無い駅は消える
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NEITHER_STATION}"]`)).toHaveCount(0);
+    // 一覧は自動表示しない（検索欄が空のため）
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+
+    // 3. RVパークも追加選択 → AND（両方ある駅だけ）
+    await page.getByTestId('facility-filter-rvpark').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
+
+    // 4. RVパークのみ（温泉を解除）
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
+    // 第3回監査で追加した三滝堂（RVパークライト）・猪苗代（RVパークのみ）も出ること
+    await expect(page.locator(`[data-sid="${MITAKIDO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${INAWASHIRO_STATION}"]`)).toBeVisible();
+
+    // 4b. 宮城県 + RVパーク → 三滝堂が出ること
+    await page.getByTestId('chip-宮城県').click();
+    await expect(page.locator(`[data-sid="${MITAKIDO_STATION}"]`)).toBeVisible();
+    await page.getByTestId('chip-tohoku').click();
+
+    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289・ならは・猪苗代の3駅が出て、設備なしの駅は消える
+    await page.getByTestId('chip-福島県').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NARAHA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${INAWASHIRO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NEITHER_FUKUSHIMA_STATION}"]`)).toHaveCount(0);
+    await page.getByTestId('chip-tohoku').click();
+
+    // 6. 状態フィルターとの複合（未訪問 + RVパーク）
+    await page.getByTestId('filter-none').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await page.getByTestId('filter-all').click();
+
+    // 7. 県+状態+温泉の複合（0件になる組み合わせ: 青森県・行きたい・温泉あり）
+    await page.getByTestId('facility-filter-rvpark').click(); // RVパーク解除
+    await page.getByTestId('facility-filter-onsen').click(); // 温泉のみ選択
+    await page.getByTestId('chip-青森県').click();
+    await page.getByTestId('filter-want').click();
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0); // 未訪問のためwishlist条件では出ない
+
+    // 8. フィルター解除ですべて戻る
+    await page.getByTestId('filter-all').click();
+    await page.getByTestId('chip-tohoku').click();
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${NEITHER_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toBeVisible();
+  });
+
+  test('道の駅詳細シートにRVパーク・温泉の設備バッジが表示される（存在するものだけ）', async ({ page }) => {
+    await gotoStation(page, 'mne-19039'); // きらら289（RVパーク+温泉）
+    await expect(page.getByTestId('station-facilities')).toBeVisible();
+    await expect(page.getByTestId('station-facilities')).toContainText('RVパーク');
+    await expect(page.getByTestId('station-facilities')).toContainText('温泉');
+    await page.getByTestId('sheet-x').click();
+
+    await gotoStation(page, 'mne-18900'); // しちのへ（どちらも無し）
+    await expect(page.getByTestId('station-facilities')).toHaveCount(0);
+  });
+
   test('状態フィルターが排他状態と連動する（訪問済み⇔行きたいの移動）', async ({ page }) => {
     await gotoStation(page);
     await page.getByTestId('btn-visited').click(); // 詳細から訪問済みへ
@@ -460,9 +628,11 @@ test.describe('フィルターと達成率', () => {
     await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     await page.getByTestId('filter-none').click();
     await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toHaveCount(0);
-    // タップで行きたいへ → 訪問済み一覧から消え、行きたい一覧に出る
+    // 行きたいへ変更 → 訪問済み一覧から消え、行きたい一覧に出る
     await page.getByTestId('filter-all').click();
-    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // visited → wishlist
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 詳細シートを開く
+    await page.getByTestId('btn-want').click(); // visited → wishlist
+    await page.getByTestId('sheet-x').click();
     await page.waitForTimeout(400);
     await page.getByTestId('filter-want').click();
     await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
@@ -580,6 +750,45 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(confirmBox).toContainText('Googleマップ');
     const link = confirmBox.locator('a').first();
     await expect(link).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&origin=/);
+  });
+
+  test('コース作成: 現在地取得成功→現在地を出発地点としてルート計算まで進む', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (ok: (p: { coords: { latitude: number; longitude: number } }) => void) =>
+            setTimeout(() => ok({ coords: { latitude: 38.2688, longitude: 140.8721 } }), 50), // 仙台市付近
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await goToAutoPlanner(page);
+    // 既定タブが「現在地」のため、タブ切替なしでそのまま使えることも合わせて確認
+    await expect(page.getByTestId('origin-mode-geo')).toHaveClass(/active/);
+    await page.getByTestId('origin-geo-use').click();
+    await expect(page.getByTestId('origin-label')).toContainText('現在地');
+    await page.getByTestId('plan-submit').click();
+    await expect(page.getByTestId('route-card-max')).toBeVisible({ timeout: 40000 });
+  });
+
+  test('コース作成: 現在地取得エラーはPOSITION_UNAVAILABLE/TIMEOUTで異なる案内文になる（POI検索と同じ共通処理）', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: {
+          getCurrentPosition: (_ok: unknown, err: (e: { code: number; message: string }) => void) =>
+            setTimeout(() => err({ code: 2, message: 'Position unavailable' }), 50),
+        },
+        configurable: true,
+      });
+    });
+    await page.goto('/');
+    await goToAutoPlanner(page);
+    await page.getByTestId('origin-geo-use').click();
+    await expect(page.getByTestId('origin-geo-error')).toBeVisible();
+    await expect(page.getByTestId('origin-geo-error')).toContainText('電波状況の良い場所');
   });
 
   test('地図の「コースを作る」ボタンから設定画面へ入れる @smoke', async ({ page }) => {
@@ -750,7 +959,8 @@ test.describe('営業時間の表示（時刻固定・Asia/Tokyo基準）', () =
     await page.getByTestId('sheet-x').click();
     await closeLegend(page);
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
-    await marker.click(); // → 訪問済み(赤)
+    await marker.click(); // → 詳細シートを開く
+    await page.getByTestId('btn-visited').click(); // → 訪問済み(赤)
     const visited = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
     await expect(visited).toBeVisible({ timeout: 10000 });
     // 本体は赤(#d83a34)のまま、左下の営業ドットは緑(hrs-open)で別表示
@@ -916,7 +1126,7 @@ test.describe('地図全画面モード', () => {
     expect(after2.zoom).toBe(before.zoom);
   });
 
-  test('全画面中もマーカー操作・営業バッジ・色循環・シートが使える', async ({ page }) => {
+  test('全画面中もマーカー操作・営業バッジ・状態変更・シートが使える', async ({ page }) => {
     await page.clock.install({ time: DAY });
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
@@ -927,13 +1137,14 @@ test.describe('地図全画面モード', () => {
     const marker = page.locator(`[data-sid="${STATION_ID}"]`);
     await expect(marker).toBeVisible();
     await expect(marker.locator('.hrs-dot.hrs-open')).toBeVisible(); // 営業バッジ
-    // タップで色循環（未訪問→訪問済み・赤）
+    // タップで詳細シートが開くだけ（色はまだ変わらない）
     await marker.click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    // シート内ボタンで状態変更（未訪問→訪問済み・赤）
+    await page.getByTestId('btn-visited').click();
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
-    // トーストの詳細→ボトムシート開閉
-    await page.getByTestId('tap-toast-detail').click();
-    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    // シートは既に開いたまま。閉じるボタンで閉じられる
     await page.getByTestId('sheet-x').click();
     await expect(page.getByTestId('station-sheet')).toBeHidden();
     // 全画面のままであること
@@ -1129,7 +1340,9 @@ test.describe('記録のバックアップ・復元', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('sheet-x').click(); // シートが駅を覆う画面幅があるため先に閉じる
     await closeLegend(page);
-    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 訪問済みにする
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 詳細シートを開く
+    await page.getByTestId('btn-visited').click(); // 訪問済みにする
+    await page.getByTestId('sheet-x').click();
     await page.getByTestId('tab-records').click();
     const [download] = await Promise.all([
       page.waitForEvent('download'),
@@ -1246,7 +1459,9 @@ test.describe('記録のバックアップ・復元', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('sheet-x').click(); // シートが駅を覆う画面幅があるため先に閉じる
     await closeLegend(page);
-    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 訪問済みにする
+    await page.locator(`[data-sid="${STATION_ID}"]`).click(); // 詳細シートを開く
+    await page.getByTestId('btn-visited').click(); // 訪問済みにする
+    await page.getByTestId('sheet-x').click();
     const filePath = join(tmpdir(), `backup-broken-${Date.now()}.json`);
     writeFileSync(filePath, '{this is not valid json', 'utf-8');
     await page.getByTestId('tab-records').click();

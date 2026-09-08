@@ -59,6 +59,17 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
         {rec?.visitedAt && (state === 'visited' || state === 'stamped') && (
           <p className="addr">訪問日: {new Date(rec.visitedAt).toLocaleDateString('ja-JP')}</p>
         )}
+        {(st.facilities?.rvPark === 'yes' || st.facilities?.onsen === 'yes') && (
+          <p style={{ margin: '4px 0' }} data-testid="station-facilities">
+            {st.facilities?.rvPark === 'yes' && <span className="badge visited">🚐 RVパーク</span>}{' '}
+            {st.facilities?.onsen === 'yes' && <span className="badge visited">♨️ 温泉</span>}
+          </p>
+        )}
+        {(st.facilities?.rvPark === 'unknown' || st.facilities?.onsen === 'unknown') && (
+          <p className="addr" style={{ fontSize: 11 }}>
+            設備情報 未確認（RVパーク・温泉）
+          </p>
+        )}
         {st.note && <div className="note-box">ℹ️ {st.note}</div>}
         {st.status === 'pre_open' && (
           <div className="note-box">この駅は開業前のため、状態変更とルート提案の対象外です。</div>
@@ -162,8 +173,6 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
           </button>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
-          💡 地図のマーカーは押すたびに 未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問 の順で切り替わります。
-          <br />
           営業時間・休館日は変わりやすいため、出発前に公式ページで最新情報を確認してください。
         </p>
         <button style={{ width: '100%', marginTop: 4 }} onClick={onClose} data-testid="sheet-close">

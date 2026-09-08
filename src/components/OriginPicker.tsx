@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Station } from '../types';
 import { PREFECTURES } from '../types';
 import { geocode } from '../lib/geocode';
+import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 import type { OriginValue } from './PlannerForm';
 
 /** 追加の出発地点モード（「地図から選ぶ」専用: 最初に選んだ駅から／選択駅の近くから、等） */
@@ -48,11 +49,13 @@ export default function OriginPicker({
       setGeoError('この端末では位置情報を使えません。住所か地図、道の駅からも選べます。');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => onOriginChange({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: '現在地' }),
-      () => setGeoError('現在地がわかりませんでした。住所か地図、道の駅からも選べます。'),
-      { timeout: 10000 },
-    );
+    void getBestCurrentPosition().then(({ position, error }) => {
+      if (position) {
+        onOriginChange({ lat: position.coords.latitude, lng: position.coords.longitude, label: '現在地' });
+        return;
+      }
+      setGeoError(`${describeGeolocationError(error ?? { code: 2 })} 住所か地図、道の駅からも選べます。`);
+    });
   };
 
   const doSearch = async () => {
@@ -76,7 +79,7 @@ export default function OriginPicker({
   return (
     <div>
       <div className="seg" style={{ marginBottom: 10, flexWrap: 'wrap' }}>
-        <button className={originMode === 'geo' ? 'active' : ''} onClick={() => setOriginMode('geo')}>
+        <button className={originMode === 'geo' ? 'active' : ''} onClick={() => setOriginMode('geo')} data-testid="origin-mode-geo">
           現在地
         </button>
         <button className={originMode === 'search' ? 'active' : ''} onClick={() => setOriginMode('search')}>
@@ -104,10 +107,14 @@ export default function OriginPicker({
       </div>
       {originMode === 'geo' && (
         <>
-          <button className="btn-primary" style={{ width: '100%' }} onClick={useGeolocation}>
+          <button className="btn-primary" style={{ width: '100%' }} onClick={useGeolocation} data-testid="origin-geo-use">
             📍 現在地を使う
           </button>
-          {geoError && <div className="msg warn">{geoError}</div>}
+          {geoError && (
+            <div className="msg warn" data-testid="origin-geo-error">
+              {geoError}
+            </div>
+          )}
         </>
       )}
       {originMode === 'search' && (

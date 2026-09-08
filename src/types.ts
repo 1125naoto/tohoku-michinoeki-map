@@ -3,6 +3,43 @@ import type { Poi } from './lib/poi';
 /** 道の駅の営業状態 */
 export type StationStatus = 'open' | 'pre_open' | 'closed_temp' | 'unknown';
 
+/**
+ * 設備の有無。「情報が無い」を「無い」に丸めない（実データ監査で確認できなかった場合は
+ * unknownのままにし、falseだと確定的に言い切らない）。
+ */
+export type FacilityStatus = 'yes' | 'no' | 'unknown';
+
+/**
+ * RVパーク候補と道の駅の位置関係。yes/no判定だけでは「隣接別施設」を誤って
+ * 含めたり、逆に精査せず除外したりしやすいため、根拠を残すために分類する。
+ * - onsite: 道の駅の駐車場・敷地内にある
+ * - integrated: 道の駅の正式構成施設として運営・案内されている（onsiteを包含する強い分類）
+ * - adjacent: 住所がほぼ同一だが、別法人が運営する隣接別施設
+ * - nearby: 同一市町村内だが徒歩圏外（車で数分等）の別施設
+ * - unrelated: 施設自体が道の駅と無関係（同名の別施設等）
+ * ユーザー向け「RVパークあり」フィルター(rvPark='yes')に含めるのは
+ * onsite/integratedのみ。adjacent/nearbyはrvPark='no'のまま、relationで根拠を残す。
+ */
+export type FacilityRelation = 'onsite' | 'integrated' | 'adjacent' | 'nearby' | 'unrelated';
+
+/**
+ * 道の駅そのものの施設属性（周辺スポット検索とは別。道の駅自体が持つ設備）。
+ * 47都道府県への拡張時も同じ型・同じfilter engine（lib/ui.ts）で使う想定。
+ * RVパーク: 日本RV協会(JRVA)公認の正式なRVパーク（道の駅の敷地内・併設のもの）。
+ *   単なる広い駐車場や「車中泊できそう」は含まない。
+ * 温泉: 道の駅施設内、または道の駅と一体運営・徒歩圏の併設温泉。数km離れた周辺温泉は含まない。
+ */
+export interface StationFacilities {
+  rvPark: FacilityStatus;
+  onsen: FacilityStatus;
+  /** RVパーク候補が見つかった場合の位置関係（見つからなかった場合はundefined） */
+  rvParkRelation?: FacilityRelation;
+  /** 主な根拠URL */
+  source?: string;
+  /** 確認日 (YYYY-MM-DD) */
+  lastChecked?: string;
+}
+
 /** 道の駅マスターデータ（1駅分） */
 export interface Station {
   /** 永続ID（一度割り当てたら変更しない） */
@@ -30,6 +67,8 @@ export interface Station {
   sources: string[];
   /** 補足（安達 上下線など） */
   note?: string;
+  /** 道の駅自体の施設属性（RVパーク・温泉）。未収録の駅ではundefined（=unknown扱い） */
+  facilities?: StationFacilities;
 }
 
 export const PREFECTURES = ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] as const;
@@ -117,7 +156,7 @@ export interface RouteLeg {
 }
 
 /** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
-export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'park' | 'other';
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other';
 
 export interface RouteStop {
   /** 道の駅の場合は実際の駅ID。周辺スポットの場合はPoi.idをそのまま使う（一意性のため） */

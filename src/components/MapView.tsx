@@ -7,17 +7,21 @@ import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
+import { matchesFilter, matchesFacilityFilter, NO_FACILITY_FILTER, type FacilityFilter } from '../lib/ui';
+import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 
 interface Props {
   stations: Station[];
   visits: VisitMap;
   prefFilter: Prefecture | null;
   statusFilter: StatusFilter;
+  /** 道の駅自体の設備条件（RVパーク・温泉）でマーカーを絞る。省略時は絞り込みなし */
+  facilityFilter?: FacilityFilter;
   /**
-   * マーカーのタップ/クリック。押すたびに即時に状態を1段階進める
-   * （時間差判定・保留タイマーは存在しない。公式HPはトースト/詳細のボタンから開く）
+   * マーカーのタップ/クリック。詳細シートを開くだけで、訪問状態は一切変更しない
+   * （状態変更はシート内の明示的なボタンからのみ行う。誤タップでの色変化を防ぐ）。
    */
-  onTapStation: (id: string) => void;
+  onOpenStation: (id: string) => void;
   /** マーカー以外の地図タップ（詳細カードを閉じる用） */
   onMapTap: () => void;
   /** 出発地点の地図指定モード */
@@ -69,23 +73,6 @@ export function visitState(st: Station, visits: VisitMap): MarkerState {
       return 'want';
     default:
       return 'none';
-  }
-}
-
-/** 状態フィルター（相互排他: 各駅は必ずどれか1つの一覧にだけ現れる） */
-export function matchesFilter(st: Station, visits: VisitMap, statusFilter: StatusFilter): boolean {
-  const state = visits[st.id]?.state ?? 'unvisited';
-  switch (statusFilter) {
-    case 'all':
-      return true;
-    case 'none':
-      return st.status === 'open' && state === 'unvisited';
-    case 'want':
-      return state === 'wishlist';
-    case 'visited':
-      return state === 'visited';
-    case 'stamp':
-      return state === 'stamped';
   }
 }
 
@@ -336,9 +323,9 @@ function Legend({
             駅名は拡大すると表示されます。
           </div>
           <div className="legend-hint">
-            道の駅マークを押すたびに、未訪問→訪問済み→行きたい→スタンプ取得済み→未訪問の順で切り替わります。
+            道の駅マークを押すと詳細が開きます（訪問状態は変わりません）。
             <br />
-            公式HP・詳細は、押した後に出るボタンから開けます。
+            訪問済み・行きたい・スタンプ取得済みへの変更は、詳細内のボタンから行えます。
             <br />
             ※営業状態は通常営業時間に基づく目安です。臨時休業・季節変更は公式情報をご確認ください。
             {!isTouch && (
@@ -373,7 +360,8 @@ export default function MapView({
   visits,
   prefFilter,
   statusFilter,
-  onTapStation,
+  facilityFilter = NO_FACILITY_FILTER,
+  onOpenStation,
   onMapTap,
   pickMode,
   onPick,
@@ -402,7 +390,7 @@ export default function MapView({
   const orderLayerRef = useRef<L.LayerGroup | null>(null);
   const pickRef = useRef(pickMode);
   const onPickRef = useRef(onPick);
-  const onTapRef = useRef(onTapStation);
+  const onOpenRef = useRef(onOpenStation);
   const onMapTapRef = useRef(onMapTap);
   const routeSelectModeRef = useRef(routeSelectMode);
   const onToggleRouteSelectRef = useRef(onToggleRouteSelect);
@@ -410,14 +398,14 @@ export default function MapView({
   const onTogglePoiSelectRef = useRef(onTogglePoiSelect);
   pickRef.current = pickMode;
   onPickRef.current = onPick;
-  onTapRef.current = onTapStation;
+  onOpenRef.current = onOpenStation;
   onMapTapRef.current = onMapTap;
   routeSelectModeRef.current = routeSelectMode;
   onToggleRouteSelectRef.current = onToggleRouteSelect;
   onTapPoiRef.current = onTapPoi;
   onTogglePoiSelectRef.current = onTogglePoiSelect;
 
-  // 1回の物理タップから touchend と click が二重発火しても「1タップ=1段階」を守るための
+  // 1回の物理タップから touchend と click が二重発火しても「1タップ=1回」を守るための
   // デデュープ（80ms未満の同一ID再入は同じ物理タップとみなす）。
   // 履歴はマーカー再構築やReact再描画の影響を受けないコンポーネントレベルのrefで保持する。
   const lastTapRef = useRef<{ id: string; at: number } | null>(null);
@@ -426,13 +414,13 @@ export default function MapView({
     const lastTap = lastTapRef.current;
     lastTapRef.current = { id, at: now };
     if (lastTap && lastTap.id === id && now - lastTap.at < 80) return;
-    // ルート選択モード中は訪問状態への分岐を一切経由せず、選択の追加/解除だけを行う
+    // ルート選択モード中は詳細シートを開かず、選択の追加/解除だけを行う
     if (routeSelectModeRef.current) {
       onToggleRouteSelectRef.current(id);
       return;
     }
-    // タップ間隔に関係なく、押した瞬間に状態を1段階だけ進める（保留・時間差判定なし）
-    onTapRef.current(id);
+    // 詳細シートを開くだけ。訪問状態はここでは一切変更しない
+    onOpenRef.current(id);
   };
 
   // 周辺スポットのタップ（道の駅と同じデデュープを適用。訪問状態には一切触れない）
@@ -571,7 +559,10 @@ export default function MapView({
     }
     const target: L.LayerGroup = useCluster ? cluster : allLayer;
     const shown = stations.filter(
-      (st) => (!prefFilter || st.pref === prefFilter) && matchesFilter(st, visits, statusFilter),
+      (st) =>
+        (!prefFilter || st.pref === prefFilter) &&
+        matchesFilter(st, visits, statusFilter) &&
+        matchesFacilityFilter(st, facilityFilter),
     );
     for (const st of shown) {
       const state = visitState(st, visits);
@@ -603,7 +594,7 @@ export default function MapView({
       });
       marker.on('click', () => handleMarkerTap(st.id));
       // マーカー連打が地図のダブルクリックズームを発火させないよう伝播だけ止める
-      // （dblclickに機能は割り当てない。各clickが既に1段階ずつ進めている）
+      // （dblclickに機能は割り当てない。各clickが既に詳細シートを開いている）
       marker.on('dblclick', (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e.originalEvent);
       });
@@ -614,6 +605,7 @@ export default function MapView({
     visits,
     prefFilter,
     statusFilter,
+    facilityFilter,
     now,
     selectedId,
     settings.markerMode,
@@ -756,11 +748,11 @@ export default function MapView({
       setTimeout(() => setLocMsg(null), 3000);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    void getBestCurrentPosition().then(({ position, error }) => {
+      if (position) {
         const map = mapRef.current;
         if (!map) return;
-        const ll: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        const ll: [number, number] = [position.coords.latitude, position.coords.longitude];
         if (meMarkerRef.current) meMarkerRef.current.setLatLng(ll);
         else
           meMarkerRef.current = L.circleMarker(ll, {
@@ -771,13 +763,11 @@ export default function MapView({
             fillOpacity: 1,
           }).addTo(map);
         map.setView(ll, Math.max(map.getZoom(), 12));
-      },
-      () => {
-        setLocMsg('現在地を取得できませんでした');
-        setTimeout(() => setLocMsg(null), 3000);
-      },
-      { timeout: 10000 },
-    );
+        return;
+      }
+      setLocMsg(describeGeolocationError(error ?? { code: 2 }));
+      setTimeout(() => setLocMsg(null), 5000);
+    });
   };
   const locateRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {

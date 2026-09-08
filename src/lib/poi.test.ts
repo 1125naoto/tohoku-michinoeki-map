@@ -12,39 +12,193 @@ import {
 } from './poi';
 
 describe('カテゴリ分類（OSMタグから）', () => {
-  it('ラーメン店を分類する', () => {
-    expect(classify({ amenity: 'restaurant', cuisine: 'ramen' })).toEqual({ category: 'food', subcategory: 'ramen' });
+  it('ラーメン店を分類する（cuisine=ramen）', () => {
+    expect(classify({ amenity: 'restaurant', cuisine: 'ramen' })).toEqual({
+      category: 'food',
+      subcategory: 'ramen',
+      subcategories: ['ramen'],
+    });
   });
   it('カフェを分類する', () => {
-    expect(classify({ amenity: 'cafe' })).toEqual({ category: 'food', subcategory: 'cafe' });
+    expect(classify({ amenity: 'cafe' })).toEqual({ category: 'food', subcategory: 'cafe', subcategories: ['cafe'] });
   });
-  it('cuisineが無い一般レストランは「その他の飲食店」', () => {
-    expect(classify({ amenity: 'restaurant' })).toEqual({ category: 'food', subcategory: 'food_other' });
+  it('cuisineも店名の手がかりも無い一般レストランは「その他の飲食店」', () => {
+    expect(classify({ amenity: 'restaurant' })).toEqual({
+      category: 'food',
+      subcategory: 'food_other',
+      subcategories: ['food_other'],
+    });
   });
   it('温泉(natural=hot_spring)を分類する', () => {
-    expect(classify({ natural: 'hot_spring' })).toEqual({ category: 'onsen', subcategory: 'onsen' });
+    expect(classify({ natural: 'hot_spring' })).toEqual({ category: 'onsen', subcategory: 'onsen', subcategories: ['onsen'] });
   });
-  it('日帰り温泉(amenity=public_bath)を分類する', () => {
-    expect(classify({ amenity: 'public_bath' })).toEqual({ category: 'onsen', subcategory: 'higaeri_onsen' });
+  it('日帰り温泉(amenity=public_bath)を分類する（温泉由来を示すタグ・店名が無い場合は日帰り温泉のみ）', () => {
+    expect(classify({ amenity: 'public_bath' })).toEqual({
+      category: 'onsen',
+      subcategory: 'higaeri_onsen',
+      subcategories: ['higaeri_onsen'],
+    });
   });
   it('足湯(amenity=foot_bath)を分類する', () => {
-    expect(classify({ amenity: 'foot_bath' })).toEqual({ category: 'onsen', subcategory: 'ashiyu' });
+    expect(classify({ amenity: 'foot_bath' })).toEqual({ category: 'onsen', subcategory: 'ashiyu', subcategories: ['ashiyu'] });
   });
   it('神社(religion=shinto)を分類する', () => {
     expect(classify({ amenity: 'place_of_worship', religion: 'shinto' })).toEqual({
       category: 'tourism',
       subcategory: 'jinja_tera',
+      subcategories: ['jinja_tera'],
     });
   });
   it('観光名所(tourism=attraction)を分類する', () => {
-    expect(classify({ tourism: 'attraction' })).toEqual({ category: 'tourism', subcategory: 'meisho' });
+    expect(classify({ tourism: 'attraction' })).toEqual({ category: 'tourism', subcategory: 'meisho', subcategories: ['meisho'] });
   });
   it('公園(leisure=park)を分類する', () => {
-    expect(classify({ leisure: 'park' })).toEqual({ category: 'tourism', subcategory: 'koen' });
+    expect(classify({ leisure: 'park' })).toEqual({ category: 'tourism', subcategory: 'koen', subcategories: ['koen'] });
   });
   it('分類できないタグはnull（推測で断定しない）', () => {
     expect(classify({ shop: 'supermarket' })).toBeNull();
     expect(classify({})).toBeNull();
+  });
+  it('ホテル(tourism=hotel/motel)を分類する', () => {
+    expect(classify({ tourism: 'hotel' })).toEqual({ category: 'lodging', subcategory: 'hotel', subcategories: ['hotel'] });
+    expect(classify({ tourism: 'motel' })).toEqual({ category: 'lodging', subcategory: 'hotel', subcategories: ['hotel'] });
+  });
+  it('旅館・民宿(tourism=guest_house)を分類する', () => {
+    expect(classify({ tourism: 'guest_house' })).toEqual({
+      category: 'lodging',
+      subcategory: 'guesthouse',
+      subcategories: ['guesthouse'],
+    });
+  });
+  it('ゲストハウス(tourism=hostel)を分類する', () => {
+    expect(classify({ tourism: 'hostel' })).toEqual({ category: 'lodging', subcategory: 'hostel', subcategories: ['hostel'] });
+  });
+
+  describe('実地テストで報告された不具合の回帰: 飲食ジャンルの細分類', () => {
+    // 実データ監査（181駅・5222件）で、cuisineタグが無い/一致しないために
+    // 実在するラーメン店・寿司店等が軒並み「その他の飲食店」「ファストフード」に
+    // 埋もれていたことを確認済み（例: 「ラーメンショップ」「大ちゃんラーメン」等70件、
+    // 「想い出寿司」「かっぱ寿司」等55件）。
+    it('amenity=fast_food + cuisine=ramen はラーメンに分類される（従来はfast_food判定がcuisineより先に確定し常にfastfood固定だった）', () => {
+      expect(classify({ amenity: 'fast_food', cuisine: 'ramen' })).toEqual({
+        category: 'food',
+        subcategory: 'ramen',
+        subcategories: ['ramen'],
+      });
+    });
+    it('cuisineタグが無くても、店名に「ラーメン」を含むrestaurantはラーメンに分類される', () => {
+      expect(classify({ amenity: 'restaurant', name: 'ラーメン一休' })).toEqual({
+        category: 'food',
+        subcategory: 'ramen',
+        subcategories: ['ramen'],
+      });
+      expect(classify({ amenity: 'restaurant', name: '中華そば 酔月' })).toEqual({
+        category: 'food',
+        subcategory: 'ramen',
+        subcategories: ['ramen'],
+      });
+    });
+    it('実データ監査（仙台/盛岡/山形）で確認したラーメン店名パターンを分類する', () => {
+      const ramenNames = [
+        'らぁめん花月',
+        '拉麺 三國志',
+        '仙台中華蕎麦 仁屋',
+        '支那そば 龍軒',
+        'つけ麺おんのじ 仙台本店',
+        '油そば 春日亭',
+        '麺屋政宗',
+        '麺処 誠',
+        '麺房おおはら',
+        '麺工房 大地',
+        'RAMEN JIRO',
+        '一蘭',
+        '町田商店',
+      ];
+      for (const name of ramenNames) {
+        expect(classify({ amenity: 'restaurant', name })?.subcategory).toBe('ramen');
+      }
+    });
+    it('cuisine=noodleや「麺」を含む名前でも、実際は非ラーメン店（そば/うどん/パスタ/麻辣湯）は誤分類しない', () => {
+      // cuisine=noodle は実データ上そば/うどん/麻辣湯にも付与されているため、
+      // それ自体では ramen 判定しない（店名側の高精度キーワードが無ければ null のまま）。
+      expect(classify({ amenity: 'restaurant', cuisine: 'noodle', name: 'そばの神田 東一屋' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      expect(classify({ amenity: 'fast_food', cuisine: 'noodle', name: '丸亀製麺' })?.subcategory).not.toBe('ramen');
+      expect(classify({ amenity: 'restaurant', cuisine: 'chinese', name: '七宝麻辣湯' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      // 「麺屋」は店名の先頭にある場合のみラーメンとみなす。先頭以外（洋麺屋＝パスタ店）は誤分類しない。
+      expect(classify({ amenity: 'restaurant', cuisine: 'pasta', name: '洋麺屋五右衛門' })?.subcategory).not.toBe(
+        'ramen',
+      );
+      expect(classify({ amenity: 'restaurant', cuisine: 'soba', name: '生そば 福はら' })?.subcategory).not.toBe(
+        'ramen',
+      );
+    });
+    it('cuisineタグが無くても、店名に「寿司」を含むrestaurantは寿司に分類される', () => {
+      expect(classify({ amenity: 'restaurant', name: '想い出寿司' })).toEqual({
+        category: 'food',
+        subcategory: 'sushi',
+        subcategories: ['sushi'],
+      });
+    });
+    it('cuisineタグが無くても、店名に「焼肉」を含むrestaurantは焼肉に分類される', () => {
+      expect(classify({ amenity: 'restaurant', name: '焼肉たろう' })).toEqual({
+        category: 'food',
+        subcategory: 'yakiniku',
+        subcategories: ['yakiniku'],
+      });
+    });
+    it('cuisineタグがある場合は店名より優先される（店名にラーメンを含んでも実際のcuisineを信じる）', () => {
+      expect(classify({ amenity: 'restaurant', cuisine: 'italian', name: 'ラーメン風イタリアン' })).toEqual({
+        category: 'food',
+        subcategory: 'italian',
+        subcategories: ['italian'],
+      });
+    });
+    it('店名にも手がかりが無いfast_foodは従来通りファストフードのまま', () => {
+      expect(classify({ amenity: 'fast_food', name: 'マクドナルド' })).toEqual({
+        category: 'food',
+        subcategory: 'fastfood',
+        subcategories: ['fastfood'],
+      });
+    });
+  });
+
+  describe('実地テストで報告された不具合の回帰: 温泉・日帰り温泉の多重所属', () => {
+    // 実データ監査で「日帰り温泉」に119件あるのに「温泉」細分類には1件しか
+    // 無いことを確認（natural=hot_springは温泉施設にはほぼ付かない）。
+    // ライブAPI確認でも、amenity=public_bathの温泉施設の大半にbath:typeタグが
+    // 無いことを確認したため、店名の「温泉」も高精度な補助シグナルとして使う。
+    it('bath:type=onsen の日帰り入浴施設は「日帰り温泉」と「温泉」の両方に属する', () => {
+      expect(classify({ amenity: 'public_bath', 'bath:type': 'onsen', name: 'ポニー温泉' })).toEqual({
+        category: 'onsen',
+        subcategory: 'higaeri_onsen',
+        subcategories: ['higaeri_onsen', 'onsen'],
+      });
+    });
+    it('bath:typeが無くても店名に「温泉」を含む公衆浴場は「日帰り温泉」と「温泉」の両方に属する', () => {
+      expect(classify({ amenity: 'public_bath', name: '木崎野温泉' })).toEqual({
+        category: 'onsen',
+        subcategory: 'higaeri_onsen',
+        subcategories: ['higaeri_onsen', 'onsen'],
+      });
+    });
+    it('温泉由来を示す手がかりが無い公衆浴場は従来通り「日帰り温泉」のみ', () => {
+      expect(classify({ amenity: 'public_bath', name: '六ヶ所村老人福祉センター' })).toEqual({
+        category: 'onsen',
+        subcategory: 'higaeri_onsen',
+        subcategories: ['higaeri_onsen'],
+      });
+    });
+    it('店名に「温泉」を含むspa施設も「温浴施設」と「温泉」の両方に属する', () => {
+      expect(classify({ leisure: 'spa', name: 'XXスパ温泉' })).toEqual({
+        category: 'onsen',
+        subcategory: 'onyoku_shisetsu',
+        subcategories: ['onyoku_shisetsu', 'onsen'],
+      });
+    });
   });
 });
 
@@ -222,6 +376,12 @@ describe('立ち寄り先の内部種別（stopType）', () => {
     expect(stopTypeOf('meisho')).toBe('tourism');
     expect(stopTypeOf('jinja_tera')).toBe('tourism');
   });
+  it('宿泊系はlodging', () => {
+    expect(stopTypeOf('hotel')).toBe('lodging');
+    expect(stopTypeOf('guesthouse')).toBe('lodging');
+    expect(stopTypeOf('hostel')).toBe('lodging');
+    expect(stopTypeOf('lodging_other')).toBe('lodging');
+  });
 });
 
 describe('滞在時間の既定値と丸め', () => {
@@ -230,6 +390,7 @@ describe('滞在時間の既定値と丸め', () => {
     expect(DEFAULT_STAY_MIN.ramen).toBe(45);
     expect(DEFAULT_STAY_MIN.onsen).toBe(90);
     expect(DEFAULT_STAY_MIN.jinja_tera).toBe(45);
+    expect(DEFAULT_STAY_MIN.hotel).toBe(480);
   });
   it('任意入力は15分単位に丸める', () => {
     expect(roundStayMin(50)).toBe(45);
