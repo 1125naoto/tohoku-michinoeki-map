@@ -10,6 +10,19 @@ export type StationStatus = 'open' | 'pre_open' | 'closed_temp' | 'unknown';
 export type FacilityStatus = 'yes' | 'no' | 'unknown';
 
 /**
+ * RVパーク候補と道の駅の位置関係。yes/no判定だけでは「隣接別施設」を誤って
+ * 含めたり、逆に精査せず除外したりしやすいため、根拠を残すために分類する。
+ * - onsite: 道の駅の駐車場・敷地内にある
+ * - integrated: 道の駅の正式構成施設として運営・案内されている（onsiteを包含する強い分類）
+ * - adjacent: 住所がほぼ同一だが、別法人が運営する隣接別施設
+ * - nearby: 同一市町村内だが徒歩圏外（車で数分等）の別施設
+ * - unrelated: 施設自体が道の駅と無関係（同名の別施設等）
+ * ユーザー向け「RVパークあり」フィルター(rvPark='yes')に含めるのは
+ * onsite/integratedのみ。adjacent/nearbyはrvPark='no'のまま、relationで根拠を残す。
+ */
+export type FacilityRelation = 'onsite' | 'integrated' | 'adjacent' | 'nearby' | 'unrelated';
+
+/**
  * 道の駅そのものの施設属性（周辺スポット検索とは別。道の駅自体が持つ設備）。
  * 47都道府県への拡張時も同じ型・同じfilter engine（lib/ui.ts）で使う想定。
  * RVパーク: 日本RV協会(JRVA)公認の正式なRVパーク（道の駅の敷地内・併設のもの）。
@@ -19,6 +32,8 @@ export type FacilityStatus = 'yes' | 'no' | 'unknown';
 export interface StationFacilities {
   rvPark: FacilityStatus;
   onsen: FacilityStatus;
+  /** RVパーク候補が見つかった場合の位置関係（見つからなかった場合はundefined） */
+  rvParkRelation?: FacilityRelation;
   /** 主な根拠URL */
   source?: string;
   /** 確認日 (YYYY-MM-DD) */

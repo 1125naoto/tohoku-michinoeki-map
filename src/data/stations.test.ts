@@ -136,9 +136,9 @@ describe('道の駅マスターデータ', () => {
 
 describe('施設属性データ（RVパーク・温泉）の再発防止フィクスチャ', () => {
   // 初回監査ではrv-park.jpのページネーション未確認によりRVパーク2件(ならは・猪苗代)を
-  // 取りこぼした(福島県は22件あり1ページ目の10件しか見ていなかった)。
-  // 再監査で全ページを確認し、道の駅完全ガイド(michinoeki-guide.com)の独立掲載とも
-  // 相互確認した結果を固定するための回帰テスト。
+  // 取りこぼし(福島県は22件あり1ページ目の10件しか見ていなかった)、第2回監査でも
+  // 「RVパークライト」グレードの三滝堂をさらに取りこぼした(標準の一覧検索2種類のいずれにも
+  // 出現しない)。詳細はdocs/FACILITY_DATA.md参照。これらを固定するための回帰テスト。
   function facilitiesOf(name: string) {
     const st = STATIONS.find((s) => s.name === name);
     if (!st) throw new Error(`station not found: ${name}`);
@@ -160,17 +160,33 @@ describe('施設属性データ（RVパーク・温泉）の再発防止フィ�
     expect(facilitiesOf('猪苗代')?.onsen).toBe('no');
   });
 
+  it('三滝堂: RVパーク(RVパークライト)はyes（標準の一覧検索2種類には出現せず、専用ページ・観光連盟公式ページで発見）', () => {
+    // 第2回監査でも取りこぼしていた。標準の都道府県別検索(rv-park.jp)・地方別一覧(kurumatabi.com)
+    // のいずれにも出現しない「RVパークライト」グレード。一覧サイトとの一致だけでは
+    // 取りこぼしを検出できないことが判明した象徴的なケース（docs/FACILITY_DATA.md セクション6）。
+    expect(facilitiesOf('三滝堂')?.rvPark).toBe('yes');
+    expect(facilitiesOf('三滝堂')?.rvParkRelation).toBe('integrated');
+  });
+
   it('たかはた: 過去にRVパーク併設だったが現在は提携終了のためno（過去記事だけでyesにしない）', () => {
     expect(facilitiesOf('たかはた')?.rvPark).toBe('no');
+  });
+
+  it('寒河江: 住所がほぼ同一のRVパーク(CLAAPIN SAGAE)があるが、隣接する別法人施設のためno・relation=adjacent', () => {
+    // 住所は道の駅(919-8)とRVパーク(919-6)でほぼ同一だが、実際は隣接する
+    // 児童遊戯施設「クラッピンサガエ」に併設された別施設であり、道の駅自体の運営ではない。
+    // 「住所がほぼ同じ」だけでyesにせず、relationで根拠を残す（false positive防止）。
+    expect(facilitiesOf('寒河江')?.rvPark).toBe('no');
+    expect(facilitiesOf('寒河江')?.rvParkRelation).toBe('adjacent');
   });
 
   it('「隣に別法人運営のRVパークがある」だけの駅はfalse positiveにしない', () => {
     // はしかみ/しちのへ/青の国ふだい/白鷹ヤナ公園は近隣(車で2〜3分)に別施設のRVパークが
     // あるが、道の駅併設ではないためrvPark='no'が正しい（同一市町村・徒歩圏だけでyesにしない）。
-    expect(facilitiesOf('はしかみ')?.rvPark).toBe('no');
-    expect(facilitiesOf('しちのへ')?.rvPark).toBe('no');
-    expect(facilitiesOf('青の国ふだい')?.rvPark).toBe('no');
-    expect(facilitiesOf('白鷹ヤナ公園')?.rvPark).toBe('no');
+    for (const name of ['はしかみ', 'しちのへ', '青の国ふだい', '白鷹ヤナ公園']) {
+      expect(facilitiesOf(name)?.rvPark).toBe('no');
+      expect(facilitiesOf(name)?.rvParkRelation).toBe('nearby');
+    }
   });
 
   it('facilitiesが未収録の駅は存在しない（全182施設に収録済み）', () => {
@@ -178,8 +194,8 @@ describe('施設属性データ（RVパーク・温泉）の再発防止フィ�
     expect(missing.map((s) => s.id)).toEqual([]);
   });
 
-  it('RV_PARK_COUNT=3・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（再監査後の確定値）', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(3);
+  it('RV_PARK_COUNT=4・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（第3回監査後の確定値）', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
     expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
     expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
     expect(STATIONS.filter((s) => s.facilities?.rvPark === 'unknown' || s.facilities?.onsen === 'unknown')).toHaveLength(0);

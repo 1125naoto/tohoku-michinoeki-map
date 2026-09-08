@@ -530,6 +530,9 @@ test.describe('フィルターと達成率', () => {
     page,
   }) => {
     const BOTH_STATION = 'mne-19039'; // きらら289（福島県・RVパーク+温泉）
+    const NARAHA_STATION = 'mne-19022'; // ならは（福島県・RVパーク+温泉）
+    const INAWASHIRO_STATION = 'mne-19862'; // 猪苗代（福島県・RVパークのみ）
+    const MITAKIDO_STATION = 'mne-19842'; // 三滝堂（宮城県・RVパークライト。第3回監査で追加）
     const ONSEN_ONLY_STATION = 'mne-18914'; // 浅虫温泉（青森県・温泉のみ）
     const NEITHER_STATION = 'mne-18900'; // しちのへ（青森県・どちらもなし）
     const NEITHER_FUKUSHIMA_STATION = 'mne-19877'; // 国見 あつかしの郷（福島県・どちらもなし）
@@ -563,10 +566,20 @@ test.describe('フィルターと達成率', () => {
     await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
     await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
+    // 第3回監査で追加した三滝堂（RVパークライト）・猪苗代（RVパークのみ）も出ること
+    await expect(page.locator(`[data-sid="${MITAKIDO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${INAWASHIRO_STATION}"]`)).toBeVisible();
 
-    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289は表示、設備なしの駅は消える
+    // 4b. 宮城県 + RVパーク → 三滝堂が出ること
+    await page.getByTestId('chip-宮城県').click();
+    await expect(page.locator(`[data-sid="${MITAKIDO_STATION}"]`)).toBeVisible();
+    await page.getByTestId('chip-tohoku').click();
+
+    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289・ならは・猪苗代の3駅が出て、設備なしの駅は消える
     await page.getByTestId('chip-福島県').click();
     await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NARAHA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${INAWASHIRO_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${NEITHER_FUKUSHIMA_STATION}"]`)).toHaveCount(0);
     await page.getByTestId('chip-tohoku').click();
 
