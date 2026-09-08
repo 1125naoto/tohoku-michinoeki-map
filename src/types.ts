@@ -79,11 +79,22 @@ export const PREFECTURES = [
   '秋田県',
   '山形県',
   '福島県',
+  '茨城県',
+  '栃木県',
+  '群馬県',
+  '埼玉県',
+  '千葉県',
+  '東京都',
+  '神奈川県',
 ] as const;
 export type Prefecture = (typeof PREFECTURES)[number];
 
-/** 都道府県が属する地方。8エリア構造（今後の都道府県追加に合わせて拡張する）。 */
-export const AREA_BY_PREFECTURE: Record<Prefecture, string> = {
+/** 収録済みの地方（表示順）。今後の都道府県追加に合わせて増やす。 */
+export const AREAS = ['北海道', '東北', '関東'] as const;
+export type AreaName = (typeof AREAS)[number];
+
+/** 都道府県が属する地方。product/region/regions.ts の地方区分マスターと整合させる。 */
+export const AREA_BY_PREFECTURE: Record<Prefecture, AreaName> = {
   北海道: '北海道',
   青森県: '東北',
   岩手県: '東北',
@@ -91,6 +102,13 @@ export const AREA_BY_PREFECTURE: Record<Prefecture, string> = {
   秋田県: '東北',
   山形県: '東北',
   福島県: '東北',
+  茨城県: '関東',
+  栃木県: '関東',
+  群馬県: '関東',
+  埼玉県: '関東',
+  千葉県: '関東',
+  東京都: '関東',
+  神奈川県: '関東',
 };
 
 export interface StationDataFile {

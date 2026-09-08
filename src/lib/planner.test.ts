@@ -5,7 +5,10 @@
  */
 import { describe, expect, it } from 'vitest';
 import { STATIONS } from '../data';
-import type { PlanParams, VisitMap } from '../types';
+import type { PlanParams, Prefecture, VisitMap } from '../types';
+
+/** 営業時間データが揃っている東北6県（全国化で他地域が到達範囲に入っても結果を決定的にするため使用） */
+const TOHOKU_PREFS: Prefecture[] = ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'];
 import { planCourses } from './planner';
 import { estimateLegMin, haversineKm } from './geo';
 import type { RoutingProvider } from './routing';
@@ -257,9 +260,12 @@ describe('営業時間との連携', () => {
   });
 
   it('「営業時間外予想の駅も含める」をOFFにすると夜間は候補が消える（既定では完全除外しない）', async () => {
-    const included = await plan({}, { departAt: night }); // 既定: 含める+優先度ダウン
+    // 全国化により、この出発地からの到達範囲に営業時間データ未収録（unknown扱い）の
+    // 他地域駅が入り得るため、確定的な検証には営業時間データが揃う東北6県に絞る
+    // （includeClosedHoursは「確定的に営業時間外」のみ除外し、unknownは除外しない設計のため）。
+    const included = await plan({}, { departAt: night, prefs: TOHOKU_PREFS }); // 既定: 含める+優先度ダウン
     expect(included.courses.length).toBeGreaterThan(0);
-    const excluded = await plan({}, { departAt: night, includeClosedHours: false });
+    const excluded = await plan({}, { departAt: night, includeClosedHours: false, prefs: TOHOKU_PREFS });
     // 夜22時出発では営業中到着できる駅がほぼ無いため、候補0件になる
     expect(excluded.courses.length).toBe(0);
   });

@@ -1,19 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import type { Prefecture, Station, StatusFilter, VisitMap } from '../types';
+import type { Station, StatusFilter, VisitMap } from '../types';
 import { stationsBounds } from '../data';
 import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
-import { matchesFilter, matchesFacilityFilter, NO_FACILITY_FILTER, type FacilityFilter } from '../lib/ui';
+import {
+  matchesFilter,
+  matchesFacilityFilter,
+  matchesPrefOrArea,
+  NO_FACILITY_FILTER,
+  type FacilityFilter,
+  type PrefOrAreaFilter,
+} from '../lib/ui';
 import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 
 interface Props {
   stations: Station[];
   visits: VisitMap;
-  prefFilter: Prefecture | null;
+  prefFilter: PrefOrAreaFilter;
   statusFilter: StatusFilter;
   /** 道の駅自体の設備条件（RVパーク・温泉）でマーカーを絞る。省略時は絞り込みなし */
   facilityFilter?: FacilityFilter;
@@ -560,7 +567,7 @@ export default function MapView({
     const target: L.LayerGroup = useCluster ? cluster : allLayer;
     const shown = stations.filter(
       (st) =>
-        (!prefFilter || st.pref === prefFilter) &&
+        matchesPrefOrArea(st, prefFilter) &&
         matchesFilter(st, visits, statusFilter) &&
         matchesFacilityFilter(st, facilityFilter),
     );
@@ -669,7 +676,7 @@ export default function MapView({
     el.classList.add(`lm-${settings.labelMode}`);
   }, [settings.labelMode]);
 
-  // 県フィルターで表示範囲を調整
+  // 地域・都道府県フィルターで表示範囲を調整
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -677,7 +684,7 @@ export default function MapView({
       map.fitBounds(stationsBounds(stations), { padding: [4, 4] });
       return;
     }
-    const pts = stations.filter((s) => s.pref === prefFilter).map((s) => [s.lat, s.lng] as [number, number]);
+    const pts = stations.filter((s) => matchesPrefOrArea(s, prefFilter)).map((s) => [s.lat, s.lng] as [number, number]);
     if (pts.length > 0) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
   }, [prefFilter, stations]);
 

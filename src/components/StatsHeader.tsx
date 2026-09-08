@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { Prefecture } from '../types';
 import type { Stats } from '../lib/stats';
+import type { PrefOrAreaFilter } from '../lib/ui';
 
 interface Props {
   stats: Stats;
-  prefFilter: Prefecture | null;
+  prefFilter: PrefOrAreaFilter;
   onSelectPref: (p: Prefecture | null) => void;
 }
 
@@ -19,7 +20,7 @@ export default function StatsHeader({ stats, prefFilter, onSelectPref }: Props) 
         data-testid="stats-toggle"
       >
         <span className="stat-block">
-          <span className="lbl">東北</span>
+          <span className="lbl">全駅</span>
           <span className="val" data-testid="stats-visited">
             {stats.visited}／{stats.total}駅
           </span>

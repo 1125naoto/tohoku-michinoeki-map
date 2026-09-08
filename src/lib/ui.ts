@@ -1,4 +1,14 @@
-import type { Prefecture, StatusFilter, Station, VisitMap } from '../types';
+import type { AreaName, Prefecture, StatusFilter, Station, VisitMap } from '../types';
+import { AREA_BY_PREFECTURE } from '../types';
+
+/** 「地域」フィルターの値。都道府県単体、または地方全体（例: '東北'）のどちらか。 */
+export type PrefOrAreaFilter = Prefecture | AreaName | null;
+
+/** 指定の駅が、選択中の都道府県/地方フィルターに合致するか（未選択なら常にtrue） */
+export function matchesPrefOrArea(st: Station, filter: PrefOrAreaFilter): boolean {
+  if (!filter) return true;
+  return st.pref === filter || AREA_BY_PREFECTURE[st.pref] === filter;
+}
 
 export const STATUS_FILTER_LABEL: Record<StatusFilter, string> = {
   all: 'すべて',
@@ -32,7 +42,7 @@ export function matchesFacilityFilter(st: Station, filter: FacilityFilter): bool
 
 /** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：すべて・すべて」） */
 export function filterSummary(
-  pref: Prefecture | null,
+  pref: PrefOrAreaFilter,
   status: StatusFilter,
   query = '',
   facility: FacilityFilter = NO_FACILITY_FILTER,
@@ -80,14 +90,14 @@ export function matchesFilter(st: Station, visits: VisitMap, statusFilter: Statu
 export function filterStations(
   stations: Station[],
   visits: VisitMap,
-  prefFilter: Prefecture | null,
+  prefFilter: PrefOrAreaFilter,
   statusFilter: StatusFilter,
   query: string,
   facilityFilter: FacilityFilter = NO_FACILITY_FILTER,
 ): Station[] {
   return stations.filter(
     (s) =>
-      (!prefFilter || s.pref === prefFilter) &&
+      matchesPrefOrArea(s, prefFilter) &&
       matchesFilter(s, visits, statusFilter) &&
       matchesFacilityFilter(s, facilityFilter) &&
       stationMatchesQuery(s, query),

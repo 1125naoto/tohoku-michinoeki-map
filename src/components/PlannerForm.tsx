@@ -285,7 +285,7 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
               </div>
             </div>
             <div className="field">
-              <label>行きたい県（未選択＝東北ぜんぶ）</label>
+              <label>行きたい県（未選択＝すべて）</label>
               <div className="seg">
                 {PREFECTURES.map((p) => (
                   <button

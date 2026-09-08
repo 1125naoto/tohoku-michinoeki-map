@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   PlanParams,
   PlannedRoute,
-  Prefecture,
   SavedRoute,
   StationState,
   StatusFilter,
@@ -15,7 +14,14 @@ import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { navToPointUrl, navToStationUrl } from './lib/gmaps';
-import { filterSummary, filterStations, isFacilityFilterActive, matchesFacilityFilter, type FacilityFilter } from './lib/ui';
+import {
+  filterSummary,
+  filterStations,
+  isFacilityFilterActive,
+  matchesFacilityFilter,
+  type FacilityFilter,
+  type PrefOrAreaFilter,
+} from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
@@ -93,7 +99,7 @@ export default function App() {
   const [savedRoutes, setSavedRoutes] = useState(() => loadRoutes());
   const [trip, setTrip] = useState<TripState | null>(() => loadTrip());
   const [tab, setTab] = useState<Tab>('map');
-  const [prefFilter, setPrefFilter] = useState<Prefecture | null>(null);
+  const [prefFilter, setPrefFilter] = useState<PrefOrAreaFilter>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>({ rvPark: false, onsen: false });
   const [stationQuery, setStationQuery] = useState('');
@@ -1046,8 +1052,8 @@ export default function App() {
         className="filter-groups"
         style={filtersOpen && !mapFullscreen ? undefined : { display: 'none' }}
       >
-        <div className="filter-row" role="toolbar" aria-label="地域で絞り込み">
-          <span className="fg-label">地域</span>
+        <div className="filter-row" role="toolbar" aria-label="地方で絞り込み">
+          <span className="fg-label">地方</span>
           <button
             className={`chip${prefFilter === null ? ' active' : ''}`}
             onClick={() => setPrefFilter(null)}
@@ -1055,6 +1061,19 @@ export default function App() {
           >
             すべて
           </button>
+          {stats.byArea.map((a) => (
+            <button
+              key={a.area}
+              className={`chip${prefFilter === a.area ? ' active' : ''}`}
+              onClick={() => setPrefFilter(prefFilter === a.area ? null : a.area)}
+              data-testid={`chip-area-${a.area}`}
+            >
+              {a.area} {a.visited}/{a.total}
+            </button>
+          ))}
+        </div>
+        <div className="filter-row" role="toolbar" aria-label="都道府県で絞り込み">
+          <span className="fg-label">都道府県</span>
           {stats.byPref.map((p) => (
             <button
               key={p.pref}

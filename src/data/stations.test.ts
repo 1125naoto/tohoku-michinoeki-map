@@ -47,6 +47,7 @@ describe('道の駅マスターデータ', () => {
     const REGION_BOUNDS: Record<string, { lat: [number, number]; lng: [number, number] }> = {
       北海道: { lat: [41.3, 45.7], lng: [139.3, 146.0] },
       東北: { lat: [36.7, 41.7], lng: [139.0, 142.3] },
+      関東: { lat: [34.8, 37.2], lng: [138.5, 140.8] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -109,8 +110,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181登録+北海道128登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -222,15 +223,9 @@ describe('北海道追加（販売版・全国展開Phase 1）', () => {
   const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
   const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
 
-  it('北海道128駅・東北182駅が両方とも収録され、合計310駅で共存する', () => {
+  it('北海道128駅・東北182駅が両方とも収録されている', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(STATIONS.length).toBe(310);
-  });
-
-  it('北海道・東北で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
-    const ids = STATIONS.map((s) => s.id);
-    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('北海道の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
@@ -262,5 +257,85 @@ describe('北海道追加（販売版・全国展開Phase 1）', () => {
     for (const name of ['足寄湖', 'まるせっぷ', 'フォーレスト276大滝']) {
       expect(hokkaido.find((s) => s.name === name)).toBeUndefined();
     }
+  });
+});
+
+describe('関東追加（販売版・全国展開Phase 2）', () => {
+  const KANTO_PREFS = ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] as const;
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+
+  it('北海道128・東北182・関東130の3地域、合計440駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(STATIONS.length).toBe(440);
+  });
+
+  it('関東は現在のproduct地方マスター定義どおり7都県（茨城・栃木・群馬・埼玉・千葉・東京・神奈川）', () => {
+    const prefsPresent = [...new Set(kanto.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...KANTO_PREFS].sort());
+    for (const p of KANTO_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('関東');
+  });
+
+  it('都県別内訳: 茨城16・栃木25・群馬33・埼玉21・千葉29・東京1・神奈川5', () => {
+    const counts: Record<string, number> = {};
+    for (const s of kanto) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      茨城県: 16,
+      栃木県: 25,
+      群馬県: 33,
+      埼玉県: 21,
+      千葉県: 29,
+      東京都: 1,
+      神奈川県: 5,
+    });
+  });
+
+  it('全440駅で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('全440駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない）', () => {
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      expect(Number.isFinite(s.lat), s.name).toBe(true);
+      expect(Number.isFinite(s.lng), s.name).toBe(true);
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('関東の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of kanto) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('kanto');
+    }
+  });
+
+  it('関東facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of kanto) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は関東追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('都市部・郊外・山間部を含む代表駅が正しく収録されている', () => {
+    const byName = new Map(kanto.map((s) => [s.name, s]));
+    // 都市部
+    expect(byName.get('八王子滝山')?.city).toBe('八王子市');
+    expect(byName.get('湘南ちがさき')?.city).toBe('茅ヶ崎市');
+    // 郊外
+    expect(byName.get('川場田園プラザ')?.city).toBe('利根郡川場村');
+    expect(byName.get('しょうなん')?.city).toBe('柏市');
+    // 山間部
+    expect(byName.get('両神温泉薬師の湯')?.city).toBe('秩父郡小鹿野町');
+    expect(byName.get('箱根峠')?.city).toBe('足柄下郡箱根町');
   });
 });

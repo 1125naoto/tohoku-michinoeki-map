@@ -13,6 +13,7 @@ import {
   type StationHours,
 } from './hours';
 import { STATIONS } from '../data';
+import { AREA_BY_PREFECTURE } from '../types';
 
 const mk = (over: Partial<StationHours>): StationHours => ({
   stationId: 'test',
@@ -131,14 +132,14 @@ describe('到着時刻判定とデータ網羅', () => {
     expect(statusAtArrival('mne-18900', jst('2026-09-04T10:00'))).toBe('open');
     expect(statusAtArrival('mne-18900', jst('2026-09-04T23:00'))).toBe('closed');
   });
-  it('東北6県182施設にデータ行があり、区分件数が一致する（北海道は今回営業時間データ未収録）', () => {
+  it('東北6県182施設にデータ行があり、区分件数が一致する（北海道・関東は今回営業時間データ未収録）', () => {
     const c = hoursCoverage();
-    const tohoku = STATIONS.filter((s) => s.pref !== '北海道');
+    const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
     expect(c.confirmed + c.partial + c.unverified + c.upcoming).toBe(tohoku.length);
     expect(c.upcoming).toBe(1); // 石川（開業前）
     expect(c.unverified).toBeGreaterThan(0); // 要確認は正常な状態（推測で埋めない）
     for (const st of STATIONS) {
-      // 北海道は営業時間データが未収録のため、未知ID扱い(unknown)で返ることを許容する
+      // 北海道・関東は営業時間データが未収録のため、未知ID扱い(unknown)で返ることを許容する
       expect(getStatus(st.id, jst('2026-09-04T10:00')).kind).toBeDefined();
     }
   });
