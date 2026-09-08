@@ -133,3 +133,55 @@ describe('道の駅マスターデータ', () => {
     }
   });
 });
+
+describe('施設属性データ（RVパーク・温泉）の再発防止フィクスチャ', () => {
+  // 初回監査ではrv-park.jpのページネーション未確認によりRVパーク2件(ならは・猪苗代)を
+  // 取りこぼした(福島県は22件あり1ページ目の10件しか見ていなかった)。
+  // 再監査で全ページを確認し、道の駅完全ガイド(michinoeki-guide.com)の独立掲載とも
+  // 相互確認した結果を固定するための回帰テスト。
+  function facilitiesOf(name: string) {
+    const st = STATIONS.find((s) => s.name === name);
+    if (!st) throw new Error(`station not found: ${name}`);
+    return st.facilities;
+  }
+
+  it('きらら289: RVパーク・温泉ともにyes（住所完全一致・道の駅併設と一次情報に明記）', () => {
+    expect(facilitiesOf('きらら289')?.rvPark).toBe('yes');
+    expect(facilitiesOf('きらら289')?.onsen).toBe('yes');
+  });
+
+  it('ならは: RVパーク・温泉ともにyes（初回監査で取りこぼしていたページネーション2ページ目分）', () => {
+    expect(facilitiesOf('ならは')?.rvPark).toBe('yes');
+    expect(facilitiesOf('ならは')?.onsen).toBe('yes');
+  });
+
+  it('猪苗代: RVパークはyesだが温泉施設フラグはno（併設施設が違う種類）', () => {
+    expect(facilitiesOf('猪苗代')?.rvPark).toBe('yes');
+    expect(facilitiesOf('猪苗代')?.onsen).toBe('no');
+  });
+
+  it('たかはた: 過去にRVパーク併設だったが現在は提携終了のためno（過去記事だけでyesにしない）', () => {
+    expect(facilitiesOf('たかはた')?.rvPark).toBe('no');
+  });
+
+  it('「隣に別法人運営のRVパークがある」だけの駅はfalse positiveにしない', () => {
+    // はしかみ/しちのへ/青の国ふだい/白鷹ヤナ公園は近隣(車で2〜3分)に別施設のRVパークが
+    // あるが、道の駅併設ではないためrvPark='no'が正しい（同一市町村・徒歩圏だけでyesにしない）。
+    expect(facilitiesOf('はしかみ')?.rvPark).toBe('no');
+    expect(facilitiesOf('しちのへ')?.rvPark).toBe('no');
+    expect(facilitiesOf('青の国ふだい')?.rvPark).toBe('no');
+    expect(facilitiesOf('白鷹ヤナ公園')?.rvPark).toBe('no');
+  });
+
+  it('facilitiesが未収録の駅は存在しない（全182施設に収録済み）', () => {
+    const missing = STATIONS.filter((s) => !s.facilities);
+    expect(missing.map((s) => s.id)).toEqual([]);
+  });
+
+  it('RV_PARK_COUNT=3・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（再監査後の確定値）', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(3);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'unknown' || s.facilities?.onsen === 'unknown')).toHaveLength(0);
+  });
+});

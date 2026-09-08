@@ -532,7 +532,7 @@ test.describe('フィルターと達成率', () => {
     const BOTH_STATION = 'mne-19039'; // きらら289（福島県・RVパーク+温泉）
     const ONSEN_ONLY_STATION = 'mne-18914'; // 浅虫温泉（青森県・温泉のみ）
     const NEITHER_STATION = 'mne-18900'; // しちのへ（青森県・どちらもなし）
-    const NEITHER_FUKUSHIMA_STATION = 'mne-19862'; // 猪苗代（福島県・どちらもなし）
+    const NEITHER_FUKUSHIMA_STATION = 'mne-19877'; // 国見 あつかしの郷（福島県・どちらもなし）
 
     await page.goto('/');
     await closeLegend(page);
@@ -564,7 +564,7 @@ test.describe('フィルターと達成率', () => {
     await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
 
-    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289のみ
+    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289は表示、設備なしの駅は消える
     await page.getByTestId('chip-福島県').click();
     await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${NEITHER_FUKUSHIMA_STATION}"]`)).toHaveCount(0);
