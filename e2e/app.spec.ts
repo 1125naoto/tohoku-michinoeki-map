@@ -526,6 +526,84 @@ test.describe('フィルターと達成率', () => {
     await expect(page.getByTestId('station-sheet')).toContainText('猪苗代');
   });
 
+  test('設備（RVパーク・温泉）フィルターで地図マーカーを絞り込める。県・状態との複合、0件、解除も正しく動く', async ({
+    page,
+  }) => {
+    const BOTH_STATION = 'mne-19039'; // きらら289（福島県・RVパーク+温泉）
+    const ONSEN_ONLY_STATION = 'mne-18914'; // 浅虫温泉（青森県・温泉のみ）
+    const NEITHER_STATION = 'mne-18900'; // しちのへ（青森県・どちらもなし）
+    const NEITHER_FUKUSHIMA_STATION = 'mne-19862'; // 猪苗代（福島県・どちらもなし）
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. 初期状態: 設備フィルターは非選択、件数表示も出ない
+    await expect(page.getByTestId('facility-filter-rvpark')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toHaveCount(0);
+
+    // 2. 温泉のみ: 温泉ありの駅だけ表示、無い駅は消える
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NEITHER_STATION}"]`)).toHaveCount(0);
+    // 一覧は自動表示しない（検索欄が空のため）
+    await expect(page.getByTestId('station-result-list')).toHaveCount(0);
+
+    // 3. RVパークも追加選択 → AND（両方ある駅だけ）
+    await page.getByTestId('facility-filter-rvpark').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
+
+    // 4. RVパークのみ（温泉を解除）
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0);
+
+    // 5. 県フィルターとの複合（福島県 + RVパーク）→ きらら289のみ
+    await page.getByTestId('chip-福島県').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${NEITHER_FUKUSHIMA_STATION}"]`)).toHaveCount(0);
+    await page.getByTestId('chip-tohoku').click();
+
+    // 6. 状態フィルターとの複合（未訪問 + RVパーク）
+    await page.getByTestId('filter-none').click();
+    await expect(page.locator(`[data-sid="${BOTH_STATION}"]`)).toBeVisible();
+    await page.getByTestId('filter-all').click();
+
+    // 7. 県+状態+温泉の複合（0件になる組み合わせ: 青森県・行きたい・温泉あり）
+    await page.getByTestId('facility-filter-rvpark').click(); // RVパーク解除
+    await page.getByTestId('facility-filter-onsen').click(); // 温泉のみ選択
+    await page.getByTestId('chip-青森県').click();
+    await page.getByTestId('filter-want').click();
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toHaveCount(0); // 未訪問のためwishlist条件では出ない
+
+    // 8. フィルター解除ですべて戻る
+    await page.getByTestId('filter-all').click();
+    await page.getByTestId('chip-tohoku').click();
+    await page.getByTestId('facility-filter-onsen').click();
+    await expect(page.getByTestId('facility-filter-onsen')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('facility-filter-count')).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${NEITHER_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toBeVisible();
+  });
+
+  test('道の駅詳細シートにRVパーク・温泉の設備バッジが表示される（存在するものだけ）', async ({ page }) => {
+    await gotoStation(page, 'mne-19039'); // きらら289（RVパーク+温泉）
+    await expect(page.getByTestId('station-facilities')).toBeVisible();
+    await expect(page.getByTestId('station-facilities')).toContainText('RVパーク');
+    await expect(page.getByTestId('station-facilities')).toContainText('温泉');
+    await page.getByTestId('sheet-x').click();
+
+    await gotoStation(page, 'mne-18900'); // しちのへ（どちらも無し）
+    await expect(page.getByTestId('station-facilities')).toHaveCount(0);
+  });
+
   test('状態フィルターが排他状態と連動する（訪問済み⇔行きたいの移動）', async ({ page }) => {
     await gotoStation(page);
     await page.getByTestId('btn-visited').click(); // 詳細から訪問済みへ

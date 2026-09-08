@@ -8,10 +8,41 @@ export const STATUS_FILTER_LABEL: Record<StatusFilter, string> = {
   stamp: 'スタンプ済み',
 };
 
+/** 道の駅自体の施設条件フィルター。両方ONの場合はAND（両方ある駅のみ）。 */
+export interface FacilityFilter {
+  rvPark: boolean;
+  onsen: boolean;
+}
+
+export const NO_FACILITY_FILTER: FacilityFilter = { rvPark: false, onsen: false };
+
+export function isFacilityFilterActive(f: FacilityFilter): boolean {
+  return f.rvPark || f.onsen;
+}
+
+/**
+ * 施設フィルター判定。unknownは「ある」とはみなさない（ユーザーが「温泉あり」を選んだ場合、
+ * 情報未確認の駅を誤って含めない）。フィルター自体を使わない場合（両方false）は常にtrue。
+ */
+export function matchesFacilityFilter(st: Station, filter: FacilityFilter): boolean {
+  if (filter.rvPark && st.facilities?.rvPark !== 'yes') return false;
+  if (filter.onsen && st.facilities?.onsen !== 'yes') return false;
+  return true;
+}
+
 /** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：東北全体・すべて」） */
-export function filterSummary(pref: Prefecture | null, status: StatusFilter, query = ''): string {
+export function filterSummary(
+  pref: Prefecture | null,
+  status: StatusFilter,
+  query = '',
+  facility: FacilityFilter = NO_FACILITY_FILTER,
+): string {
   const q = query.trim();
-  return `絞り込み：${pref ?? '東北全体'}・${STATUS_FILTER_LABEL[status]}${q ? `・「${q}」` : ''}`;
+  const facilityLabels = [facility.rvPark && 'RVパーク', facility.onsen && '温泉'].filter(
+    (v): v is string => typeof v === 'string',
+  );
+  const facilityText = facilityLabels.length > 0 ? `・${facilityLabels.join('+')}あり` : '';
+  return `絞り込み：${pref ?? '東北全体'}・${STATUS_FILTER_LABEL[status]}${facilityText}${q ? `・「${q}」` : ''}`;
 }
 
 /**
@@ -52,11 +83,13 @@ export function filterStations(
   prefFilter: Prefecture | null,
   statusFilter: StatusFilter,
   query: string,
+  facilityFilter: FacilityFilter = NO_FACILITY_FILTER,
 ): Station[] {
   return stations.filter(
     (s) =>
       (!prefFilter || s.pref === prefFilter) &&
       matchesFilter(s, visits, statusFilter) &&
+      matchesFacilityFilter(s, facilityFilter) &&
       stationMatchesQuery(s, query),
   );
 }

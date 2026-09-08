@@ -59,6 +59,17 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
         {rec?.visitedAt && (state === 'visited' || state === 'stamped') && (
           <p className="addr">訪問日: {new Date(rec.visitedAt).toLocaleDateString('ja-JP')}</p>
         )}
+        {(st.facilities?.rvPark === 'yes' || st.facilities?.onsen === 'yes') && (
+          <p style={{ margin: '4px 0' }} data-testid="station-facilities">
+            {st.facilities?.rvPark === 'yes' && <span className="badge visited">🚐 RVパーク</span>}{' '}
+            {st.facilities?.onsen === 'yes' && <span className="badge visited">♨️ 温泉</span>}
+          </p>
+        )}
+        {(st.facilities?.rvPark === 'unknown' || st.facilities?.onsen === 'unknown') && (
+          <p className="addr" style={{ fontSize: 11 }}>
+            設備情報 未確認（RVパーク・温泉）
+          </p>
+        )}
         {st.note && <div className="note-box">ℹ️ {st.note}</div>}
         {st.status === 'pre_open' && (
           <div className="note-box">この駅は開業前のため、状態変更とルート提案の対象外です。</div>

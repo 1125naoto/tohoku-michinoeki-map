@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Station, VisitMap } from '../types';
-import { filterSummary, filterStations, matchesFilter, stationMatchesQuery } from './ui';
+import { filterSummary, filterStations, matchesFacilityFilter, matchesFilter, stationMatchesQuery } from './ui';
 
 describe('絞り込みサマリー', () => {
   it('未選択時は「東北全体・すべて」', () => {
@@ -15,6 +15,11 @@ describe('絞り込みサマリー', () => {
   });
   it('検索文字列が空/空白のみなら反映しない', () => {
     expect(filterSummary(null, 'all', '   ')).toBe('絞り込み：東北全体・すべて');
+  });
+  it('設備フィルターを反映する', () => {
+    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: false })).toBe('絞り込み：東北全体・すべて・RVパークあり');
+    expect(filterSummary(null, 'all', '', { rvPark: false, onsen: true })).toBe('絞り込み：東北全体・すべて・温泉あり');
+    expect(filterSummary(null, 'all', '', { rvPark: true, onsen: true })).toBe('絞り込み：東北全体・すべて・RVパーク+温泉あり');
   });
 });
 
@@ -122,5 +127,58 @@ describe('filterStations（地域・状態・テキストの複合絞り込み�
   });
   it('一致しない組み合わせは空配列', () => {
     expect(filterStations(stations, {}, '青森県', 'visited', '')).toEqual([]);
+  });
+});
+
+describe('matchesFacilityFilter（道の駅自体の設備条件フィルター）', () => {
+  const both = makeStation({ facilities: { rvPark: 'yes', onsen: 'yes' } });
+  const onlyOnsen = makeStation({ facilities: { rvPark: 'no', onsen: 'yes' } });
+  const onlyRvPark = makeStation({ facilities: { rvPark: 'yes', onsen: 'no' } });
+  const neither = makeStation({ facilities: { rvPark: 'no', onsen: 'no' } });
+  const unknown = makeStation({ facilities: undefined });
+
+  it('フィルター未使用（両方false）は常にtrue', () => {
+    expect(matchesFacilityFilter(neither, { rvPark: false, onsen: false })).toBe(true);
+    expect(matchesFacilityFilter(unknown, { rvPark: false, onsen: false })).toBe(true);
+  });
+  it('RVパークのみ選択: rvPark=yesの駅だけ一致', () => {
+    expect(matchesFacilityFilter(onlyRvPark, { rvPark: true, onsen: false })).toBe(true);
+    expect(matchesFacilityFilter(onlyOnsen, { rvPark: true, onsen: false })).toBe(false);
+  });
+  it('温泉のみ選択: onsen=yesの駅だけ一致', () => {
+    expect(matchesFacilityFilter(onlyOnsen, { rvPark: false, onsen: true })).toBe(true);
+    expect(matchesFacilityFilter(onlyRvPark, { rvPark: false, onsen: true })).toBe(false);
+  });
+  it('両方選択時はAND（両方yesの駅のみ一致、片方だけは不一致）', () => {
+    expect(matchesFacilityFilter(both, { rvPark: true, onsen: true })).toBe(true);
+    expect(matchesFacilityFilter(onlyOnsen, { rvPark: true, onsen: true })).toBe(false);
+    expect(matchesFacilityFilter(onlyRvPark, { rvPark: true, onsen: true })).toBe(false);
+    expect(matchesFacilityFilter(neither, { rvPark: true, onsen: true })).toBe(false);
+  });
+  it('unknown（facilities未収録）は「ある」とみなさない', () => {
+    expect(matchesFacilityFilter(unknown, { rvPark: true, onsen: false })).toBe(false);
+    expect(matchesFacilityFilter(unknown, { rvPark: false, onsen: true })).toBe(false);
+  });
+});
+
+describe('filterStations（設備条件との複合）', () => {
+  const withOnsen = makeStation({ id: 'o1', pref: '福島県', facilities: { rvPark: 'no', onsen: 'yes' } });
+  const withRvPark = makeStation({ id: 'r1', pref: '福島県', facilities: { rvPark: 'yes', onsen: 'no' } });
+  const withBoth = makeStation({ id: 'b1', pref: '宮城県', facilities: { rvPark: 'yes', onsen: 'yes' } });
+  const withNeither = makeStation({ id: 'n1', pref: '宮城県', facilities: { rvPark: 'no', onsen: 'no' } });
+  const stations = [withOnsen, withRvPark, withBoth, withNeither];
+
+  it('温泉ありのみで絞る', () => {
+    const result = filterStations(stations, {}, null, 'all', '', { rvPark: false, onsen: true });
+    expect(result.map((s) => s.id).sort()).toEqual(['b1', 'o1']);
+  });
+  it('RVパーク+温泉の複合（AND）で絞る', () => {
+    const result = filterStations(stations, {}, null, 'all', '', { rvPark: true, onsen: true });
+    expect(result.map((s) => s.id)).toEqual(['b1']);
+  });
+  it('県フィルターと設備フィルターのAND', () => {
+    const result = filterStations(stations, {}, '宮城県', 'all', '', { rvPark: true, onsen: true });
+    expect(result.map((s) => s.id)).toEqual(['b1']);
+    expect(filterStations(stations, {}, '福島県', 'all', '', { rvPark: true, onsen: true })).toEqual([]);
   });
 });

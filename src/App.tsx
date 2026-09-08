@@ -15,7 +15,7 @@ import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { navToPointUrl, navToStationUrl } from './lib/gmaps';
-import { filterSummary, filterStations } from './lib/ui';
+import { filterSummary, filterStations, isFacilityFilterActive, matchesFacilityFilter, type FacilityFilter } from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
@@ -95,6 +95,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('map');
   const [prefFilter, setPrefFilter] = useState<Prefecture | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>({ rvPark: false, onsen: false });
   const [stationQuery, setStationQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(() => hashStationId());
   const [origin, setOrigin] = useState<OriginValue | null>(null);
@@ -613,8 +614,13 @@ export default function App() {
   const selected = selectedId ? getStation(selectedId) : undefined;
   /** 絞り込み結果の駅一覧（地図のピン探しではなく、一覧タップで数秒で選べるようにするため） */
   const filteredStationList = useMemo(
-    () => filterStations(STATIONS, visits, prefFilter, statusFilter, stationQuery),
-    [prefFilter, statusFilter, stationQuery, visits],
+    () => filterStations(STATIONS, visits, prefFilter, statusFilter, stationQuery, facilityFilter),
+    [prefFilter, statusFilter, stationQuery, visits, facilityFilter],
+  );
+  /** 設備条件のみ（県・状態は無視）で絞った件数。0件時の案内文と「該当N駅」表示に使う */
+  const facilityOnlyCount = useMemo(
+    () => (isFacilityFilterActive(facilityFilter) ? STATIONS.filter((s) => matchesFacilityFilter(s, facilityFilter)).length : null),
+    [facilityFilter],
   );
   // 県別・状態フィルターは「地図マーカーを絞り込む」専用（従来のシンプルな挙動）。
   // 一覧の自動展開は駅名・市町村検索が入力されているときだけ（県/状態を押しただけで
@@ -1033,7 +1039,7 @@ export default function App() {
           aria-expanded={filtersOpen}
           data-testid="filters-toggle"
         >
-          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter, stationQuery)}`}
+          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter, stationQuery, facilityFilter)}`}
         </button>
       )}
       <div
@@ -1072,6 +1078,28 @@ export default function App() {
               {f.label}
             </button>
           ))}
+        </div>
+        <div className="filter-row" role="toolbar" aria-label="設備で絞り込み">
+          <span className="fg-label">設備</span>
+          <button
+            className={`chip${facilityFilter.rvPark ? ' active' : ''}`}
+            onClick={() => setFacilityFilter((f) => ({ ...f, rvPark: !f.rvPark }))}
+            data-testid="facility-filter-rvpark"
+          >
+            🚐 RVパーク
+          </button>
+          <button
+            className={`chip${facilityFilter.onsen ? ' active' : ''}`}
+            onClick={() => setFacilityFilter((f) => ({ ...f, onsen: !f.onsen }))}
+            data-testid="facility-filter-onsen"
+          >
+            ♨️ 温泉
+          </button>
+          {isFacilityFilterActive(facilityFilter) && (
+            <span className="fg-count" data-testid="facility-filter-count">
+              該当{facilityOnlyCount}駅
+            </span>
+          )}
         </div>
         <div className="filter-row station-search-row">
           <span className="fg-label">検索</span>
@@ -1137,6 +1165,7 @@ export default function App() {
             visits={visits}
             prefFilter={prefFilter}
             statusFilter={statusFilter}
+            facilityFilter={facilityFilter}
             onOpenStation={handleOpenStation}
             onMapTap={closeSheet}
             pickMode={pickMode}

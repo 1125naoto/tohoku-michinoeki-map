@@ -7,7 +7,7 @@ import type { LatLng } from '../lib/geo';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { zoomClasses, type MapSettings } from '../lib/mapSettings';
 import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi } from '../lib/poi';
-import { matchesFilter } from '../lib/ui';
+import { matchesFilter, matchesFacilityFilter, NO_FACILITY_FILTER, type FacilityFilter } from '../lib/ui';
 import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 
 interface Props {
@@ -15,6 +15,8 @@ interface Props {
   visits: VisitMap;
   prefFilter: Prefecture | null;
   statusFilter: StatusFilter;
+  /** 道の駅自体の設備条件（RVパーク・温泉）でマーカーを絞る。省略時は絞り込みなし */
+  facilityFilter?: FacilityFilter;
   /**
    * マーカーのタップ/クリック。詳細シートを開くだけで、訪問状態は一切変更しない
    * （状態変更はシート内の明示的なボタンからのみ行う。誤タップでの色変化を防ぐ）。
@@ -358,6 +360,7 @@ export default function MapView({
   visits,
   prefFilter,
   statusFilter,
+  facilityFilter = NO_FACILITY_FILTER,
   onOpenStation,
   onMapTap,
   pickMode,
@@ -556,7 +559,10 @@ export default function MapView({
     }
     const target: L.LayerGroup = useCluster ? cluster : allLayer;
     const shown = stations.filter(
-      (st) => (!prefFilter || st.pref === prefFilter) && matchesFilter(st, visits, statusFilter),
+      (st) =>
+        (!prefFilter || st.pref === prefFilter) &&
+        matchesFilter(st, visits, statusFilter) &&
+        matchesFacilityFilter(st, facilityFilter),
     );
     for (const st of shown) {
       const state = visitState(st, visits);
@@ -599,6 +605,7 @@ export default function MapView({
     visits,
     prefFilter,
     statusFilter,
+    facilityFilter,
     now,
     selectedId,
     settings.markerMode,
