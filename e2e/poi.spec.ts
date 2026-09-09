@@ -110,7 +110,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.locator('.poi-marker .rs-route-num').first()).toHaveText('1');
 
     // 訪問記録は変化していない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／545駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／723駅');
 
     // 道の駅も追加して混合ルートを作成する
     await page.getByTestId('poi-detail-close').click();
@@ -171,6 +171,9 @@ test.describe('周辺スポット検索', () => {
   });
 
   test('道の駅を選ぶ: 都道府県で絞り込むと、その県の道の駅だけが選べる（県を切り替えても前の県の駅が残らない）', async ({ page }) => {
+    // 全都道府県(中部追加後23件)を1件ずつ実操作で検証するため、既定の60秒では
+    // 環境負荷時に不足しうる（screens.spec.tsの複数画面撮影と同じ理由）
+    test.setTimeout(120_000);
     await page.goto('/');
     await closeBanners(page);
     await page.getByTestId('poi-search-open').click();
@@ -354,10 +357,10 @@ test.describe('周辺スポット検索', () => {
         await expect(page.getByTestId('trip-poi-arrived')).toContainText('到着済み');
         await page.getByTestId('trip-poi-next').click();
         // 周辺スポットの到着は道の駅の達成率に影響しない
-        await expect(page.getByTestId('stats-visited')).toContainText('0／545駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('0／723駅');
       } else if (await page.getByTestId('trip-arrived').isVisible().catch(() => false)) {
         await page.getByTestId('trip-arrived').click();
-        await expect(page.getByTestId('stats-visited')).toContainText('1／545駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('1／723駅');
       }
     }
   });
@@ -917,7 +920,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
 
     // POIで達成率が変わらない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／545駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／723駅');
   });
 
   test('全画面モードでも周辺スポット検索が使える', async ({ page }) => {

@@ -49,6 +49,11 @@ describe('道の駅マスターデータ', () => {
       東北: { lat: [36.7, 41.7], lng: [139.0, 142.3] },
       関東: { lat: [34.8, 37.2], lng: [138.5, 140.8] },
       北陸: { lat: [35.2, 38.5], lng: [135.4, 139.7] },
+      // 中部(山梨・長野・岐阜・静岡・愛知)は県境・山間部が多く、実際の行政界が
+      // 単純な緯度経度の矩形に収まらないため、実データ(最西端・最東端等)を
+      // 踏まえてやや広めに取る。県外座標の機械的誤検知を避ける目的の粗い範囲であり、
+      // 個別駅の正確な位置は一次情報(michi-no-eki.jp個別ページ)で確認済み。
+      中部: { lat: [34.5, 37.1], lng: [136.2, 139.2] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -116,8 +121,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -336,12 +341,11 @@ describe('北陸追加（販売版・全国展開Phase 3）', () => {
   const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
   const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
 
-  it('北海道128・東北182・関東130・北陸105の4地域、合計545駅で共存する', () => {
+  it('北海道128・東北182・関東130・北陸105の4地域が収録されている（中部追加後も既存4地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
     expect(hokuriku.length).toBe(105);
-    expect(STATIONS.length).toBe(545);
   });
 
   it('北陸は現在のproduct地方マスター定義どおり4県（新潟・富山・石川・福井）', () => {
@@ -361,12 +365,12 @@ describe('北陸追加（販売版・全国展開Phase 3）', () => {
     });
   });
 
-  it('全545駅で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
+  it('全駅で駅IDが衝突しない（michi-no-eki.jpの全国一意ID採用）', () => {
     const ids = STATIONS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('全545駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない）', () => {
+  it('全駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない）', () => {
     const seen = new Map<string, string>();
     for (const s of STATIONS) {
       expect(Number.isFinite(s.lat), s.name).toBe(true);
@@ -407,5 +411,78 @@ describe('北陸追加（販売版・全国展開Phase 3）', () => {
     expect(byName.get('KOKOくろべ')?.pref).toBe('富山県');
     expect(byName.get('めぐみ白山')?.pref).toBe('石川県');
     expect(byName.get('若狭おばま')?.pref).toBe('福井県');
+  });
+});
+
+describe('中部追加（販売版・全国展開Phase 4）', () => {
+  const CHUBU_PREFS = ['山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] as const;
+  const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+
+  it('北海道128・東北182・関東130・北陸105・中部178の5地域、合計723駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(chubu.length).toBe(178);
+    expect(STATIONS.length).toBe(723);
+  });
+
+  it('中部は現在のproduct地方マスター定義どおり5県（山梨・長野・岐阜・静岡・愛知）', () => {
+    const prefsPresent = [...new Set(chubu.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...CHUBU_PREFS].sort());
+    for (const p of CHUBU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('中部');
+  });
+
+  it('県別内訳: 山梨22・長野54・岐阜55・静岡28・愛知19', () => {
+    const counts: Record<string, number> = {};
+    for (const s of chubu) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      山梨県: 22,
+      長野県: 54,
+      岐阜県: 55,
+      静岡県: 28,
+      愛知県: 19,
+    });
+  });
+
+  it('全駅で駅IDが衝突しない・座標が重複しない（中部追加後も5地域共存で成立）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('中部の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of chubu) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('chubu');
+    }
+  });
+
+  it('中部facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of chubu) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は中部追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('5県の代表駅が正しく収録されている（都市近郊・山間部・観光地・海側・内陸）', () => {
+    const byName = new Map(chubu.map((s) => [s.name, s]));
+    expect(byName.get('なるさわ')?.pref).toBe('山梨県'); // 富士五湖・観光地
+    expect(byName.get('信州新町')?.pref).toBe('長野県'); // 長野市近郊
+    expect(byName.get('パスカル清見')?.pref).toBe('岐阜県'); // 高山市・山間部
+    expect(byName.get('富士')?.pref).toBe('静岡県'); // 富士市・都市近郊
+    expect(byName.get('田原めっくんはうす')?.pref).toBe('愛知県'); // 渥美半島・海側
   });
 });
