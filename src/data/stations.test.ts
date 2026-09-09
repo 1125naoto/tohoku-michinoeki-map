@@ -58,6 +58,10 @@ describe('道の駅マスターデータ', () => {
       // 実データ(最北=兵庫県北部、最南=和歌山県南部、最西=兵庫県西部、
       // 最東=三重県東部)を踏まえてやや広めに取る。
       近畿: { lat: [33.3, 35.9], lng: [134.2, 137.0] },
+      // 中国地方(鳥取・島根・岡山・広島・山口)も県境・山間部が多く、日本海側・瀬戸内側
+      // 双方に跨るため、実データ(最北=島根県隠岐諸島を除く本土最北、最南=瀬戸内沿岸、
+      // 最西=山口県西端、最東=岡山・兵庫県境)を踏まえてやや広めに取る。
+      中国: { lat: [33.6, 35.7], lng: [130.7, 134.5] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -125,8 +129,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -499,14 +503,13 @@ describe('近畿追加（販売版・全国展開Phase 5）', () => {
   const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
   const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158の6地域、合計881駅で共存する', () => {
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158の6地域が収録されている（中国追加後も既存6地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
-    expect(STATIONS.length).toBe(881);
   });
 
   it('近畿は現在のproduct地方マスター定義どおり7府県（三重・滋賀・京都・大阪・兵庫・奈良・和歌山）', () => {
@@ -578,5 +581,93 @@ describe('近畿追加（販売版・全国展開Phase 5）', () => {
     expect(byName.get('神鍋高原')?.pref).toBe('兵庫県'); // 豊岡市・山間部
     expect(byName.get('吉野路　大塔')?.pref).toBe('奈良県'); // 五條市・山間部
     expect(byName.get('イノブータンランド・すさみ')?.pref).toBe('和歌山県'); // すさみ町・海側
+  });
+});
+
+describe('中国地方追加（販売版・全国展開Phase 6）', () => {
+  const CHUGOKU_PREFS = ['鳥取県', '島根県', '岡山県', '広島県', '山口県'] as const;
+  const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+  const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
+  const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
+
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108の7地域、合計989駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(chubu.length).toBe(178);
+    expect(kinki.length).toBe(158);
+    expect(chugoku.length).toBe(108);
+    expect(STATIONS.length).toBe(989);
+  });
+
+  it('中国地方は現在のproduct地方マスター定義どおり5県（鳥取・島根・岡山・広島・山口）', () => {
+    const prefsPresent = [...new Set(chugoku.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...CHUGOKU_PREFS].sort());
+    for (const p of CHUGOKU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('中国');
+  });
+
+  it('県別内訳: 鳥取17・島根29・岡山17・広島21・山口24', () => {
+    const counts: Record<string, number> = {};
+    for (const s of chugoku) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      鳥取県: 17,
+      島根県: 29,
+      岡山県: 17,
+      広島県: 21,
+      山口県: 24,
+    });
+  });
+
+  it('全駅で駅IDが衝突しない・座標が重複しない（中国追加後も7地域共存で成立）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('中国地方の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of chugoku) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('chugoku');
+    }
+  });
+
+  it('中国地方facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of chugoku) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は中国追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('一次情報側の住所表記揺れ（都道府県欠落・市区町村欠落・URLプレースホルダー）を正規化している', () => {
+    const soleneshunan = chugoku.find((s) => s.id === 'mne-19610');
+    expect(soleneshunan?.address.startsWith('山口県')).toBe(true); // 一次情報は「山口県」欠落、市区町村から補完
+
+    const mitsuya = chugoku.find((s) => s.id === 'mne-19952');
+    expect(mitsuya?.city).toBe('安芸高田市'); // 一次情報は検索一覧で市区町村欄が空欄
+
+    const hiruzen = chugoku.find((s) => s.id === 'mne-19564');
+    expect(hiruzen?.officialUrl).toBeNull(); // 一次情報は「なし」というプレースホルダー文字列
+  });
+
+  it('5県の代表駅が正しく収録されている（都市近郊・山間部・観光地・日本海側・瀬戸内側）', () => {
+    const byName = new Map(chugoku.map((s) => [s.name, s]));
+    expect(byName.get('ポート赤碕')?.pref).toBe('鳥取県'); // 琴浦町・日本海側
+    expect(byName.get('ゆうひパーク浜田')?.pref).toBe('島根県'); // 浜田市・日本海側
+    expect(byName.get('みやま公園')?.pref).toBe('岡山県'); // 玉野市・瀬戸内側
+    expect(byName.get('豊平どんぐり村')?.pref).toBe('広島県'); // 北広島町・山間部
+    expect(byName.get('萩往還')?.pref).toBe('山口県'); // 萩市・観光地
   });
 });

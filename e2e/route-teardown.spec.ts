@@ -154,7 +154,7 @@ test.describe('旅行の終了', () => {
     if (await page.getByTestId('trip-arrived').isVisible().catch(() => false)) {
       await page.getByTestId('trip-arrived').click();
     }
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
 
     await page.getByTestId('trip-end-now').click();
     await expect(page.getByRole('dialog', { name: '旅行を終了しますか？' })).toBeVisible();
@@ -162,7 +162,7 @@ test.describe('旅行の終了', () => {
 
     await expect(page.getByTestId('route-action-toast')).toContainText('旅行を終了しました。訪問記録・スタンプ記録は残っています');
     // 訪問記録は維持される
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     // 旅行中状態が終了し、通常のコース作成方式選択画面に戻る
     await page.getByTestId('tab-route').click();
     await expect(page.getByTestId('course-mode-auto')).toBeVisible();

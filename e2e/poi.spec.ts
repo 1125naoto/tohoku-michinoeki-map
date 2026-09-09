@@ -110,7 +110,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.locator('.poi-marker .rs-route-num').first()).toHaveText('1');
 
     // 訪問記録は変化していない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
 
     // 道の駅も追加して混合ルートを作成する
     await page.getByTestId('poi-detail-close').click();
@@ -357,10 +357,10 @@ test.describe('周辺スポット検索', () => {
         await expect(page.getByTestId('trip-poi-arrived')).toContainText('到着済み');
         await page.getByTestId('trip-poi-next').click();
         // 周辺スポットの到着は道の駅の達成率に影響しない
-        await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
       } else if (await page.getByTestId('trip-arrived').isVisible().catch(() => false)) {
         await page.getByTestId('trip-arrived').click();
-        await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+        await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
       }
     }
   });
@@ -920,7 +920,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
 
     // POIで達成率が変わらない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
   });
 
   test('全画面モードでも周辺スポット検索が使える', async ({ page }) => {

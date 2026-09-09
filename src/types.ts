@@ -102,11 +102,16 @@ export const PREFECTURES = [
   '兵庫県',
   '奈良県',
   '和歌山県',
+  '鳥取県',
+  '島根県',
+  '岡山県',
+  '広島県',
+  '山口県',
 ] as const;
 export type Prefecture = (typeof PREFECTURES)[number];
 
 /** 収録済みの地方（表示順）。今後の都道府県追加に合わせて増やす。 */
-export const AREAS = ['北海道', '東北', '関東', '北陸', '中部', '近畿'] as const;
+export const AREAS = ['北海道', '東北', '関東', '北陸', '中部', '近畿', '中国'] as const;
 export type AreaName = (typeof AREAS)[number];
 
 /** 都道府県が属する地方。product/region/regions.ts の地方区分マスターと整合させる。 */
@@ -141,6 +146,11 @@ export const AREA_BY_PREFECTURE: Record<Prefecture, AreaName> = {
   兵庫県: '近畿',
   奈良県: '近畿',
   和歌山県: '近畿',
+  鳥取県: '中国',
+  島根県: '中国',
+  岡山県: '中国',
+  広島県: '中国',
+  山口県: '中国',
 };
 
 export interface StationDataFile {

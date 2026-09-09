@@ -99,7 +99,7 @@ test.describe('地図と詳細カード @smoke', () => {
     await page.goto('/');
     await expect(page.getByTestId('map-root')).toBeVisible();
     await expect(page.locator('.leaflet-control-attribution')).toContainText('OpenStreetMap');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('stats-percent')).toContainText('0％');
     // 横スクロールが発生していない
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -122,7 +122,7 @@ test.describe('地図と詳細カード @smoke', () => {
     await page.waitForTimeout(1500);
     await expect(page.locator('.cluster-pill, .rs-marker').first()).toBeVisible();
     // クラスタのタップでは訪問状態を変更しない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
   });
 
   test('地方・都道府県・表示フィルターがグループ分けされている @smoke', async ({ page }) => {
@@ -192,24 +192,24 @@ test.describe('詳細カードの操作', () => {
     // 行きたい（達成数には含めない）
     await page.getByTestId('btn-want').click();
     await expect(page.getByTestId('station-sheet')).toContainText('行きたい');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     // 訪問済み
     await page.getByTestId('btn-visited').click();
     await expect(page.getByTestId('station-sheet')).toContainText('✓ 訪問済み');
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     // スタンプ取得済み（達成数+スタンプ数に含める）
     await page.getByTestId('btn-stamp').click();
     await expect(page.getByTestId('station-sheet')).toContainText('スタンプ取得済み');
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('1');
     // 再読み込み後も保持
     await page.reload();
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await gotoStation(page);
     await expect(page.getByTestId('station-sheet')).toContainText('スタンプ取得済み');
     // 未訪問に戻す
     await page.getByTestId('btn-reset').click();
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
   });
 
   test('ホバーで駅名ツールチップが表示され、訪問状態は変わらない @smoke', async ({ page }) => {
@@ -222,7 +222,7 @@ test.describe('詳細カードの操作', () => {
     await marker.hover();
     await expect(page.locator('.leaflet-tooltip.rs-tooltip')).toContainText(`道の駅 ${STATION_NAME}`);
     await page.waitForTimeout(500);
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅'); // hoverでは変更しない
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅'); // hoverでは変更しない
   });
 
   /** マーカー背景色（2番目のrect）のfill属性とcomputed styleを取得 */
@@ -250,34 +250,34 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('station-sheet')).toContainText(STATION_NAME);
     await page.waitForTimeout(300);
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('tap-toast')).toBeHidden();
 
     // シート内「✓ 訪問済みにする」: 赤・訪問済み
     await page.getByTestId('btn-visited').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
     await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
 
     // シート内「★ 行きたいにする」: オレンジ・行きたい（達成数から外れる）。シートは開いたまま
     await page.getByTestId('btn-want').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('行きたいに変更しました');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d9640a');
 
     // 元に戻す → 直前の訪問済みへ復元
     await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
     await page.getByTestId('tap-toast-undo').click();
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
 
     // シート内「印 スタンプ取得済みにする」: 訪問済みから直接スタンプへ（達成数+スタンプ数に加算）
     await page.getByTestId('btn-stamp').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('スタンプ取得済みに変更しました');
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('1');
     await expect(page.locator(`.rs-marker.stamp[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#6a3ab2');
@@ -285,15 +285,15 @@ test.describe('詳細カードの操作', () => {
     // シート内「未訪問に戻す」: 青・未訪問へ戻る（達成数・スタンプ数から外れる）
     await page.getByTestId('btn-reset').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('未訪問に戻しました');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('0');
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
 
     // 再度「訪問済みにする」→ 再読み込み後も維持される
     await page.getByTestId('btn-visited').click();
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await page.reload();
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 15000 });
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
@@ -318,7 +318,7 @@ test.describe('詳細カードの操作', () => {
     }
     await page.waitForTimeout(400);
     expect((await markerFill(page, STATION_ID))?.attr).toBe('#1a4f9e');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('0');
     await expect(page.getByTestId('tap-toast')).toBeHidden();
     await expect(page.getByTestId('station-sheet')).toBeVisible();
@@ -343,7 +343,7 @@ test.describe('詳細カードの操作', () => {
     await page.waitForTimeout(600);
     expect(popups).toBe(0);
     // どちらも状態は変わらず、最後にタップした駅の詳細シートが開いている
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('tap-toast')).toBeHidden();
   });
@@ -383,13 +383,13 @@ test.describe('詳細カードの操作', () => {
 
     // シート内ボタンで色を変える（青→赤→オレンジ→紫→青）
     await page.getByTestId('btn-visited').click();
-    await expectStage('#d83a34', 'rgb(216, 58, 52)', '1／881駅', '0');
+    await expectStage('#d83a34', 'rgb(216, 58, 52)', '1／989駅', '0');
     await page.getByTestId('btn-want').click();
-    await expectStage('#d9640a', 'rgb(217, 100, 10)', '0／881駅', '0');
+    await expectStage('#d9640a', 'rgb(217, 100, 10)', '0／989駅', '0');
     await page.getByTestId('btn-stamp').click();
-    await expectStage('#6a3ab2', 'rgb(106, 58, 178)', '1／881駅', '1');
+    await expectStage('#6a3ab2', 'rgb(106, 58, 178)', '1／989駅', '1');
     await page.getByTestId('btn-reset').click();
-    await expectStage('#1a4f9e', 'rgb(26, 79, 158)', '0／881駅', '0');
+    await expectStage('#1a4f9e', 'rgb(26, 79, 158)', '0／989駅', '0');
 
     // トーストの「公式HP」ボタン → 中間画面なしで公式ページを直接開き、状態は変わらない
     await page.getByTestId('btn-visited').click(); // → 訪問済み(赤)・トースト表示
@@ -411,7 +411,7 @@ test.describe('詳細カードの操作', () => {
     }
     expect(landedUrl).toMatch(/https?:\/\//);
     await page.waitForTimeout(500);
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅'); // 公式HPで状態は変わらない
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅'); // 公式HPで状態は変わらない
     const lsAfter = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
     expect(lsAfter).toBe(lsBefore);
   });
@@ -691,6 +691,9 @@ test.describe('フィルターと達成率', () => {
     // 3. 都道府県チップとの組み合わせ: 中部選択中に長野県だけへさらに絞り込める
     await page.getByTestId('chip-長野県').click();
     await expect(page.locator(`[data-sid="${CHUBU_STATION}"]`)).toBeVisible();
+    // 県フィルター変更に伴う地図の自動fitBoundsアニメーションが完全に収まるのを待つ
+    // （アニメーション中に__setMapView()すると、後から進行中のfitBoundsに上書きされることがある）
+    await page.waitForTimeout(2000);
 
     // 4. 中部の駅の詳細シートが正しく開く
     // （長野県は南北に長く、隣接マーカーのヒット領域が重なりやすいため、
@@ -750,10 +753,11 @@ test.describe('フィルターと達成率', () => {
     // 3. 都道府県チップとの組み合わせ: 近畿選択中に三重県だけへさらに絞り込める
     await page.getByTestId('chip-三重県').click();
     await expect(page.locator(`[data-sid="${KINKI_STATION}"]`)).toBeVisible();
-    // 県フィルター変更に伴う地図の自動fitBoundsが収まるのを待つ
-    // （この直後に__setMapView()しても、収まりきっていないfitBoundsが後から
-    //   ビューを上書きし、固定UI（📍現在地/🔍周辺スポット）とマーカーが重なることがあった）
-    await page.waitForTimeout(600);
+    // 県フィルター変更に伴う地図の自動fitBoundsアニメーションが完全に収まるのを待つ。
+    // アニメーション中に__setMapView()を呼ぶと、後から進行中のfitBoundsアニメーションに
+    // ビューを上書きされ、固定UI（📍現在地/🔍周辺スポット）とマーカーが重なることがあった
+    // （600ms程度では機材負荷時に間に合わないことがあった）。
+    await page.waitForTimeout(2000);
 
     // 4. 近畿の駅の詳細シートが正しく開く
     // （対象駅を画面中央へ寄せてからタップする＝manual-route.spec.tsのtapStation()と同じ手法）
@@ -775,6 +779,73 @@ test.describe('フィルターと達成率', () => {
     await expect(page.locator(`[data-sid="${HOKURIKU_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${CHUBU_STATION}"]`)).toBeVisible();
     await expect(page.locator(`[data-sid="${KINKI_STATION}"]`)).toBeVisible();
+  });
+
+  test('中国地方追加後、北海道・東北・関東・北陸・中部・近畿・中国の7地域が「地方」チップで自然に切替できる @smoke', async ({
+    page,
+  }) => {
+    const HOKKAIDO_STATION = 'mne-18899'; // わっかない（北海道）
+    const TOHOKU_STATION = 'mne-18904'; // 青森県
+    const KANTO_STATION = 'mne-19149'; // 八王子滝山（東京都）
+    const HOKURIKU_STATION = 'mne-19223'; // あいぽーと佐渡（新潟県佐渡市）
+    const CHUBU_STATION = 'mne-19189'; // 小谷（長野県小谷村）
+    const KINKI_STATION = 'mne-19388'; // 伊勢志摩（三重県志摩市）
+    const CHUGOKU_STATION = 'mne-19560'; // みやま公園（岡山県玉野市。最寄駅まで26.6km離れた孤立地点でクラスタ化しない）
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. すべて: 7地域とも地図に出る
+    await expect(page.locator(`[data-sid="${HOKKAIDO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${TOHOKU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${KANTO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${HOKURIKU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${CHUBU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${KINKI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${CHUGOKU_STATION}"]`)).toBeVisible();
+
+    // 2. 「地方」チップ:中国 → 中国地方の駅だけ表示、他6地域は消える
+    await page.getByTestId('chip-area-中国').click();
+    await expect(page.getByTestId('chip-area-中国')).toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${CHUGOKU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${HOKKAIDO_STATION}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${TOHOKU_STATION}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${KANTO_STATION}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${HOKURIKU_STATION}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${CHUBU_STATION}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-sid="${KINKI_STATION}"]`)).toHaveCount(0);
+    await page.waitForTimeout(400);
+
+    // 3. 都道府県チップとの組み合わせ: 中国選択中に岡山県だけへさらに絞り込める
+    await page.getByTestId('chip-岡山県').click();
+    await expect(page.locator(`[data-sid="${CHUGOKU_STATION}"]`)).toBeVisible();
+    // 県フィルター変更に伴う地図の自動fitBoundsアニメーションが完全に収まるのを待つ。
+    // アニメーション中に__setMapView()を呼ぶと、後から進行中のfitBoundsアニメーションに
+    // ビューを上書きされることがある（600ms程度では機材負荷時に間に合わないことがあった）。
+    await page.waitForTimeout(2000);
+
+    // 4. 中国地方の駅の詳細シートが正しく開く
+    // （対象駅を画面中央へ寄せてからタップする＝manual-route.spec.tsのtapStation()と同じ手法）
+    await page.evaluate(
+      ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
+      [34.520201, 133.926904],
+    );
+    await page.waitForTimeout(500);
+    await page.locator(`[data-sid="${CHUGOKU_STATION}"]`).click();
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await expect(page.getByTestId('station-sheet')).toContainText('みやま公園');
+    await page.keyboard.press('Escape');
+
+    // 5. すべてへ戻す → 7地域とも出る
+    await page.getByTestId('chip-all').click();
+    await expect(page.locator(`[data-sid="${HOKKAIDO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${TOHOKU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${KANTO_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${HOKURIKU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${CHUBU_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${KINKI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${CHUGOKU_STATION}"]`)).toBeVisible();
   });
 
   test('設備（RVパーク・温泉）フィルターで地図マーカーを絞り込める。県・状態との複合、0件、解除も正しく動く', async ({
@@ -889,7 +960,7 @@ test.describe('フィルターと達成率', () => {
     await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
     await page.getByTestId('filter-visited').click();
     await expect(page.locator(`[data-sid="${STATION_ID}"]`)).toHaveCount(0);
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅'); // 達成数から外れる
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅'); // 達成数から外れる
   });
 
   test('県別グリッドの分母が自動計算されている @smoke', async ({ page }) => {
@@ -925,13 +996,18 @@ test.describe('フィルターと達成率', () => {
     await expect(page.getByTestId('pref-兵庫県')).toContainText('0／37駅');
     await expect(page.getByTestId('pref-奈良県')).toContainText('0／18駅');
     await expect(page.getByTestId('pref-和歌山県')).toContainText('0／37駅');
+    await expect(page.getByTestId('pref-鳥取県')).toContainText('0／17駅');
+    await expect(page.getByTestId('pref-島根県')).toContainText('0／29駅');
+    await expect(page.getByTestId('pref-岡山県')).toContainText('0／17駅');
+    await expect(page.getByTestId('pref-広島県')).toContainText('0／21駅');
+    await expect(page.getByTestId('pref-山口県')).toContainText('0／24駅');
   });
 
   test('達成率100%の表示', async ({ page }) => {
     // アプリが検証用に公開している window.__stationIds を使って全駅訪問済みを投入
     await page.goto('/');
     const ids = await page.evaluate(() => (window as unknown as { __stationIds?: string[] }).__stationIds);
-    expect(ids && ids.length).toBe(881);
+    expect(ids && ids.length).toBe(989);
     await page.evaluate(
       ([key, idList]) => {
         const now = new Date().toISOString();
@@ -944,7 +1020,7 @@ test.describe('フィルターと達成率', () => {
       [VISITS_KEY, ids] as const,
     );
     await page.reload();
-    await expect(page.getByTestId('stats-visited')).toContainText('881／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('989／989駅');
     await expect(page.getByTestId('stats-percent')).toContainText('100％');
   });
 });
@@ -960,7 +1036,7 @@ test.describe('堅牢性', () => {
     }, VISITS_KEY);
     await page.goto('/');
     await expect(page.getByTestId('map-root')).toBeVisible();
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
   });
 
   test('オフライン状態の表示 @smoke', async ({ page, context }) => {
@@ -1097,7 +1173,7 @@ test.describe('ルート提案から旅行中まで', () => {
     await page.getByTestId('trip-start').click();
     await expect(page.getByTestId('trip-view')).toBeVisible();
     // ルートに含まれただけでは訪問済みにならない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     await expect(page.getByTestId('trip-progress')).toContainText('0／');
     await expect(page.getByTestId('trip-remaining-time')).toBeVisible();
     // 安全案内
@@ -1115,17 +1191,17 @@ test.describe('ルート提案から旅行中まで', () => {
     expect(navUrl).toContain('dir_action=navigate');
     expect(navUrl).toContain(currentName.replace('道の駅 ', '')); // 次の駅名がdestinationに入っている
     await popup!.close();
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
 
     // 到着した → visited(赤) + 次の駅へ
     await page.getByTestId('trip-arrived').click();
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
     await expect(page.getByTestId('trip-progress')).toContainText('1／');
 
     // 2駅目: スタンプ取得 → stamped(紫)
     if (await page.getByTestId('trip-stamp').isVisible().catch(() => false)) {
       await page.getByTestId('trip-stamp').click();
-      await expect(page.getByTestId('stats-visited')).toContainText('2／881駅');
+      await expect(page.getByTestId('stats-visited')).toContainText('2／989駅');
       await expect(page.getByTestId('stats-stamped')).toContainText('1');
     }
 
@@ -1140,7 +1216,7 @@ test.describe('ルート提案から旅行中まで', () => {
     }
     await expect(page.getByTestId('trip-return')).toBeVisible();
     await expect(page.getByTestId('trip-nav-home')).toBeVisible(); // 出発地点へ戻るナビ
-    await expect(page.getByTestId('stats-visited')).toContainText('2／881駅'); // スキップで状態不変
+    await expect(page.getByTestId('stats-visited')).toContainText('2／989駅'); // スキップで状態不変
 
     // 中断→再開: 進行状況が保持される
     await page.getByTestId('trip-suspend').click();
@@ -1153,7 +1229,7 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(page.getByTestId('trip-finish')).toBeVisible();
     await page.getByTestId('trip-apply').click();
     await expect(page.getByTestId('route-pane')).toBeVisible();
-    await expect(page.getByTestId('stats-visited')).toContainText('2／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('2／989駅');
   });
 
   test('シナリオB: 行きたい優先でwishlist駅が優先される', async ({ page }) => {
@@ -1377,9 +1453,11 @@ test.describe('地図全画面モード', () => {
       (window as unknown as { __getMapState: () => unknown }).__getMapState(),
     )) as MS;
     expect(after.zoom).toBe(before.zoom);
-    // 1px未満の丸めは許容（広域ズームでは0.005°程度になる）
-    expect(Math.abs(after.lat - before.lat)).toBeLessThan(0.02);
-    expect(Math.abs(after.lng - before.lng)).toBeLessThan(0.02);
+    // 1px未満の丸めは許容。全国化で収録駅の東西範囲が広がるほど初期表示のズームが
+    // 下がり、1pxあたりの経度幅が大きくなるため、許容量も広域ズームに応じて緩める
+    // （中国地方追加で北海道〜山口まで広がり、狭いビューポートでは0.02をわずかに超えた）
+    expect(Math.abs(after.lat - before.lat)).toBeLessThan(0.03);
+    expect(Math.abs(after.lng - before.lng)).toBeLessThan(0.03);
     // タイルが描画されている（灰色のみでない）
     await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({ timeout: 15000 });
     // 横スクロールなし
@@ -1518,13 +1596,13 @@ test.describe('シナリオC: ルーティング障害時の概算フォール�
 });
 
 test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
-  test('初期状態では収録全駅が881件の個別マーカーで表示され、まとめ表示（クラスタ）は出ない @smoke', async ({
+  test('初期状態では収録全駅が989件の個別マーカーで表示され、まとめ表示（クラスタ）は出ない @smoke', async ({
     page,
   }) => {
     await page.goto('/');
     await closeLegend(page);
     await expect(page.locator('.rs-marker').first()).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('.rs-hit')).toHaveCount(881);
+    await expect(page.locator('.rs-hit')).toHaveCount(989);
     await expect(page.locator('.cluster-pill')).toHaveCount(0);
   });
 
@@ -1534,12 +1612,12 @@ test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
     await setMarkerMode(page, 'cluster');
     await expect(page.locator('.cluster-pill').first()).toBeVisible({ timeout: 15000 });
     // クラスタ化時は大半がピルにまとまる（近隣に他駅がない孤立した駅だけは
-    // 単独マーカーのまま出ることがあるため、881件全部ではないことだけ確認する）
-    await expect(page.locator('.rs-hit')).not.toHaveCount(881);
-    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
+    // 単独マーカーのまま出ることがあるため、989件全部ではないことだけ確認する）
+    await expect(page.locator('.rs-hit')).not.toHaveCount(989);
+    await expect(page.getByTestId('stats-visited')).toContainText('0／989駅');
     // 「全駅表示」へ戻すと元通りになる
     await setMarkerMode(page, 'all');
-    await expect(page.locator('.rs-hit')).toHaveCount(881);
+    await expect(page.locator('.rs-hit')).toHaveCount(989);
     await expect(page.locator('.cluster-pill')).toHaveCount(0);
   });
 
@@ -1681,7 +1759,7 @@ test.describe('記録のバックアップ・復元', () => {
     const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
     expect(saved).not.toContain('mne-99999-dummy');
     expect(saved).toContain(`"${STATION_ID}"`);
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
   });
 
   test('バックアップの復元（統合）: 既存の記録を残しつつバックアップ側を反映する', async ({ page }) => {
@@ -1726,7 +1804,7 @@ test.describe('記録のバックアップ・復元', () => {
     const saved = await page.evaluate(() => localStorage.getItem('tohoku-me:visits:v2'));
     expect(saved).toContain('mne-99999-dummy');
     expect(saved).toContain(`"${STATION_ID}"`);
-    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('1／989駅');
   });
 
   test('壊れたバックアップファイルはエラー表示となり、既存の記録は変更されない', async ({ page }) => {
