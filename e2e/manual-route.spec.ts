@@ -96,7 +96,7 @@ test.describe('地図から選ぶルート作成', () => {
     await tapStation(page, ST_A);
     await tapStation(page, ST_B);
     await expect(page.getByTestId('route-select-count')).toContainText('2駅選択中');
-    await expect(page.getByTestId('stats-visited')).toContainText('0／723駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
 
     await page.getByTestId('route-select-create').click();
     await pickOriginStation(page, ST_A);
@@ -126,7 +126,7 @@ test.describe('地図から選ぶルート作成', () => {
     await expect(page.locator(`[data-sid="${ST_B}"] .rs-route-num`)).toHaveText('2');
     await expect(page.locator(`[data-sid="${ST_C}"] .rs-route-num`)).toHaveText('3');
     // 訪問記録は変わっていない
-    await expect(page.getByTestId('stats-visited')).toContainText('0／723駅');
+    await expect(page.getByTestId('stats-visited')).toContainText('0／881駅');
 
     await page.getByTestId('route-select-show-list').click();
     await expect(page.getByTestId('route-select-row')).toHaveCount(3);
@@ -354,7 +354,7 @@ test.describe('地図から選ぶルート作成', () => {
     await finishBtn.click();
     await expect(page.getByTestId('trip-finish')).toBeVisible();
     await page.getByTestId('trip-apply').click();
-    await expect(page.getByTestId('stats-visited')).not.toContainText('0／723駅');
+    await expect(page.getByTestId('stats-visited')).not.toContainText('0／881駅');
   });
 
   test('シナリオ6: モード競合 - 通常タップ→詳細シート、選択モード中はタップで選択追加（シートは開かない）、終了後は詳細シートに復帰', async ({
@@ -382,7 +382,7 @@ test.describe('地図から選ぶルート作成', () => {
     await expect(page.getByTestId('route-select-count')).toContainText('1駅選択中');
     await expect(page.getByTestId('station-sheet')).toHaveCount(0);
     await expect(page.locator(`.rs-marker.visited[data-sid="${ST_A}"]`)).toBeVisible(); // 赤のまま
-    await expect(page.getByTestId('stats-visited')).toContainText('1／723駅'); // タップ前と同じ（増えない）
+    await expect(page.getByTestId('stats-visited')).toContainText('1／881駅'); // タップ前と同じ（増えない）
 
     // 選択モード終了
     await page.getByTestId('route-select-exit').click();

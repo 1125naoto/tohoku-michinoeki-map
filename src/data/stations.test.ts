@@ -54,6 +54,10 @@ describe('道の駅マスターデータ', () => {
       // 踏まえてやや広めに取る。県外座標の機械的誤検知を避ける目的の粗い範囲であり、
       // 個別駅の正確な位置は一次情報(michi-no-eki.jp個別ページ)で確認済み。
       中部: { lat: [34.5, 37.1], lng: [136.2, 139.2] },
+      // 近畿(三重・滋賀・京都・大阪・兵庫・奈良・和歌山)も府県境・山間部が多いため、
+      // 実データ(最北=兵庫県北部、最南=和歌山県南部、最西=兵庫県西部、
+      // 最東=三重県東部)を踏まえてやや広めに取る。
+      近畿: { lat: [33.3, 35.9], lng: [134.2, 137.0] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -121,8 +125,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -422,13 +426,12 @@ describe('中部追加（販売版・全国展開Phase 4）', () => {
   const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
   const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
 
-  it('北海道128・東北182・関東130・北陸105・中部178の5地域、合計723駅で共存する', () => {
+  it('北海道128・東北182・関東130・北陸105・中部178の5地域が収録されている（近畿追加後も既存5地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
-    expect(STATIONS.length).toBe(723);
   });
 
   it('中部は現在のproduct地方マスター定義どおり5県（山梨・長野・岐阜・静岡・愛知）', () => {
@@ -484,5 +487,96 @@ describe('中部追加（販売版・全国展開Phase 4）', () => {
     expect(byName.get('パスカル清見')?.pref).toBe('岐阜県'); // 高山市・山間部
     expect(byName.get('富士')?.pref).toBe('静岡県'); // 富士市・都市近郊
     expect(byName.get('田原めっくんはうす')?.pref).toBe('愛知県'); // 渥美半島・海側
+  });
+});
+
+describe('近畿追加（販売版・全国展開Phase 5）', () => {
+  const KINKI_PREFS = ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] as const;
+  const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+  const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
+
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158の6地域、合計881駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(chubu.length).toBe(178);
+    expect(kinki.length).toBe(158);
+    expect(STATIONS.length).toBe(881);
+  });
+
+  it('近畿は現在のproduct地方マスター定義どおり7府県（三重・滋賀・京都・大阪・兵庫・奈良・和歌山）', () => {
+    const prefsPresent = [...new Set(kinki.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...KINKI_PREFS].sort());
+    for (const p of KINKI_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('近畿');
+  });
+
+  it('府県別内訳: 三重18・滋賀20・京都18・大阪10・兵庫37・奈良18・和歌山37', () => {
+    const counts: Record<string, number> = {};
+    for (const s of kinki) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      三重県: 18,
+      滋賀県: 20,
+      京都府: 18,
+      大阪府: 10,
+      兵庫県: 37,
+      奈良県: 18,
+      和歌山県: 37,
+    });
+  });
+
+  it('全駅で駅IDが衝突しない・座標が重複しない（近畿追加後も6地域共存で成立）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('近畿の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of kinki) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('kinki');
+    }
+  });
+
+  it('近畿facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of kinki) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は近畿追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('三重県は今回の全国化マスター(product/region/regions.ts)どおり近畿のまま（中部へは移動しない）', () => {
+    expect(AREA_BY_PREFECTURE['三重県']).toBe('近畿');
+  });
+
+  it('きなりの郷 下北山（奈良県）は一次情報側の経度入力ミスを補正した座標を採用している', () => {
+    const st = kinki.find((s) => s.id === 'mne-22788');
+    expect(st).toBeDefined();
+    expect(st!.lng).toBeCloseTo(135.9624087621255, 5);
+    expect(st!.lng).toBeGreaterThan(122);
+    expect(st!.lng).toBeLessThan(146);
+  });
+
+  it('7府県の代表駅が正しく収録されている（都市近郊・山間部・観光地・海側・内陸）', () => {
+    const byName = new Map(kinki.map((s) => [s.name, s]));
+    expect(byName.get('紀宝町ウミガメ公園')?.pref).toBe('三重県'); // 熊野灘・海側
+    expect(byName.get('びわ湖大橋米プラザ')?.pref).toBe('滋賀県'); // 大津市・都市近郊
+    expect(byName.get('舟屋の里伊根')?.pref).toBe('京都府'); // 丹後・観光地/海側
+    expect(byName.get('しらとりの郷・羽曳野')?.pref).toBe('大阪府'); // 羽曳野市・都市近郊
+    expect(byName.get('神鍋高原')?.pref).toBe('兵庫県'); // 豊岡市・山間部
+    expect(byName.get('吉野路　大塔')?.pref).toBe('奈良県'); // 五條市・山間部
+    expect(byName.get('イノブータンランド・すさみ')?.pref).toBe('和歌山県'); // すさみ町・海側
   });
 });
