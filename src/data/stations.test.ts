@@ -62,6 +62,11 @@ describe('道の駅マスターデータ', () => {
       // 双方に跨るため、実データ(最北=島根県隠岐諸島を除く本土最北、最南=瀬戸内沿岸、
       // 最西=山口県西端、最東=岡山・兵庫県境)を踏まえてやや広めに取る。
       中国: { lat: [33.6, 35.7], lng: [130.7, 134.5] },
+      // 四国(徳島・香川・愛媛・高知)は本州と海を隔てており、離島(小豆島)や
+      // 半島先端(佐田岬)まで収録範囲に含む。実データ(最北=香川県小豆島、
+      // 最南=高知県土佐清水市、最西=愛媛県佐田岬半島、最東=徳島県阿南市)を
+      // 踏まえてやや広めに取る。
+      四国: { lat: [32.6, 34.7], lng: [132.1, 134.8] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -129,8 +134,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108+四国91登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108 + 91);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -594,7 +599,7 @@ describe('中国地方追加（販売版・全国展開Phase 6）', () => {
   const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
   const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108の7地域、合計989駅で共存する', () => {
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108の7地域が収録されている（四国追加後も既存7地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
@@ -602,7 +607,6 @@ describe('中国地方追加（販売版・全国展開Phase 6）', () => {
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
     expect(chugoku.length).toBe(108);
-    expect(STATIONS.length).toBe(989);
   });
 
   it('中国地方は現在のproduct地方マスター定義どおり5県（鳥取・島根・岡山・広島・山口）', () => {
@@ -669,5 +673,122 @@ describe('中国地方追加（販売版・全国展開Phase 6）', () => {
     expect(byName.get('みやま公園')?.pref).toBe('岡山県'); // 玉野市・瀬戸内側
     expect(byName.get('豊平どんぐり村')?.pref).toBe('広島県'); // 北広島町・山間部
     expect(byName.get('萩往還')?.pref).toBe('山口県'); // 萩市・観光地
+  });
+});
+
+describe('四国追加（販売版・全国展開Phase 7）', () => {
+  const SHIKOKU_PREFS = ['徳島県', '香川県', '愛媛県', '高知県'] as const;
+  const shikoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '四国');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+  const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
+  const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
+  const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
+
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91の8地域、合計1080駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(chubu.length).toBe(178);
+    expect(kinki.length).toBe(158);
+    expect(chugoku.length).toBe(108);
+    expect(shikoku.length).toBe(91);
+    expect(STATIONS.length).toBe(1080);
+  });
+
+  it('四国は現在のproduct地方マスター定義どおり4県（徳島・香川・愛媛・高知）', () => {
+    const prefsPresent = [...new Set(shikoku.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...SHIKOKU_PREFS].sort());
+    for (const p of SHIKOKU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('四国');
+  });
+
+  it('県別内訳: 徳島18・香川18・愛媛29・高知26（国交省一覧XLSの県別件数と一致）', () => {
+    const counts: Record<string, number> = {};
+    for (const s of shikoku) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      徳島県: 18,
+      香川県: 18,
+      愛媛県: 29,
+      高知県: 26,
+    });
+  });
+
+  it('全駅で駅IDが衝突しない・座標が重複しない（四国追加後も8地域共存で成立）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('四国の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of shikoku) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('shikoku');
+    }
+  });
+
+  it('四国facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of shikoku) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は四国追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('一次情報側の住所欠落（都道府県名なし）を国交省一覧で裏取りして補完している', () => {
+    // 一次情報の所在地は「安芸郡東洋町白浜88−1」で高知県が欠落していた。
+    // 国交省「道の駅」一覧の所在地欄（高知県／安芸郡東洋町）で裏取りして補完した。
+    const toyocho = shikoku.find((s) => s.id === 'mne-22528');
+    expect(toyocho?.address.startsWith('高知県')).toBe(true);
+    expect(toyocho?.city).toBe('東洋町');
+  });
+
+  it('一次情報のホームページ欄が空だった駅はofficialUrl=null（既存地域と同じ規約、空文字にしない）', () => {
+    const noUrl = shikoku.filter((s) => s.officialUrl === null).map((s) => s.id);
+    expect(noUrl.sort()).toEqual(['mne-19623', 'mne-19922', 'mne-19975'].sort());
+    for (const s of shikoku) expect(s.officialUrl === null || /^https?:\/\//.test(s.officialUrl!), s.id).toBe(true);
+  });
+
+  it('四国は本州と海を隔てるが、全駅が四国の実在範囲（離島・半島先端を含む）に収まる', () => {
+    for (const s of shikoku) {
+      expect(s.lat, `${s.name} lat`).toBeGreaterThan(32.6);
+      expect(s.lat, `${s.name} lat`).toBeLessThan(34.7);
+      expect(s.lng, `${s.name} lng`).toBeGreaterThan(132.1);
+      expect(s.lng, `${s.name} lng`).toBeLessThan(134.8);
+    }
+  });
+
+  it('4県の代表駅が正しく収録されている（瀬戸内側・太平洋側・山間部・離島・半島先端）', () => {
+    const byName = new Map(shikoku.map((s) => [s.name, s]));
+    expect(byName.get('第九の里')?.pref).toBe('徳島県'); // 鳴門市・瀬戸内側
+    expect(byName.get('大歩危')?.pref).toBe('徳島県'); // 三好市・山間部
+    expect(byName.get('小豆島オリーブ公園')?.pref).toBe('香川県'); // 小豆島・離島
+    expect(byName.get('佐田岬半島ミュージアム')?.pref).toBe('愛媛県'); // 伊方町・半島先端
+    expect(byName.get('風早の郷風和里')?.pref).toBe('愛媛県'); // 松山市・都市近郊
+    expect(byName.get('めじかの里土佐清水')?.pref).toBe('高知県'); // 土佐清水市・太平洋側
+    expect(byName.get('ゆすはら')?.pref).toBe('高知県'); // 梼原町・山間部
+  });
+
+  it('新潟県「みかわ」と愛媛県「みかわ」は同音同名の別施設であり重複登録ではない', () => {
+    const mikawa = STATIONS.filter((s) => s.name === 'みかわ');
+    expect(mikawa).toHaveLength(2);
+    expect(mikawa.map((s) => s.pref).sort()).toEqual(['新潟県', '愛媛県'].sort());
+    const [a, b] = mikawa;
+    expect(haversineKm(a, b)).toBeGreaterThan(400); // 別施設であることを距離でも確認
+  });
+
+  it('既存データ異常の修正: 宮城県「村田」の市区町村が郡名で切れていた不具合が直っている', () => {
+    // 一次情報・国交省一覧とも所在地は「柴田郡村田町」。'柴田郡村' は途中で切れた誤値だった。
+    const murata = STATIONS.find((s) => s.id === 'mne-18968');
+    expect(murata?.city).toBe('村田町');
   });
 });
