@@ -171,8 +171,9 @@ test.describe('周辺スポット検索', () => {
   });
 
   test('道の駅を選ぶ: 都道府県で絞り込むと、その県の道の駅だけが選べる（県を切り替えても前の県の駅が残らない）', async ({ page }) => {
-    // 全都道府県(中部追加後23件)を1件ずつ実操作で検証するため、既定の60秒では
-    // 環境負荷時に不足しうる（screens.spec.tsの複数画面撮影と同じ理由）
+    // 収録済みの全都道府県（件数はデータから動的に算出。地方追加のたびに増える）を
+    // 1件ずつ実操作で検証するため、既定の60秒では環境負荷時に不足しうる
+    // （screens.spec.tsの複数画面撮影と同じ理由）
     test.setTimeout(120_000);
     await page.goto('/');
     await closeBanners(page);
@@ -198,10 +199,14 @@ test.describe('周辺スポット検索', () => {
       // プレースホルダー("")を除き、選択中の県の駅だけが候補になっている
       const stationValues = optionValues.filter((v) => v !== '');
       expect(new Set(stationValues)).toEqual(new Set(expectedIds));
-      // 前の県（他県）の駅が一切残っていない
-      for (const otherId of otherIds) {
-        expect(stationValues).not.toContain(otherId);
-      }
+      // 前の県（他県）の駅が一切残っていないこと。
+      // 以前は他県の全駅を1件ずつexpect()していたが、これは「収録駅数×都道府県数」に
+      // 比例してPlaywrightのexpect呼び出しが数万回（989駅・35県で約3.3万回）に膨らみ、
+      // iPhoneではテスト自体が120秒を超える原因になっていた（実測で特定）。
+      // 判定内容は変えずに、素のJSで1回の比較へ集約する。
+      const otherIdSet = new Set(otherIds);
+      const leaked = stationValues.filter((v) => otherIdSet.has(v));
+      expect(leaked, `${pref}を選択中に他県の駅が残っている`).toEqual([]);
     }
   });
 
@@ -981,7 +986,14 @@ test.describe('周辺スポット検索', () => {
       btnBox!.y < bannerBox!.y + bannerBox!.height &&
       btnBox!.y + btnBox!.height > bannerBox!.y;
     expect(overlaps).toBe(false);
-    await page.getByTestId('poi-search-open').click({ timeout: 5000 });
+    // 収録駅が約1000件まで増えた結果、iPhone(WebKit)では初期描画のあとに
+    // アニメーションフレームが最大4秒ほど飛ぶことが実測で判明している
+    // （ボタンの矩形自体は120フレーム連続で完全に不動で、レイアウトは安定している）。
+    // Playwrightのクリックは「2フレーム連続で同じ矩形」を待つ仕様のため、このフレーム
+    // 飛びに当たると5秒では足りずタイムアウトすることがあった。本テストの主眼である
+    // 「バナーに覆われて押せない」不具合の回帰は直前の重なり判定とクリック成否で
+    // 担保されるため、判定内容は変えずに待ち時間だけ実測値に合わせて広げる。
+    await page.getByTestId('poi-search-open').click({ timeout: 30000 });
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
   });
 });

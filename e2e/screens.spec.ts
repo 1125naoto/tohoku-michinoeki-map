@@ -15,8 +15,12 @@ async function noHorizontalScroll(page: import('@playwright/test').Page) {
 }
 
 test('主要画面のスクリーンショット @smoke', async ({ page }, testInfo) => {
-  // 10画面近くを1テストで連続撮影するため、既定の60秒では負荷時に不足しうる
-  test.setTimeout(120_000);
+  // 20画面以上を1テストで連続撮影するうえ、収録駅が約1000件に増えたことで
+  // iPhone(WebKit)では1回の撮影・タップにそれぞれ数秒かかるようになったため、
+  // 120秒でも足りずテスト全体の制限時間で落ちることがあった（マーカーは正しく
+  // クリックできており、hit-target・アサーションはいずれも正常であることを実測で確認済み）。
+  // 収録地方が増えるほど撮影対象も重くなるため、実測値に対して余裕を持たせる。
+  test.setTimeout(300_000);
   const p = testInfo.project.name;
 
   // 1. 地図初期表示（訪問0件・初回は凡例+ホーム画面追加案内が表示された状態）
