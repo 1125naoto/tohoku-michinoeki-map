@@ -67,6 +67,10 @@ describe('道の駅マスターデータ', () => {
       // 最南=高知県土佐清水市、最西=愛媛県佐田岬半島、最東=徳島県阿南市)を
       // 踏まえてやや広めに取る。
       四国: { lat: [32.6, 34.7], lng: [132.1, 134.8] },
+      // 九州(福岡・佐賀・長崎・熊本・大分・宮崎・鹿児島)は離島を多く含む。
+      // 実データ(最南=鹿児島県徳之島、最北=福岡県宗像市、最西=長崎県五島列島、
+      // 最東=大分県佐伯市)を踏まえてやや広めに取る。沖縄は本Phaseの対象外。
+      九州: { lat: [27.0, 34.2], lng: [128.3, 132.3] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -134,8 +138,8 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108+四国91登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108 + 91);
+  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108+四国91+九州146登録、東北のみ+1施設）', () => {
+    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108 + 91 + 146);
     const adachi = STATIONS.filter((s) => s.name.includes('安達'));
     expect(adachi.length).toBe(2);
     expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
@@ -687,7 +691,7 @@ describe('四国追加（販売版・全国展開Phase 7）', () => {
   const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
   const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91の8地域、合計1080駅で共存する', () => {
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91の8地域が収録されている（九州追加後も既存8地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
     expect(kanto.length).toBe(130);
@@ -696,7 +700,6 @@ describe('四国追加（販売版・全国展開Phase 7）', () => {
     expect(kinki.length).toBe(158);
     expect(chugoku.length).toBe(108);
     expect(shikoku.length).toBe(91);
-    expect(STATIONS.length).toBe(1080);
   });
 
   it('四国は現在のproduct地方マスター定義どおり4県（徳島・香川・愛媛・高知）', () => {
@@ -790,5 +793,156 @@ describe('四国追加（販売版・全国展開Phase 7）', () => {
     // 一次情報・国交省一覧とも所在地は「柴田郡村田町」。'柴田郡村' は途中で切れた誤値だった。
     const murata = STATIONS.find((s) => s.id === 'mne-18968');
     expect(murata?.city).toBe('村田町');
+  });
+});
+
+describe('九州追加（販売版・全国展開Phase 8）', () => {
+  const KYUSHU_PREFS = ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県'] as const;
+  const kyushu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '九州');
+  const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
+  const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+  const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
+  const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
+  const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
+  const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
+  const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
+  const shikoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '四国');
+
+  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91・九州146の9地域、合計1226駅で共存する', () => {
+    expect(hokkaido.length).toBe(128);
+    expect(tohoku.length).toBe(182);
+    expect(kanto.length).toBe(130);
+    expect(hokuriku.length).toBe(105);
+    expect(chubu.length).toBe(178);
+    expect(kinki.length).toBe(158);
+    expect(chugoku.length).toBe(108);
+    expect(shikoku.length).toBe(91);
+    expect(kyushu.length).toBe(146);
+    expect(STATIONS.length).toBe(1226);
+  });
+
+  it('九州は現在のproduct地方マスター定義どおり7県（沖縄は含まない）', () => {
+    const prefsPresent = [...new Set(kyushu.map((s) => s.pref))].sort();
+    expect(prefsPresent).toEqual([...KYUSHU_PREFS].sort());
+    for (const p of KYUSHU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('九州');
+    // 沖縄は全国展開の最終Phaseで別途追加する
+    expect(PREFECTURES).not.toContain('沖縄県' as never);
+  });
+
+  it('県別内訳: 福岡17・佐賀11・長崎12・熊本38・大分26・宮崎19・鹿児島23（国交省一覧XLSの県別件数と一致）', () => {
+    const counts: Record<string, number> = {};
+    for (const s of kyushu) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
+    expect(counts).toEqual({
+      福岡県: 17,
+      佐賀県: 11,
+      長崎県: 12,
+      熊本県: 38,
+      大分県: 26,
+      宮崎県: 19,
+      鹿児島県: 23,
+    });
+  });
+
+  it('全駅で駅IDが衝突しない・座標が重複しない（九州追加後も9地域共存で成立）', () => {
+    const ids = STATIONS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const seen = new Map<string, string>();
+    for (const s of STATIONS) {
+      const key = `${s.lat.toFixed(5)},${s.lng.toFixed(5)}`;
+      expect(seen.has(key), `${s.name} と ${seen.get(key)} が同一座標`).toBe(false);
+      seen.set(key, s.name);
+    }
+  });
+
+  it('九州の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される', () => {
+    for (const s of kyushu) {
+      const n = toNationwideStation(s);
+      expect(n.regionId, s.name).toBe('kyushu');
+    }
+  });
+
+  it('九州facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of kyushu) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は九州追加後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('熊本県は連絡会の検索一覧が落としていた最新2駅を含む38駅で、国交省一覧と一致する', () => {
+    const kumamoto = kyushu.filter((s) => s.pref === '熊本県');
+    expect(kumamoto).toHaveLength(38);
+    const byId = new Map(kumamoto.map((s) => [s.id, s]));
+    // 検索カード一覧(36件)には無く、同ページの地図データにのみ存在した2駅
+    expect(byId.get('mne-22789')?.name).toBe('ウェルネスあらお'); // 第63回 R7.6 荒尾市
+    expect(byId.get('mne-23223')?.name).toBe('くらたけ天草戦国ミュージアム'); // 第65回 R8.8 天草市
+  });
+
+  it('開業前の駅はstatus=pre_openで区別され、それ以外は全てopen', () => {
+    const preOpen = kyushu.filter((s) => s.status === 'pre_open');
+    expect(preOpen.map((s) => s.id)).toEqual(['mne-23223']); // 2026年11月22日オープン予定
+    expect(preOpen[0]?.note).toBeTruthy();
+    for (const s of kyushu) expect(['open', 'pre_open']).toContain(s.status);
+    // 2026年6月5日オープン済みのウェルネスあらおはopen扱い
+    expect(kyushu.find((s) => s.id === 'mne-22789')?.status).toBe('open');
+  });
+
+  it('一次情報のホームページ欄の異常（空リンク・先頭空白）を正規化している', () => {
+    // 先頭に空白が入ったhrefはtrimして有効なURLにする
+    const suzuta = kyushu.find((s) => s.id === 'mne-19858');
+    expect(suzuta?.officialUrl).toBe('https://www.city.omura.nagasaki.jp/kankou/kanko/michinoeki/index.html');
+    // 空リンクはnull（空文字にしない）。既存地域と同じ規約。
+    for (const s of kyushu) {
+      expect(s.officialUrl === null || /^https?:\/\/\S+$/.test(s.officialUrl!), s.id).toBe(true);
+    }
+    expect(kyushu.filter((s) => s.officialUrl === null).length).toBe(14);
+  });
+
+  it('九州は離島を含むが、全駅が九州の実在範囲に収まる', () => {
+    for (const s of kyushu) {
+      expect(s.lat, `${s.name} lat`).toBeGreaterThan(27.0);
+      expect(s.lat, `${s.name} lat`).toBeLessThan(34.2);
+      expect(s.lng, `${s.name} lng`).toBeGreaterThan(128.3);
+      expect(s.lng, `${s.name} lng`).toBeLessThan(132.3);
+    }
+  });
+
+  it('市区町村が全駅で市区町村名になっている（郡名や地域名が入っていない）', () => {
+    for (const s of STATIONS) {
+      const where = `${s.id} ${s.name} ${s.address}`;
+      // 末尾が市区町村で終わる（「東信地域」「下高井郡」のような値を弾く）
+      expect(s.city, where).toMatch(/[市区町村]$/);
+      // 住所の都道府県の直後（郡があればその次）から、cityがそのまま続いている。
+      // 「余市町」「四日市市」のように名称の途中に市/町/村を含む自治体があるため、
+      // 正規表現で機械的に切り出すのではなく前方一致で突き合わせる。
+      const rest = s.address.slice(s.pref.length);
+      const afterGun = rest.replace(/^.{1,6}?郡/, '');
+      expect(rest.startsWith(s.city) || afterGun.startsWith(s.city), where).toBe(true);
+    }
+  });
+
+  it('既存データ異常の修正: cityに郡名・地域名が入っていた6件が直っている', () => {
+    // いずれも連絡会の個別駅ページと国交省「道の駅」一覧の所在地で裏取り済み
+    const byId = new Map(STATIONS.map((s) => [s.id, s]));
+    expect(byId.get('mne-19186')?.city).toBe('上田市'); // 旧: 東信地域
+    expect(byId.get('mne-19939')?.city).toBe('野沢温泉村'); // 旧: 下高井郡
+    expect(byId.get('mne-22056')?.city).toBe('長和町'); // 旧: 小県郡
+    expect(byId.get('mne-22371')?.city).toBe('佐久穂町'); // 旧: 南佐久郡
+    expect(byId.get('mne-19956')?.city).toBe('設楽町'); // 旧: 北設楽郡
+    expect(byId.get('mne-19957')?.city).toBe('矢掛町'); // 旧: 小田郡
+    expect(byId.get('mne-18968')?.city).toBe('村田町'); // Phase 7で修正済み(旧: 柴田郡村)
+  });
+
+  it('7県の代表駅が正しく収録されている（都市近郊・山間部・海沿い・半島・離島・観光地）', () => {
+    const byName = new Map(kyushu.map((s) => [s.name, s]));
+    expect(byName.get('むなかた')?.pref).toBe('福岡県'); // 宗像市・海沿い(最北)
+    expect(byName.get('かみみね')?.pref).toBe('佐賀県'); // 上峰町・都市近郊
+    expect(byName.get('遣唐使ふるさと館')?.pref).toBe('長崎県'); // 五島市・離島(最西)
+    expect(byName.get('阿蘇')?.pref).toBe('熊本県'); // 阿蘇市・山間部/観光地
+    expect(byName.get('かまえ')?.pref).toBe('大分県'); // 佐伯市・海沿い(最東)
+    expect(byName.get('青雲橋')?.pref).toBe('宮崎県'); // 日之影町・山間部
+    expect(byName.get('とくのしま')?.pref).toBe('鹿児島県'); // 徳之島町・離島(最南)
   });
 });
