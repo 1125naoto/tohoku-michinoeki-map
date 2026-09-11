@@ -1,8 +1,8 @@
 {
   "meta": {
     "verifiedAt": "2026-09-11",
-    "registrationCount": 1225,
-    "facilityCount": 1226,
+    "registrationCount": 1234,
+    "facilityCount": 1237,
     "countsByPref": {
       "青森県": 28,
       "岩手県": 39,
@@ -17,7 +17,7 @@
       "埼玉県": 21,
       "千葉県": 29,
       "東京都": 1,
-      "神奈川県": 5,
+      "神奈川県": 6,
       "新潟県": 42,
       "富山県": 16,
       "石川県": 26,
@@ -49,7 +49,8 @@
       "熊本県": 38,
       "大分県": 26,
       "宮崎県": 19,
-      "鹿児島県": 23
+      "鹿児島県": 23,
+      "沖縄県": 10
     },
     "sources": [
       {
@@ -107,6 +108,14 @@
       {
         "name": "国土交通省「道の駅」一覧 XLS（令和8年9月4日現在・全国1,234駅。九州7県の駅名・所在地・登録回の突合に使用）",
         "url": "https://www.mlit.go.jp/road/Michi-no-Eki/file/list.xlsx"
+      },
+      {
+        "name": "全国「道の駅」連絡会 都道府県別検索・個別駅ページ（沖縄県10駅ほか、全国再突合）",
+        "url": "https://www.michi-no-eki.jp/stations/search/56/all/all"
+      },
+      {
+        "name": "松田町公式（寄自然休養村管理センター／やどりきテラス～清流の里～の所在地）",
+        "url": "https://town.matsuda.kanagawa.jp/site/kankou-sub/center.html"
       }
     ],
     "notes": [
@@ -125,7 +134,13 @@
       "2026-09-11: 九州7県(福岡・佐賀・長崎・熊本・大分・宮崎・鹿児島)146駅を追加。全国「道の駅」連絡会 stations/search(都県コード49-55)の個別駅ページから座標・住所・公式サイトを直接取得（既存8地域と同一の一次情報源）。国土交通省「道の駅」一覧XLS(令和8年9月4日現在・全国1,234駅)と県別件数(福岡17・佐賀11・長崎12・熊本38・大分26・宮崎19・鹿児島23)・駅名を全件突合した。熊本県は連絡会の検索カード一覧が36件で最新2駅(ウェルネスあらお 第63回R7.6・くらたけ天草戦国ミュージアム 第65回R8.8)を落としていたため、同ページの地図データ(js-data-box)との和集合38件を採用し、国交省一覧の38件と一致することを確認した。facilitiesは今回未監査のため全件unknown扱い。",
       "2026-09-11: 「くらたけ天草戦国ミュージアム」(熊本県天草市, mne-23223)は第65回登録済みだが2026年11月22日オープン予定のため status=pre_open として収録（熊本日日新聞・RKK熊本放送・Car Watchの報道で確認）。「ウェルネスあらお」(熊本県荒尾市, mne-22789)は2026年6月5日オープン済みのため status=open。",
       "2026-09-11: 未解決の既存データ差分1件 — 神奈川県「やどりきテラス清流の里」(第65回登録 R8.8・足柄上郡松田町, michi-no-eki.jp では mne-23221)が本データに未収録。関東Phase収録時(2026-09-08)には連絡会の検索一覧に未反映だったことが原因で、現在は同一覧に掲載されている。九州追加とは無関係な関東側の差分のため本Phaseでは追加せず、全国データ投入完了後の「最新登録差分の全国横断取り込み」タスクで対応する。",
-      "2026-09-11: 既存データ修正6件 — cityに市区町村名ではなく郡名や地域名が入っていた駅を修正。上田 道と川の駅(mne-19186)「東信地域」→「上田市」、野沢温泉(mne-19939)「下高井郡」→「野沢温泉村」、和田宿ステーション(mne-22056)「小県郡」→「長和町」、八千穂高原(mne-22371)「南佐久郡」→「佐久穂町」、したら(mne-19956)「北設楽郡」→「設楽町」、山陽道やかげ宿(mne-19957)「小田郡」→「矢掛町」。いずれも全国「道の駅」連絡会の個別駅ページと国土交通省「道の駅」一覧の所在地で裏取り済み。Phase 7で修正した宮城県「村田」(city=「柴田郡村」)と同じ不具合クラス。変更はcityの1フィールドのみで、ID・座標・URL・status・facilities・保存キーは不変。"
+      "2026-09-11: 既存データ修正6件 — cityに市区町村名ではなく郡名や地域名が入っていた駅を修正。上田 道と川の駅(mne-19186)「東信地域」→「上田市」、野沢温泉(mne-19939)「下高井郡」→「野沢温泉村」、和田宿ステーション(mne-22056)「小県郡」→「長和町」、八千穂高原(mne-22371)「南佐久郡」→「佐久穂町」、したら(mne-19956)「北設楽郡」→「設楽町」、山陽道やかげ宿(mne-19957)「小田郡」→「矢掛町」。いずれも全国「道の駅」連絡会の個別駅ページと国土交通省「道の駅」一覧の所在地で裏取り済み。Phase 7で修正した宮城県「村田」(city=「柴田郡村」)と同じ不具合クラス。変更はcityの1フィールドのみで、ID・座標・URL・status・facilities・保存キーは不変。",
+      "2026-09-11: 沖縄県10駅を追加し、全国10地域(北海道・東北・関東・北陸・中部・近畿・中国・四国・九州・沖縄)が揃った。全国「道の駅」連絡会 stations/search(都県コード56)の個別駅ページから座標・住所・公式サイトを直接取得（既存9地域と同一の一次情報源）。全10駅とも沖縄本島に所在する。",
+      "2026-09-11: 全国再突合を実施。連絡会の都道府県別検索は1ページ36件でページングされ、カード一覧だけでは全件を取得できない（例: 北海道はカード36件に対し同ページの地図データは128件）ため、全47都道府県でカード一覧と地図データ(js-data-box)の和集合を取得し、国土交通省「道の駅」一覧XLS(令和8年9月4日現在・全国1,234駅)と突合した。結果、連絡会の和集合1,237施設 = 国交省の登録1,234件 + 上下線で2施設になる3登録(福島「安達」・静岡「宇津ノ谷峠」・和歌山「かつらぎ西」)で完全に整合し、本データも同じ1,237施設になった。なお連絡会の都県コードは秋田=12・岩手=13とJISコード順とは異なるため、サイト自身のリンクから対応表を取得して突合している。",
+      "2026-09-11: 全国再突合で判明した未収録駅1件を追加 — 神奈川県「やどりきテラス清流の里」(mne-23221, 足柄上郡松田町寄3415)。第65回登録(令和8年8月)で、関東Phase収録時(2026-09-08)には連絡会の検索一覧へ未反映だった。施設は寄自然休養村管理センターを改修したもので令和8年5月17日リニューアルオープン済み・営業中のため status=open。連絡会の個別ページは所在地が空欄のスタブのため、住所は松田町公式サイトで確認した。これにより関東は130→131施設になった。",
+      "2026-09-11: 既存データ補正 — 福島県「石川」(mlit-r64-ishikawa)の座標を、国土地理院の住所検索による概略値から、連絡会が新たに公開した個別ページ(stations/views/22977)の掲載値へ更新した（37.166725,140.429443 → 37.1664616,140.4297082）。本データは住所ジオコーディングのみによる座標を許容しないため。2026年9月18日グランドオープン予定で本日時点は開業前のため status=pre_open を維持。station IDはlocalStorage互換のため変更していない。",
+      "2026-09-11: 一次情報の住所欠落を1件補正 — 沖縄県「ぎのざ」(mne-19820)の所在地が「沖縄県国頭郡宜野座字漢那1633」と自治体名の「村」が欠落していたため、国交省「道の駅」一覧の所在地欄「国頭郡宜野座村」で裏取りのうえ「沖縄県国頭郡宜野座村字漢那1633」へ補完した。",
+      "2026-09-11: 既存データ修正1件 — 福井県「若狭熊川宿」(mne-19397)のofficialUrl末尾に空白が混入していたため除去した。国土交通省「道の駅」一覧のホームページ欄と一致することを確認済み。変更はofficialUrlの1フィールドのみ。"
     ]
   },
   "stations": [
@@ -6890,18 +6905,18 @@
       "pref": "福島県",
       "city": "石川町",
       "address": "福島県石川郡石川町字大橋58番地1",
-      "lat": 37.166725,
-      "lng": 140.429443,
+      "lat": 37.1664616,
+      "lng": 140.4297082,
       "status": "pre_open",
       "officialUrl": "https://www.town.ishikawa.fukushima.jp/",
       "infoUrl": "https://www.mlit.go.jp/report/press/road01_hh_002029.html",
-      "verifiedAt": "2026-09-02",
+      "verifiedAt": "2026-09-11",
       "sources": [
+        "https://www.michi-no-eki.jp/stations/views/22977",
         "https://www.mlit.go.jp/report/press/road01_hh_002029.html",
-        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html",
-        "https://msearch.gsi.go.jp/address-search/AddressSearch?q=福島県石川郡石川町字大橋58"
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
       ],
-      "note": "第64回登録(令和7年12月)・令和8年度オープン予定（開業前）",
+      "note": "第64回登録(令和7年12月)。2026年9月18日(金)グランドオープン予定のため本日時点は開業前。座標は全国「道の駅」連絡会が公開した個別ページ(stations/views/22977)の掲載値。station IDは収録時の mlit-r64-ishikawa のまま（localStorage互換のため変更しない）。",
       "facilities": {
         "rvPark": "no",
         "onsen": "no",
@@ -9418,6 +9433,26 @@
       ]
     },
     {
+      "id": "mne-23221",
+      "name": "やどりきテラス清流の里",
+      "kana": null,
+      "pref": "神奈川県",
+      "city": "松田町",
+      "address": "神奈川県足柄上郡松田町寄3415",
+      "lat": 35.4017068,
+      "lng": 139.1349317,
+      "status": "open",
+      "officialUrl": null,
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/23221",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/23221",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html",
+        "https://town.matsuda.kanagawa.jp/site/kankou-sub/center.html"
+      ],
+      "note": "第65回登録(令和8年8月)。施設は寄自然休養村管理センターを改修した「やどりきテラス～清流の里～」で令和8年5月17日リニューアルオープン済み（松田町公式）。連絡会の個別ページは所在地が空欄のため住所は松田町公式で確認した。"
+    },
+    {
       "id": "mne-19199",
       "name": "豊栄",
       "kana": null,
@@ -11029,7 +11064,7 @@
       "lat": 35.440696,
       "lng": 135.906077,
       "status": "open",
-      "officialUrl": "https://www.kkr.mlit.go.jp/road/michi_no_eki/contents/fukui/wakasakumakawasyuku.html ",
+      "officialUrl": "https://www.kkr.mlit.go.jp/road/michi_no_eki/contents/fukui/wakasakumakawasyuku.html",
       "infoUrl": "https://www.michi-no-eki.jp/stations/views/19397",
       "verifiedAt": "2026-09-09",
       "sources": [
@@ -23564,6 +23599,186 @@
       "verifiedAt": "2026-09-11",
       "sources": [
         "https://www.michi-no-eki.jp/stations/views/22373",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19813",
+      "name": "許田",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "名護市",
+      "address": "沖縄県名護市許田17-1",
+      "lat": 26.55206898,
+      "lng": 127.9693201,
+      "status": "open",
+      "officialUrl": "https://www.yanbaru-b.co.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19813",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19813",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19814",
+      "name": "おおぎみ　やんばるの森ビジターセンター",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "大宜味村",
+      "address": "沖縄県国頭郡大宜味村字津波95",
+      "lat": 26.66074,
+      "lng": 128.10218,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/oogimi.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19814",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19814",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19815",
+      "name": "ゆいゆい国頭",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "国頭村",
+      "address": "沖縄県国頭郡国頭村字奥間1605",
+      "lat": 26.7319805,
+      "lng": 128.1693617,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/kunigami.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19815",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19815",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19816",
+      "name": "かでな",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "嘉手納町",
+      "address": "沖縄県中頭郡嘉手納町字屋良1026-3",
+      "lat": 26.3681116,
+      "lng": 127.7741485,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/kadena.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19816",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19816",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19817",
+      "name": "喜名番所",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "読谷村",
+      "address": "沖縄県中頭郡読谷村字喜名1-2",
+      "lat": 26.3993416,
+      "lng": 127.758204,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/kinabansyo.html",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19817",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19817",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19818",
+      "name": "豊崎",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "豊見城市",
+      "address": "沖縄県豊見城市字豊崎3-39",
+      "lat": 26.1576946,
+      "lng": 127.6553335,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/toyosaki.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19818",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19818",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19819",
+      "name": "いとまん",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "糸満市",
+      "address": "沖縄県糸満市西崎町4-19-1",
+      "lat": 26.1384965,
+      "lng": 127.661156,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/itoman.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19819",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19819",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19820",
+      "name": "ぎのざ",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "宜野座村",
+      "address": "沖縄県国頭郡宜野座村字漢那1633",
+      "lat": 26.473874,
+      "lng": 127.952328,
+      "status": "open",
+      "officialUrl": "http://www.dc.ogb.go.jp/road/Michi-no-Eki/ginoza.htm",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19820",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19820",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19954",
+      "name": "サンライズひがし",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "東村",
+      "address": "沖縄県国頭郡東村字平良550番地23",
+      "lat": 26.630949,
+      "lng": 128.153532,
+      "status": "open",
+      "officialUrl": "http://www.sunrise-higashi.jp/index.jsp",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19954",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19954",
+        "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
+      ]
+    },
+    {
+      "id": "mne-19976",
+      "name": "やんばるパイナップルの丘 安波",
+      "kana": null,
+      "pref": "沖縄県",
+      "city": "国頭村",
+      "address": "沖縄県国頭郡国頭村字安波1089番地7",
+      "lat": 26.70462572,
+      "lng": 128.2802085,
+      "status": "open",
+      "officialUrl": "https://pineapple-hills.jp/",
+      "infoUrl": "https://www.michi-no-eki.jp/stations/views/19976",
+      "verifiedAt": "2026-09-11",
+      "sources": [
+        "https://www.michi-no-eki.jp/stations/views/19976",
         "https://www.mlit.go.jp/road/Michi-no-Eki/list.html"
       ]
     }

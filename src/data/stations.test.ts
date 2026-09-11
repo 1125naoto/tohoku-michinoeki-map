@@ -3,11 +3,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { STATIONS, DATA_META, countsByPref } from './index';
-import { PREFECTURES, AREA_BY_PREFECTURE } from '../types';
+import { PREFECTURES, AREA_BY_PREFECTURE, AREAS } from '../types';
 import { haversineKm } from '../lib/geo';
 import { stationSearchUrl } from '../lib/gmaps';
 import { isRoutable } from '../lib/planner';
 import { toNationwideStation } from '../product/station/nationwideStation';
+import { prefectureByName, REGION_NAMES } from '../product/region/regions';
 
 describe('道の駅マスターデータ', () => {
   it('IDの重複がない', () => {
@@ -71,6 +72,8 @@ describe('道の駅マスターデータ', () => {
       // 実データ(最南=鹿児島県徳之島、最北=福岡県宗像市、最西=長崎県五島列島、
       // 最東=大分県佐伯市)を踏まえてやや広めに取る。沖縄は本Phaseの対象外。
       九州: { lat: [27.0, 34.2], lng: [128.3, 132.3] },
+      // 沖縄(本島)。収録10駅はいずれも沖縄本島に所在する。
+      沖縄: { lat: [26.0, 26.9], lng: [127.5, 128.4] },
     };
     for (const s of STATIONS) {
       const region = AREA_BY_PREFECTURE[s.pref];
@@ -138,11 +141,16 @@ describe('道の駅マスターデータ', () => {
     }
   });
 
-  it('国交省の登録数と施設数の関係が説明されている（安達上下線=東北181+北海道128+関東130+北陸105+中部178+近畿158+中国108+四国91+九州146登録、東北のみ+1施設）', () => {
-    expect(DATA_META.registrationCount).toBe(181 + 128 + 130 + 105 + 178 + 158 + 108 + 91 + 146);
-    const adachi = STATIONS.filter((s) => s.name.includes('安達'));
-    expect(adachi.length).toBe(2);
-    expect(STATIONS.length).toBe(DATA_META.registrationCount + 1);
+  it('国交省の登録数と施設数の関係が説明されている（全国1,234登録 + 上下線で2施設になる3登録 = 1,237施設）', () => {
+    // 全国再突合の結果、国土交通省「道の駅」一覧(令和8年9月4日現在)の登録数は1,234件。
+    // うち3件は上下線などで施設が2つに分かれており、本データは施設単位で保持する。
+    expect(DATA_META.registrationCount).toBe(1234);
+    const dualFacility = ['安達', '宇津ノ谷峠', 'かつらぎ西'];
+    for (const name of dualFacility) {
+      expect(STATIONS.filter((s) => s.name.includes(name)), name).toHaveLength(2);
+    }
+    expect(STATIONS.length).toBe(DATA_META.registrationCount + dualFacility.length);
+    expect(STATIONS.length).toBe(DATA_META.facilityCount);
   });
 
   it('ダミー・TODO・仮データ・placeholderが残っていない', () => {
@@ -294,10 +302,10 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
   const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
   const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
 
-  it('北海道128・東北182・関東130がそれぞれ収録されている', () => {
+  it('北海道128・東北182・関東131がそれぞれ収録されている', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
   });
 
   it('関東は現在のproduct地方マスター定義どおり7都県（茨城・栃木・群馬・埼玉・千葉・東京・神奈川）', () => {
@@ -306,7 +314,7 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
     for (const p of KANTO_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('関東');
   });
 
-  it('都県別内訳: 茨城16・栃木25・群馬33・埼玉21・千葉29・東京1・神奈川5', () => {
+  it('都県別内訳: 茨城16・栃木25・群馬33・埼玉21・千葉29・東京1・神奈川6（神奈川はPhase 9の全国再突合で5→6）', () => {
     const counts: Record<string, number> = {};
     for (const s of kanto) counts[s.pref] = (counts[s.pref] ?? 0) + 1;
     expect(counts).toEqual({
@@ -316,7 +324,7 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
       埼玉県: 21,
       千葉県: 29,
       東京都: 1,
-      神奈川県: 5,
+      神奈川県: 6,
     });
   });
 
@@ -358,10 +366,10 @@ describe('北陸追加（販売版・全国展開Phase 3）', () => {
   const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
   const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
 
-  it('北海道128・東北182・関東130・北陸105の4地域が収録されている（中部追加後も既存4地域件数は不変）', () => {
+  it('北海道128・東北182・関東131・北陸105の4地域が収録されている（中部追加後も既存4地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
   });
 
@@ -439,10 +447,10 @@ describe('中部追加（販売版・全国展開Phase 4）', () => {
   const kanto = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '関東');
   const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
 
-  it('北海道128・東北182・関東130・北陸105・中部178の5地域が収録されている（近畿追加後も既存5地域件数は不変）', () => {
+  it('北海道128・東北182・関東131・北陸105・中部178の5地域が収録されている（近畿追加後も既存5地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
   });
@@ -512,10 +520,10 @@ describe('近畿追加（販売版・全国展開Phase 5）', () => {
   const hokuriku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '北陸');
   const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158の6地域が収録されている（中国追加後も既存6地域件数は不変）', () => {
+  it('北海道128・東北182・関東131・北陸105・中部178・近畿158の6地域が収録されている（中国追加後も既存6地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
@@ -603,10 +611,10 @@ describe('中国地方追加（販売版・全国展開Phase 6）', () => {
   const chubu = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中部');
   const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108の7地域が収録されている（四国追加後も既存7地域件数は不変）', () => {
+  it('北海道128・東北182・関東131・北陸105・中部178・近畿158・中国108の7地域が収録されている（四国追加後も既存7地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
@@ -691,10 +699,10 @@ describe('四国追加（販売版・全国展開Phase 7）', () => {
   const kinki = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '近畿');
   const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91の8地域が収録されている（九州追加後も既存8地域件数は不変）', () => {
+  it('北海道128・東北182・関東131・北陸105・中部178・近畿158・中国108・四国91の8地域が収録されている（九州追加後も既存8地域件数は不変）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
@@ -808,25 +816,24 @@ describe('九州追加（販売版・全国展開Phase 8）', () => {
   const chugoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '中国');
   const shikoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '四国');
 
-  it('北海道128・東北182・関東130・北陸105・中部178・近畿158・中国108・四国91・九州146の9地域、合計1226駅で共存する', () => {
+  it('北海道128・東北182・北陸105・中部178・近畿158・中国108・四国91・九州146の各地域件数は沖縄追加後も不変（関東は全国再突合で130→131）', () => {
     expect(hokkaido.length).toBe(128);
     expect(tohoku.length).toBe(182);
-    expect(kanto.length).toBe(130);
+    expect(kanto.length).toBe(131); // 全国再突合(Phase 9)で「やどりきテラス清流の里」を追加
     expect(hokuriku.length).toBe(105);
     expect(chubu.length).toBe(178);
     expect(kinki.length).toBe(158);
     expect(chugoku.length).toBe(108);
     expect(shikoku.length).toBe(91);
     expect(kyushu.length).toBe(146);
-    expect(STATIONS.length).toBe(1226);
   });
 
   it('九州は現在のproduct地方マスター定義どおり7県（沖縄は含まない）', () => {
     const prefsPresent = [...new Set(kyushu.map((s) => s.pref))].sort();
     expect(prefsPresent).toEqual([...KYUSHU_PREFS].sort());
     for (const p of KYUSHU_PREFS) expect(AREA_BY_PREFECTURE[p]).toBe('九州');
-    // 沖縄は全国展開の最終Phaseで別途追加する
-    expect(PREFECTURES).not.toContain('沖縄県' as never);
+    // 沖縄はPhase 9で別地方として追加済み（九州には含めない）
+    expect(AREA_BY_PREFECTURE['沖縄県']).toBe('沖縄');
   });
 
   it('県別内訳: 福岡17・佐賀11・長崎12・熊本38・大分26・宮崎19・鹿児島23（国交省一覧XLSの県別件数と一致）', () => {
@@ -944,5 +951,109 @@ describe('九州追加（販売版・全国展開Phase 8）', () => {
     expect(byName.get('かまえ')?.pref).toBe('大分県'); // 佐伯市・海沿い(最東)
     expect(byName.get('青雲橋')?.pref).toBe('宮崎県'); // 日之影町・山間部
     expect(byName.get('とくのしま')?.pref).toBe('鹿児島県'); // 徳之島町・離島(最南)
+  });
+});
+
+describe('沖縄追加と全国最新版突合（販売版・全国展開Phase 9）', () => {
+  const okinawa = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '沖縄');
+  const byArea = (a: string) => STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === a);
+
+  it('全国10地域がそろい、合計1237施設で共存する', () => {
+    expect(byArea('北海道')).toHaveLength(128);
+    expect(byArea('東北')).toHaveLength(182);
+    expect(byArea('関東')).toHaveLength(131); // 全国再突合で「やどりきテラス清流の里」を追加
+    expect(byArea('北陸')).toHaveLength(105);
+    expect(byArea('中部')).toHaveLength(178);
+    expect(byArea('近畿')).toHaveLength(158);
+    expect(byArea('中国')).toHaveLength(108);
+    expect(byArea('四国')).toHaveLength(91);
+    expect(byArea('九州')).toHaveLength(146);
+    expect(okinawa).toHaveLength(10);
+    expect(STATIONS).toHaveLength(1237);
+  });
+
+  it('AREASとPREFECTURESが全国47都道府県・10地方をカバーし、product地方マスターと一致する', () => {
+    expect(AREAS).toHaveLength(10);
+    expect(AREAS[AREAS.length - 1]).toBe('沖縄');
+    expect(PREFECTURES).toHaveLength(47);
+    // 全都道府県が地方に解決でき、地方マスター(product/region)と食い違わない
+    for (const p of PREFECTURES) {
+      const area = AREA_BY_PREFECTURE[p];
+      expect(AREAS, p).toContain(area);
+      const info = prefectureByName(p);
+      expect(info, p).toBeDefined();
+      expect(REGION_NAMES[info!.regionId], p).toBe(area);
+    }
+    // 収録データ側にも47都道府県すべてが存在する（未収録県ゼロ）
+    const prefsInData = new Set(STATIONS.map((s) => s.pref));
+    expect(prefsInData.size).toBe(47);
+  });
+
+  it('沖縄は1県のみで、収録10駅はすべて沖縄本島の範囲に収まる', () => {
+    expect([...new Set(okinawa.map((s) => s.pref))]).toEqual(['沖縄県']);
+    for (const s of okinawa) {
+      expect(s.lat, s.name).toBeGreaterThan(26.0);
+      expect(s.lat, s.name).toBeLessThan(26.9);
+      expect(s.lng, s.name).toBeGreaterThan(127.5);
+      expect(s.lng, s.name).toBeLessThan(128.4);
+      expect(toNationwideStation(s).regionId).toBe('okinawa');
+    }
+  });
+
+  it('沖縄facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+    for (const s of okinawa) expect(s.facilities, s.id).toBeUndefined();
+  });
+
+  it('東北facility確定値(RV=4・温泉=21・BOTH=2)は沖縄追加・全国再突合後も不変', () => {
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+  });
+
+  it('全国再突合で追加した神奈川県「やどりきテラス清流の里」が正しく収録されている', () => {
+    const yadoriki = STATIONS.find((s) => s.id === 'mne-23221');
+    expect(yadoriki).toBeDefined();
+    expect(yadoriki!.pref).toBe('神奈川県');
+    expect(yadoriki!.city).toBe('松田町');
+    expect(yadoriki!.address).toBe('神奈川県足柄上郡松田町寄3415');
+    expect(yadoriki!.status).toBe('open'); // 令和8年5月17日リニューアルオープン済み
+    expect(yadoriki!.note).toBeTruthy();
+  });
+
+  it('福島県「石川」は開業前のままで、座標が一次情報値へ更新され、station IDは変わっていない', () => {
+    const ishikawa = STATIONS.find((s) => s.id === 'mlit-r64-ishikawa');
+    expect(ishikawa).toBeDefined(); // localStorage互換のためIDは変更しない
+    expect(ishikawa!.status).toBe('pre_open'); // 2026年9月18日グランドオープン予定
+    expect(ishikawa!.lat).toBeCloseTo(37.1664616, 6);
+    expect(ishikawa!.lng).toBeCloseTo(140.4297082, 6);
+    expect(ishikawa!.sources.some((u) => u.includes('michi-no-eki.jp/stations/views/22977'))).toBe(true);
+  });
+
+  it('開業前はこの2駅のみで、ルート候補から除外される', () => {
+    const preOpen = STATIONS.filter((s) => s.status === 'pre_open');
+    expect(preOpen.map((s) => s.id).sort()).toEqual(['mlit-r64-ishikawa', 'mne-23223'].sort());
+    for (const s of preOpen) expect(isRoutable(s)).toBe(false);
+  });
+
+  it('一次情報の住所欠落（自治体名の「村」欠落）を補正している', () => {
+    const ginoza = STATIONS.find((s) => s.id === 'mne-19820');
+    expect(ginoza!.address).toBe('沖縄県国頭郡宜野座村字漢那1633');
+    expect(ginoza!.city).toBe('宜野座村');
+  });
+
+  it('URLに前後の空白が混入していない（福井「若狭熊川宿」で実際に発生していた）', () => {
+    for (const s of STATIONS) {
+      expect(s.infoUrl, s.id).toBe(s.infoUrl.trim());
+      if (s.officialUrl) expect(s.officialUrl, s.id).toBe(s.officialUrl.trim());
+    }
+  });
+
+  it('沖縄の代表駅が正しく収録されている（都市近郊・観光地・海沿い・やんばる）', () => {
+    const byName = new Map(okinawa.map((s) => [s.name, s]));
+    expect(byName.get('許田')?.city).toBe('名護市'); // 高速出口近く・観光拠点
+    expect(byName.get('豊崎')?.city).toBe('豊見城市'); // 那覇近郊
+    expect(byName.get('いとまん')?.city).toBe('糸満市'); // 海沿い・日本最南端級の市
+    expect(byName.get('ゆいゆい国頭')?.city).toBe('国頭村'); // やんばる
+    expect(byName.get('かでな')?.city).toBe('嘉手納町'); // 都市近郊
   });
 });

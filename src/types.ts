@@ -118,11 +118,12 @@ export const PREFECTURES = [
   '大分県',
   '宮崎県',
   '鹿児島県',
+  '沖縄県',
 ] as const;
 export type Prefecture = (typeof PREFECTURES)[number];
 
 /** 収録済みの地方（表示順）。今後の都道府県追加に合わせて増やす。 */
-export const AREAS = ['北海道', '東北', '関東', '北陸', '中部', '近畿', '中国', '四国', '九州'] as const;
+export const AREAS = ['北海道', '東北', '関東', '北陸', '中部', '近畿', '中国', '四国', '九州', '沖縄'] as const;
 export type AreaName = (typeof AREAS)[number];
 
 /** 都道府県が属する地方。product/region/regions.ts の地方区分マスターと整合させる。 */
@@ -173,6 +174,7 @@ export const AREA_BY_PREFECTURE: Record<Prefecture, AreaName> = {
   大分県: '九州',
   宮崎県: '九州',
   鹿児島県: '九州',
+  沖縄県: '沖縄',
 };
 
 export interface StationDataFile {
