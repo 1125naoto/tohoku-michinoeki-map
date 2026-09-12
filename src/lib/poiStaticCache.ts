@@ -17,6 +17,24 @@ export interface StaticPoiCacheFile {
   /** scripts/fetch_poi_cache.py が生成した日時（ISO文字列） */
   generatedAt: string;
   pois: Poi[];
+  /**
+   * 以下はPhase 11（全国POI static cache生成）で追加した後方互換フィールド。
+   * 旧ビルド時代に生成されたファイルには存在しない場合があるため、すべて省略可能とし、
+   * 読み込み側（loadStaticPoiCache）はこれらの有無にかかわらず動作すること。
+   */
+  /** 生成時点のPoiスキーマ版（src/lib/poi.ts の POI_SCHEMA_VERSION） */
+  schemaVersion?: number;
+  source?: 'overpass';
+  /** 生成スクリプトのクエリ構造の版（v1=単一クエリ、v2=food/other分離） */
+  queryVersion?: number;
+  /**
+   * 'ok' = 正常応答（0件の場合を含む、本当にAPIから取得できた結果）。
+   * ファイルが存在すること自体が取得成功を意味するため、通信が本当に失敗した
+   * 駅はそもそもファイルが生成されない（0件を装った偽の成功結果を作らない）。
+   */
+  status?: 'ok';
+  /** 実際に応答を返した接続先（診断用） */
+  endpointsUsed?: string[];
 }
 
 /**

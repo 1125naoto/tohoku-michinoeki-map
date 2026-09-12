@@ -3,12 +3,25 @@ name: 周辺スポット事前キャッシュの定期更新
 # scripts/fetch_poi_cache.py を実行し、public/data/poi/*.json を最新のOverpassデータで
 # 再生成する。変更があればmainへコミットし、既存のdeploy.ymlが自動的に公開へ反映する。
 # 秘密鍵・APIキーは不要（Overpassは無料公開API）。
+#
+# 全国1,237施設規模になったため、Phase 11（全国POI static cache生成）で
+# 「毎週全駅をゼロから再取得する」方式から「差分更新」方式へ変更した:
+#   1. 前回失敗した駅を少数だけ優先的に再試行する（無限リトライはしない）
+#   2. 未生成 or 60日超の駅を、1回の実行あたり上限件数まで古い順に処理する
+# 1回で全駅は処理しきれない場合があるが、複数週にわたって均等に更新される
+# （scripts/fetch_poi_cache.py --stats で進捗を確認できる）。
+# GitHub Actionsの時間制限内で確実に完走することを優先し、件数上限を設けている。
 
 on:
   schedule:
     # 毎週月曜 03:00 JST（日曜 18:00 UTC）。全国展開後はデータ規模に応じて頻度を見直す。
     - cron: '0 18 * * 0'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      max_stations:
+        description: '今回の実行で処理する駅数の上限（差分更新分）'
+        required: false
+        default: '400'
 
 permissions:
   contents: write
@@ -16,6 +29,9 @@ permissions:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # 想定所要時間: 400駅 × 約6秒(通信+レート制限用スリープ) ≈ 40分。既定タイムアウト(360分)に十分収まるが、
+    # Overpass側の不調で個々の接続先が遅延した場合の余裕として明示的に上限を設ける。
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,17 +41,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 周辺スポットキャッシュを再取得（全駅。一部失敗しても取得できた分は反映する）
-        run: python scripts/fetch_poi_cache.py || true
+      - name: 前回失敗した駅を少数だけ再試行（無限リトライはしない）
+        run: python scripts/fetch_poi_cache.py --retry-failed --max-stations 50 || true
+
+      - name: 未生成/期限切れの駅を差分更新（1回の実行では上限件数までにとどめる）
+        run: >
+          python scripts/fetch_poi_cache.py
+          --stale-days 60
+          --max-stations "${{ github.event.inputs.max_stations || '400' }}"
+          || true
+
+      - name: 更新結果のサマリを表示
+        run: python scripts/fetch_poi_cache.py --stats
 
       - name: 変更があればmainへコミット
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/data/poi/
+          git add public/data/poi/ data/poi_cache_checkpoint.json
           if git diff --cached --quiet; then
             echo "変更なし"
           else
-            git commit -m "周辺スポット事前キャッシュを更新 (自動生成)"
+            git commit -m "周辺スポット事前キャッシュを更新 (自動生成・差分更新)"
             git push
           fi

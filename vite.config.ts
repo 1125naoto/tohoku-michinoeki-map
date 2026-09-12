@@ -139,6 +139,21 @@ export default defineConfig({
             urlPattern: /^https:\/\/msearch\.gsi\.go\.jp\/.*/,
             handler: 'NetworkOnly',
           },
+          {
+            // 周辺スポット事前生成キャッシュ(public/data/poi/*.json)。
+            // 全国1,237施設ぶん存在しうるため、globPatternsでのインストール時
+            // 一括プリキャッシュは絶対に行わない（PWAインストールサイズが肥大化する）。
+            // 代わりにオンデマンド取得+StaleWhileRevalidateとし、初回訪問時は
+            // 通信を待たせつつ、2回目以降の同一駅アクセスは即時表示＋裏で更新する。
+            urlPattern: ({ url }) => url.pathname.includes('/data/poi/') && url.pathname.endsWith('.json'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'poi-static-cache',
+              // 全国1,237駅ぶん端末に溜まり続けないよう、直近に見た駅だけ保持する
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),

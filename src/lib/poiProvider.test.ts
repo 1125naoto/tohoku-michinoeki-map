@@ -45,6 +45,23 @@ describe('StaticOsmPoiProvider（道の駅起点の事前生成静的キャッ�
     expect(result.failed).toBe(true);
     expect(result.pois).toEqual([]);
   });
+
+  it('生成スクリプトが「正常応答・本当に0件」を保存した場合（status:"ok", pois:[]）も、APIの取得失敗と同じくfailed:trueとしてライブ検索へ進む', async () => {
+    // static-osm providerの役割は「事前生成データがあれば優先表示する」ことであり、
+    // 0件という結果自体は現地の実情が変わっている可能性があるため、静的な0件を
+    // そのまま確定表示せずライブ検索で再確認させる（既存の意図的な設計。今回は
+    // 追加したschema("status":"ok")がこの挙動を壊さないことを回帰確認する）。
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ stationId: 'mne-2', lat: 38, lng: 140, radiusM: 10000, generatedAt: '2026', status: 'ok', pois: [] }),
+      }),
+    );
+    const result = await new StaticOsmPoiProvider('mne-2').search({ lat: 38, lng: 140 }, 3000);
+    expect(result.failed).toBe(true);
+    expect(result.pois).toEqual([]);
+  });
 });
 
 describe('OverpassPoiProvider（ライブ検索。現在地検索は必ずこれを使う）', () => {
