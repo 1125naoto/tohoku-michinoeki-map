@@ -10,6 +10,10 @@ import { isRoutable } from '../lib/planner';
 import { toNationwideStation } from '../product/station/nationwideStation';
 import { prefectureByName, REGION_NAMES } from '../product/region/regions';
 
+/** 東北6県の確定値(RVパーク4・温泉21・両方2)を保護するための共通スコープ。
+ * Phase 10の全国監査後も東北分は不変であることを各Phaseのブロックで検証する。 */
+const TOHOKU_STATIONS = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
+
 describe('道の駅マスターデータ', () => {
   it('IDの重複がない', () => {
     const ids = STATIONS.map((s) => s.id);
@@ -241,17 +245,24 @@ describe('施設属性データ（RVパーク・温泉）の再発防止フィ�
     expect(tohoku.length).toBe(182);
   });
 
-  it('北海道はfacilities未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
+  it('北海道もPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
     const hokkaido = STATIONS.filter((s) => s.pref === '北海道');
     expect(hokkaido.length).toBe(128);
-    for (const s of hokkaido) expect(s.facilities, s.id).toBeUndefined();
+    for (const s of hokkaido) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
-  it('RV_PARK_COUNT=4・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（第3回監査後の確定値、北海道追加後も東北分の値は不変）', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'unknown' || s.facilities?.onsen === 'unknown')).toHaveLength(0);
+  it('東北のRV_PARK_COUNT=4・ONSEN_COUNT=21・BOTH_COUNT=2・UNKNOWN=0（第3回監査の確定値はPhase 10の全国監査後も不変）', () => {
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    // 東北は施設条件検索で悉皆確認済みのため、unknownは1件も残らない
+    expect(
+      TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'unknown' || s.facilities?.onsen === 'unknown')
+    ).toHaveLength(0);
   });
 });
 
@@ -335,14 +346,18 @@ describe('関東追加（販売版・全国展開Phase 2）', () => {
     }
   });
 
-  it('関東facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of kanto) expect(s.facilities, s.id).toBeUndefined();
+  it('関東facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of kanto) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は関東追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('都市部・郊外・山間部を含む代表駅が正しく収録されている', () => {
@@ -420,14 +435,18 @@ describe('北陸追加（販売版・全国展開Phase 3）', () => {
     }
   });
 
-  it('北陸facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of hokuriku) expect(s.facilities, s.id).toBeUndefined();
+  it('北陸facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of hokuriku) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は北陸追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('4県の代表駅が正しく収録されている', () => {
@@ -491,14 +510,18 @@ describe('中部追加（販売版・全国展開Phase 4）', () => {
     }
   });
 
-  it('中部facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of chubu) expect(s.facilities, s.id).toBeUndefined();
+  it('中部facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of chubu) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は中部追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('5県の代表駅が正しく収録されている（都市近郊・山間部・観光地・海側・内陸）', () => {
@@ -567,14 +590,18 @@ describe('近畿追加（販売版・全国展開Phase 5）', () => {
     }
   });
 
-  it('近畿facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of kinki) expect(s.facilities, s.id).toBeUndefined();
+  it('近畿facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of kinki) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は近畿追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('三重県は今回の全国化マスター(product/region/regions.ts)どおり近畿のまま（中部へは移動しない）', () => {
@@ -657,14 +684,18 @@ describe('中国地方追加（販売版・全国展開Phase 6）', () => {
     }
   });
 
-  it('中国地方facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of chugoku) expect(s.facilities, s.id).toBeUndefined();
+  it('中国地方facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of chugoku) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は中国追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('一次情報側の住所表記揺れ（都道府県欠落・市区町村欠落・URLプレースホルダー）を正規化している', () => {
@@ -745,14 +776,18 @@ describe('四国追加（販売版・全国展開Phase 7）', () => {
     }
   });
 
-  it('四国facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of shikoku) expect(s.facilities, s.id).toBeUndefined();
+  it('四国facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of shikoku) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は四国追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('一次情報側の住所欠落（都道府県名なし）を国交省一覧で裏取りして補完している', () => {
@@ -868,14 +903,18 @@ describe('九州追加（販売版・全国展開Phase 8）', () => {
     }
   });
 
-  it('九州facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of kyushu) expect(s.facilities, s.id).toBeUndefined();
+  it('九州facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of kyushu) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は九州追加後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('熊本県は連絡会の検索一覧が落としていた最新2駅を含む38駅で、国交省一覧と一致する', () => {
@@ -1000,14 +1039,18 @@ describe('沖縄追加と全国最新版突合（販売版・全国展開Phase 9
     }
   });
 
-  it('沖縄facilitiesは今回未監査のためundefined（=unknown扱い、no扱いにしない）', () => {
-    for (const s of okinawa) expect(s.facilities, s.id).toBeUndefined();
+  it('沖縄facilitiesはPhase 10の全国監査で確定済み（値はyes/no/unknownのいずれか、undefinedではない）', () => {
+    for (const s of okinawa) {
+      expect(s.facilities, s.id).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+    }
   });
 
   it('東北facility確定値(RV=4・温泉=21・BOTH=2)は沖縄追加・全国再突合後も不変', () => {
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
-    expect(STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
-    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(4);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(21);
+    expect(TOHOKU_STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(2);
   });
 
   it('全国再突合で追加した神奈川県「やどりきテラス清流の里」が正しく収録されている', () => {
@@ -1055,5 +1098,100 @@ describe('沖縄追加と全国最新版突合（販売版・全国展開Phase 9
     expect(byName.get('いとまん')?.city).toBe('糸満市'); // 海沿い・日本最南端級の市
     expect(byName.get('ゆいゆい国頭')?.city).toBe('国頭村'); // やんばる
     expect(byName.get('かでな')?.city).toBe('嘉手納町'); // 都市近郊
+  });
+});
+
+describe('全国facility監査（販売版・全国横断Phase 10）', () => {
+  const byArea = (a: string) => STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === a);
+  const status = (f: 'rvPark' | 'onsen', v: string) => STATIONS.filter((s) => s.facilities?.[f] === v);
+
+  it('全1237施設がfacility監査レコードを持ち、値はyes/no/unknownのいずれか', () => {
+    expect(STATIONS).toHaveLength(1237);
+    for (const s of STATIONS) {
+      expect(s.facilities, `${s.id} ${s.name}`).toBeDefined();
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.rvPark);
+      expect(['yes', 'no', 'unknown'], s.id).toContain(s.facilities!.onsen);
+      // 監査日と根拠URLを必ず持つ（yes/noを根拠なしで埋めない）
+      expect(s.facilities!.lastChecked, s.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
+  it('全国集計: RVパーク yes=30 / 温泉 yes=151 / 両方=10', () => {
+    expect(status('rvPark', 'yes')).toHaveLength(30);
+    expect(status('onsen', 'yes')).toHaveLength(151);
+    expect(STATIONS.filter((s) => s.facilities?.rvPark === 'yes' && s.facilities?.onsen === 'yes')).toHaveLength(10);
+  });
+
+  it('unknownは温泉24件のみで、RVパークにunknownは残っていない', () => {
+    expect(status('rvPark', 'unknown')).toHaveLength(0);
+    expect(status('onsen', 'unknown')).toHaveLength(24);
+    // unknownを含む駅はすべて、連絡会が施設情報自体を提供していない駅
+    for (const s of status('onsen', 'unknown')) {
+      expect(s.facilities!.onsen, s.id).toBe('unknown');
+    }
+  });
+
+  it('unknownはno扱いにしない（施設フィルターの母集団に入らない）', () => {
+    const unknowns = status('onsen', 'unknown');
+    expect(unknowns.length).toBeGreaterThan(0);
+    for (const s of unknowns) {
+      expect(s.facilities!.onsen).not.toBe('no');
+      expect(s.facilities!.onsen).not.toBe('yes');
+    }
+  });
+
+  it('RVパークyesは道の駅の敷地内・一体運用のみ（隣接・近隣はno + relationで根拠を残す）', () => {
+    for (const s of status('rvPark', 'yes')) {
+      // yesの駅はrelationがintegratedか、未設定でも根拠URLを持つ
+      if (s.facilities!.rvParkRelation) expect(['integrated', 'onsite'], s.id).toContain(s.facilities!.rvParkRelation);
+      expect(s.facilities!.source, s.id).toMatch(/^https?:\/\//);
+    }
+    // 隣接・近隣として明示的にnoにした駅が存在し、false positiveになっていない
+    const adjacent = STATIONS.filter((s) => s.facilities?.rvParkRelation === 'adjacent' || s.facilities?.rvParkRelation === 'nearby');
+    expect(adjacent.length).toBeGreaterThan(0);
+    for (const s of adjacent) expect(s.facilities!.rvPark, s.id).toBe('no');
+  });
+
+  it('地方別のfacility集計が全国合計と一致する', () => {
+    const areas = ['北海道', '東北', '関東', '北陸', '中部', '近畿', '中国', '四国', '九州', '沖縄'];
+    let rv = 0;
+    let onsen = 0;
+    for (const a of areas) {
+      rv += byArea(a).filter((s) => s.facilities?.rvPark === 'yes').length;
+      onsen += byArea(a).filter((s) => s.facilities?.onsen === 'yes').length;
+    }
+    expect(rv).toBe(status('rvPark', 'yes').length);
+    expect(onsen).toBe(status('onsen', 'yes').length);
+  });
+
+  it('代表例: 全国監査で新たに確定したRVパーク併設駅', () => {
+    const byId = new Map(STATIONS.map((s) => [s.id, s]));
+    expect(byId.get('mne-19704')?.facilities?.rvPark).toBe('yes'); // むなかた(福岡)
+    expect(byId.get('mne-19093')?.facilities?.rvPark).toBe('yes'); // たくみの里(群馬)
+    expect(byId.get('mne-19590')?.facilities?.rvPark).toBe('yes'); // 阿武町(山口)
+    expect(byId.get('mne-18815')?.facilities?.rvPark).toBe('yes'); // 阿寒丹頂の里(北海道)
+  });
+
+  it('代表例: 隣接するだけのRVパークはyesにしない', () => {
+    const byId = new Map(STATIONS.map((s) => [s.id, s]));
+    // 道の駅保田小学校: RVパークは「隣接する旧鋸南幼稚園」を再利用した別敷地
+    expect(byId.get('mne-19827')?.facilities?.rvPark).toBe('no');
+    expect(byId.get('mne-19827')?.facilities?.rvParkRelation).toBe('adjacent');
+    // 道の駅さくらの里きすき: RVパークは「隣接する緑地公園内」
+    expect(byId.get('mne-19545')?.facilities?.rvPark).toBe('no');
+    expect(byId.get('mne-19545')?.facilities?.rvParkRelation).toBe('adjacent');
+  });
+
+  it('代表例: 温浴施設そのものを道の駅化した駅は温泉yes', () => {
+    const konda = STATIONS.find((s) => s.id === 'mne-23222'); // こんだ温泉ぬくもりの郷(兵庫)
+    expect(konda?.facilities?.onsen).toBe('yes');
+  });
+
+  it('沖縄は10施設すべてが監査済みで、RVパーク・温泉ともyesはない', () => {
+    const okinawa = byArea('沖縄');
+    expect(okinawa).toHaveLength(10);
+    expect(okinawa.filter((s) => s.facilities?.rvPark === 'yes')).toHaveLength(0);
+    expect(okinawa.filter((s) => s.facilities?.onsen === 'yes')).toHaveLength(0);
+    for (const s of okinawa) expect(s.facilities, s.id).toBeDefined();
   });
 });

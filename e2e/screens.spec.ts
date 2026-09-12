@@ -98,6 +98,8 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
     ['mne-19033', 37.2505454, 140.5600321],
   ];
   for (const [id, lat, lng] of manualStations) {
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([la, ln]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(la as number, ln as number, 12),
       [lat, lng],

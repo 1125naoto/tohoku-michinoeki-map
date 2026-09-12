@@ -14,6 +14,22 @@ async function gotoStation(page: Page, id = STATION_ID) {
 }
 
 /**
+ * window.__stationIds はsrc/main.tsxがJSバンドル実行時に同期的に設定するため、
+ * 通常はpage.goto()の解決時点で既に入っている。ただし収録駅数の増加(全国1237件)で
+ * WebKitの初期描画がまれに長引くと、goto()の'load'解決とスクリプト実行完了の間で
+ * 稀に競合し、undefinedのまま読んでしまうことがある。ポーリングで確実に待つ。
+ */
+async function waitForStationIds(page: Page, timeoutMs = 20000): Promise<string[]> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const ids = await page.evaluate(() => (window as unknown as { __stationIds?: string[] }).__stationIds);
+    if (ids && ids.length > 0) return ids;
+    if (Date.now() > deadline) throw new Error('window.__stationIds が設定されないままタイムアウトした');
+    await page.waitForTimeout(200);
+  }
+}
+
+/**
  * 地図整定待ち: ディープリンク直後は地図が数百ms遅れて最終位置に落ち着くため、
  * 固定座標で実クリックする前にマーカー位置が安定するのを待つ。
  */
@@ -698,6 +714,8 @@ test.describe('フィルターと達成率', () => {
     // 4. 中部の駅の詳細シートが正しく開く
     // （長野県は南北に長く、隣接マーカーのヒット領域が重なりやすいため、
     //   対象駅を画面中央へ寄せてからタップする＝manual-route.spec.tsのtapStation()と同じ手法）
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [36.8452608, 137.9004404],
@@ -761,6 +779,8 @@ test.describe('フィルターと達成率', () => {
 
     // 4. 近畿の駅の詳細シートが正しく開く
     // （対象駅を画面中央へ寄せてからタップする＝manual-route.spec.tsのtapStation()と同じ手法）
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [34.3594609, 136.7989126],
@@ -827,6 +847,8 @@ test.describe('フィルターと達成率', () => {
 
     // 4. 中国地方の駅の詳細シートが正しく開く
     // （対象駅を画面中央へ寄せてからタップする＝manual-route.spec.tsのtapStation()と同じ手法）
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [34.520201, 133.926904],
@@ -895,6 +917,8 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(2000);
 
     // 4. 四国の駅の詳細シートが正しく開く
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [33.99670576, 132.7722822],
@@ -967,6 +991,8 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(2000);
 
     // 4. 九州の駅の詳細シートが正しく開く
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [33.8484732, 130.503451],
@@ -1022,6 +1048,8 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(2000);
 
     // 4. 沖縄の駅の詳細シートが正しく開く
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
       [26.7319805, 128.1693617],
@@ -1127,6 +1155,48 @@ test.describe('フィルターと達成率', () => {
     await expect(page.locator(`[data-sid="${ONSEN_ONLY_STATION}"]`)).toBeVisible();
   });
 
+  test('全国facility監査（Phase 10）後、全地域の代表駅で設備フィルターが正しく動く @smoke', async ({ page }) => {
+    // 各地域からRVパークyes・温泉yes・両方yes・両方noの代表駅を1つずつ選ぶ（実データ優先）
+    const RV_YES = ['mne-18789', 'mne-19842', 'mne-19093', 'mne-19882', 'mne-19162', 'mne-19831', 'mne-19958', 'mne-19674', 'mne-19704'];
+    const ONSEN_YES = ['mne-18798', 'mne-18914', 'mne-19965', 'mne-23222', 'mne-19590', 'mne-19630', 'mne-19229'];
+    const BOTH_YES = ['mne-18815', 'mne-19039', 'mne-19377', 'mne-19575'];
+    const NEITHER = ['mne-18900', 'mne-19149', 'mne-19813', 'mne-19827'];
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 1. RVパーク単独: 全国のRVあり駅が表示され、なしの駅は消える
+    await page.getByTestId('facility-filter-rvpark').click();
+    await page.waitForTimeout(1200);
+    for (const id of RV_YES) await expect(page.locator(`[data-sid="${id}"]`), id).toBeVisible();
+    for (const id of NEITHER) await expect(page.locator(`[data-sid="${id}"]`), id).toHaveCount(0);
+
+    // 2. 温泉も追加 → AND（BOTHのみ残る、RVのみ・温泉のみは消える）
+    await page.getByTestId('facility-filter-onsen').click();
+    await page.waitForTimeout(1200);
+    for (const id of BOTH_YES) await expect(page.locator(`[data-sid="${id}"]`), id).toBeVisible();
+    await expect(page.locator(`[data-sid="mne-18789"]`)).toHaveCount(0); // RVのみ→消える
+    await expect(page.locator(`[data-sid="mne-18798"]`)).toHaveCount(0); // 温泉のみ→消える
+
+    // 3. 温泉のみへ切替 → 全国の温泉あり駅が表示される
+    await page.getByTestId('facility-filter-rvpark').click();
+    await page.waitForTimeout(1200);
+    for (const id of ONSEN_YES) await expect(page.locator(`[data-sid="${id}"]`), id).toBeVisible();
+
+    // 4. 沖縄はRV/温泉ともyesが無いため、沖縄×温泉は0件（クラッシュしないことを確認）
+    await page.getByTestId('chip-area-沖縄').click();
+    await page.waitForTimeout(2000);
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await expect(page.locator('[data-sid]')).toHaveCount(0);
+    await page.getByTestId('chip-all').click();
+
+    // 5. 解除で全国1237施設へ戻る
+    await page.getByTestId('facility-filter-onsen').click();
+    await page.waitForTimeout(1200);
+    for (const id of NEITHER) await expect(page.locator(`[data-sid="${id}"]`), id).toBeVisible();
+  });
+
   test('道の駅詳細シートにRVパーク・温泉の設備バッジが表示される（存在するものだけ）', async ({ page }) => {
     await gotoStation(page, 'mne-19039'); // きらら289（RVパーク+温泉）
     await expect(page.getByTestId('station-facilities')).toBeVisible();
@@ -1217,8 +1287,8 @@ test.describe('フィルターと達成率', () => {
   test('達成率100%の表示', async ({ page }) => {
     // アプリが検証用に公開している window.__stationIds を使って全駅訪問済みを投入
     await page.goto('/');
-    const ids = await page.evaluate(() => (window as unknown as { __stationIds?: string[] }).__stationIds);
-    expect(ids && ids.length).toBe(1237);
+    const ids = await waitForStationIds(page);
+    expect(ids.length).toBe(1237);
     await page.evaluate(
       ([key, idList]) => {
         const now = new Date().toISOString();
@@ -1789,7 +1859,7 @@ test.describe('シナリオC: ルーティング障害時の概算フォール�
     // 全駅訪問済み(v2)にして未訪問のみで検索。ルート計算は保存値を都度読むため
     // ページ再読み込みなしで反映されることも同時に検証する
     await page.goto('/');
-    const ids = await page.evaluate(() => (window as unknown as { __stationIds?: string[] }).__stationIds);
+    const ids = await waitForStationIds(page);
     await page.evaluate(
       ([key, idList]) => {
         const now = new Date().toISOString();
@@ -1853,11 +1923,15 @@ test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
   test('駅名ラベル: 広域では非表示、拡大すると表示される（自動モード）', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
     await page.waitForTimeout(300);
     const label = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"]) .rs-label`);
     await expect(label).toBeHidden();
     // 拡大すると表示される
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat as number, lng as number, 13),
       [40.63, 141.13],
@@ -1870,6 +1944,8 @@ test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
   test('「常に表示」「非表示」設定がズームによらず反映される', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
     const label = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"]) .rs-label`);
     await setLabelMode(page, 'always');
@@ -1894,6 +1970,8 @@ test.describe('全駅表示・駅名ラベル・地図の表示設定', () => {
   test('タップ可能領域は見た目のサイズによらず約44×44pxを維持する', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(() => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(38.5, 140.5, 6));
     await page.waitForTimeout(300);
     const hit = page.locator(`.rs-hit:has([data-sid="${STATION_ID}"])`).first();

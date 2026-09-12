@@ -117,6 +117,8 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('poi-panel-close').click();
     await expect(page.getByTestId('poi-search-panel')).toHaveCount(0);
     await page.route('**router.project-osrm.org/**', (route) => route.abort());
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat as number, lng as number, 14),
       [40.7168253, 141.1552503],
@@ -324,6 +326,8 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('poi-panel-close').click();
     await expect(page.getByTestId('poi-search-panel')).toHaveCount(0);
 
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat as number, lng as number, 14),
       [40.7168253, 141.1552503],

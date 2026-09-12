@@ -48,6 +48,8 @@ async function enterManualSelect(page: Page) {
 async function tapStation(page: Page, id: string) {
   const coord = COORDS[id];
   if (coord) {
+    // __setMapView is defined を待つ (Phase 10 hardening)
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
     await page.evaluate(
       ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 12),
       coord,
