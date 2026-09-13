@@ -1,13 +1,22 @@
 import type { AreaName, Prefecture, StatusFilter, Station, VisitMap } from '../types';
-import { AREA_BY_PREFECTURE } from '../types';
+import { AREA_BY_PREFECTURE, PREFECTURES } from '../types';
 
-/** 「地域」フィルターの値。都道府県単体、または地方全体（例: '東北'）のどちらか。 */
-export type PrefOrAreaFilter = Prefecture | AreaName | null;
+/**
+ * 「都道府県」フィルターの値。複数選択可能（OR条件）。空配列は「全国（絞り込みなし）」を表す。
+ * 単一選択だった旧仕様（実機フィードバックで「県境をまたぐ旅程で使いにくい」と指摘された）から
+ * 複数選択へ変更した。
+ */
+export type SelectedPrefectures = Prefecture[];
 
-/** 指定の駅が、選択中の都道府県/地方フィルターに合致するか（未選択なら常にtrue） */
-export function matchesPrefOrArea(st: Station, filter: PrefOrAreaFilter): boolean {
-  if (!filter) return true;
-  return st.pref === filter || AREA_BY_PREFECTURE[st.pref] === filter;
+/** 指定の地方に属する都道府県一覧（表示順はPREFECTURESの並びに従う） */
+export function prefecturesInArea(area: AreaName): Prefecture[] {
+  return PREFECTURES.filter((p) => AREA_BY_PREFECTURE[p] === area);
+}
+
+/** 指定の駅が、選択中の都道府県フィルターに合致するか（未選択=空配列なら常にtrue＝全国扱い） */
+export function matchesSelectedPrefectures(st: Station, selected: SelectedPrefectures): boolean {
+  if (selected.length === 0) return true;
+  return selected.includes(st.pref);
 }
 
 export const STATUS_FILTER_LABEL: Record<StatusFilter, string> = {
@@ -40,9 +49,9 @@ export function matchesFacilityFilter(st: Station, filter: FacilityFilter): bool
   return true;
 }
 
-/** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：すべて・すべて」） */
+/** 絞り込みを閉じているときの1行サマリー（例: 「絞り込み：全国・すべて」「絞り込み：青森県+秋田県・すべて」） */
 export function filterSummary(
-  pref: PrefOrAreaFilter,
+  selectedPrefectures: SelectedPrefectures,
   status: StatusFilter,
   query = '',
   facility: FacilityFilter = NO_FACILITY_FILTER,
@@ -52,7 +61,8 @@ export function filterSummary(
     (v): v is string => typeof v === 'string',
   );
   const facilityText = facilityLabels.length > 0 ? `・${facilityLabels.join('+')}あり` : '';
-  return `絞り込み：${pref ?? 'すべて'}・${STATUS_FILTER_LABEL[status]}${facilityText}${q ? `・「${q}」` : ''}`;
+  const prefText = selectedPrefectures.length === 0 ? '全国' : selectedPrefectures.join('+');
+  return `絞り込み：${prefText}・${STATUS_FILTER_LABEL[status]}${facilityText}${q ? `・「${q}」` : ''}`;
 }
 
 /**
@@ -84,20 +94,21 @@ export function matchesFilter(st: Station, visits: VisitMap, statusFilter: Statu
 }
 
 /**
- * 地域・表示状態・テキスト検索の複合絞り込み（一覧タップで数秒で選べるようにするための中心関数）。
- * 各条件はAND結合。県未選択(null)・状態'all'・テキスト空はそれぞれ「絞り込みなし」を表す。
+ * 都道府県・表示状態・テキスト検索の複合絞り込み（一覧タップで数秒で選べるようにするための中心関数）。
+ * 各条件はAND結合。県未選択(空配列)・状態'all'・テキスト空はそれぞれ「絞り込みなし」を表す。
+ * 都道府県は複数選択でき、選択中の都道府県どうしはOR（いずれかに該当すれば表示）。
  */
 export function filterStations(
   stations: Station[],
   visits: VisitMap,
-  prefFilter: PrefOrAreaFilter,
+  selectedPrefectures: SelectedPrefectures,
   statusFilter: StatusFilter,
   query: string,
   facilityFilter: FacilityFilter = NO_FACILITY_FILTER,
 ): Station[] {
   return stations.filter(
     (s) =>
-      matchesPrefOrArea(s, prefFilter) &&
+      matchesSelectedPrefectures(s, selectedPrefectures) &&
       matchesFilter(s, visits, statusFilter) &&
       matchesFacilityFilter(s, facilityFilter) &&
       stationMatchesQuery(s, query),

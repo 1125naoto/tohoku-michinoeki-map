@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import type { Prefecture } from '../types';
 import type { Stats } from '../lib/stats';
-import type { PrefOrAreaFilter } from '../lib/ui';
+import type { SelectedPrefectures } from '../lib/ui';
 
 interface Props {
   stats: Stats;
-  prefFilter: PrefOrAreaFilter;
-  onSelectPref: (p: Prefecture | null) => void;
+  selectedPrefectures: SelectedPrefectures;
+  /** 都道府県のトグル（既に選択中なら解除、未選択なら追加）。空配列を渡すと全国（絞り込み解除）。 */
+  onToggleClearPref: (p: Prefecture | 'all') => void;
 }
 
-export default function StatsHeader({ stats, prefFilter, onSelectPref }: Props) {
+export default function StatsHeader({ stats, selectedPrefectures, onToggleClearPref }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <header className="stats-header">
@@ -42,11 +43,19 @@ export default function StatsHeader({ stats, prefFilter, onSelectPref }: Props) 
       </button>
       {open && (
         <div className="pref-grid" data-testid="pref-grid">
+          {/* 都道府県は複数選択可（OR）。「全国」は選択解除の一発リセット。 */}
+          <button
+            className={`pref-cell${selectedPrefectures.length === 0 ? ' active' : ''}`}
+            onClick={() => onToggleClearPref('all')}
+            data-testid="pref-all"
+          >
+            <div>全国</div>
+          </button>
           {stats.byPref.map((ps) => (
             <button
               key={ps.pref}
-              className={`pref-cell${prefFilter === ps.pref ? ' active' : ''}`}
-              onClick={() => onSelectPref(prefFilter === ps.pref ? null : ps.pref)}
+              className={`pref-cell${selectedPrefectures.includes(ps.pref) ? ' active' : ''}`}
+              onClick={() => onToggleClearPref(ps.pref)}
               data-testid={`pref-${ps.pref}`}
             >
               <div>{ps.pref.replace('県', '')}</div>

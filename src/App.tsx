@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  AreaName,
   PlanParams,
   PlannedRoute,
+  Prefecture,
   SavedRoute,
   StationState,
   StatusFilter,
@@ -19,8 +21,9 @@ import {
   filterStations,
   isFacilityFilterActive,
   matchesFacilityFilter,
+  prefecturesInArea,
   type FacilityFilter,
-  type PrefOrAreaFilter,
+  type SelectedPrefectures,
 } from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
@@ -99,7 +102,27 @@ export default function App() {
   const [savedRoutes, setSavedRoutes] = useState(() => loadRoutes());
   const [trip, setTrip] = useState<TripState | null>(() => loadTrip());
   const [tab, setTab] = useState<Tab>('map');
-  const [prefFilter, setPrefFilter] = useState<PrefOrAreaFilter>(null);
+  const [selectedPrefectures, setSelectedPrefectures] = useState<SelectedPrefectures>([]);
+  /** 都道府県チップのトグル（既に選択中なら解除、未選択なら追加）。'all'で全国（絞り込み解除）。 */
+  const toggleClearPref = useCallback((p: Prefecture | 'all') => {
+    if (p === 'all') {
+      setSelectedPrefectures([]);
+      return;
+    }
+    setSelectedPrefectures((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  }, []);
+  /**
+   * 「地方」チップ: その地方に属する都道府県一式へ一括切替（既存の単一選択の使い勝手を維持）。
+   * 既にその地方の県だけがちょうど選択されている場合はもう一度押すと全国へ戻す（従来どおりのトグル）。
+   * 都道府県チップの個別トグルとは独立して動作する。
+   */
+  const toggleAreaFilter = useCallback((area: AreaName) => {
+    const areaPrefs = prefecturesInArea(area);
+    setSelectedPrefectures((prev) => {
+      const isExactlyThisArea = prev.length === areaPrefs.length && areaPrefs.every((p) => prev.includes(p));
+      return isExactlyThisArea ? [] : areaPrefs;
+    });
+  }, []);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>({ rvPark: false, onsen: false });
   const [stationQuery, setStationQuery] = useState('');
@@ -620,8 +643,8 @@ export default function App() {
   const selected = selectedId ? getStation(selectedId) : undefined;
   /** 絞り込み結果の駅一覧（地図のピン探しではなく、一覧タップで数秒で選べるようにするため） */
   const filteredStationList = useMemo(
-    () => filterStations(STATIONS, visits, prefFilter, statusFilter, stationQuery, facilityFilter),
-    [prefFilter, statusFilter, stationQuery, visits, facilityFilter],
+    () => filterStations(STATIONS, visits, selectedPrefectures, statusFilter, stationQuery, facilityFilter),
+    [selectedPrefectures, statusFilter, stationQuery, visits, facilityFilter],
   );
   /** 設備条件のみ（県・状態は無視）で絞った件数。0件時の案内文と「該当N駅」表示に使う */
   const facilityOnlyCount = useMemo(
@@ -1036,7 +1059,7 @@ export default function App() {
         </div>
       )}
       {!mapFullscreen && (
-        <StatsHeader stats={stats} prefFilter={prefFilter} onSelectPref={setPrefFilter} />
+        <StatsHeader stats={stats} selectedPrefectures={selectedPrefectures} onToggleClearPref={toggleClearPref} />
       )}
       {!mapFullscreen && (
         <button
@@ -1045,7 +1068,9 @@ export default function App() {
           aria-expanded={filtersOpen}
           data-testid="filters-toggle"
         >
-          {filtersOpen ? '▲ 絞り込みをたたむ' : `▼ ${filterSummary(prefFilter, statusFilter, stationQuery, facilityFilter)}`}
+          {filtersOpen
+            ? '▲ 絞り込みをたたむ'
+            : `▼ ${filterSummary(selectedPrefectures, statusFilter, stationQuery, facilityFilter)}`}
         </button>
       )}
       <div
@@ -1055,30 +1080,42 @@ export default function App() {
         <div className="filter-row" role="toolbar" aria-label="地方で絞り込み">
           <span className="fg-label">地方</span>
           <button
-            className={`chip${prefFilter === null ? ' active' : ''}`}
-            onClick={() => setPrefFilter(null)}
+            className={`chip${selectedPrefectures.length === 0 ? ' active' : ''}`}
+            onClick={() => toggleClearPref('all')}
             data-testid="chip-all"
           >
             すべて
           </button>
-          {stats.byArea.map((a) => (
-            <button
-              key={a.area}
-              className={`chip${prefFilter === a.area ? ' active' : ''}`}
-              onClick={() => setPrefFilter(prefFilter === a.area ? null : a.area)}
-              data-testid={`chip-area-${a.area}`}
-            >
-              {a.area} {a.visited}/{a.total}
-            </button>
-          ))}
+          {stats.byArea.map((a) => {
+            const areaPrefs = prefecturesInArea(a.area);
+            const areaActive =
+              selectedPrefectures.length === areaPrefs.length && areaPrefs.every((p) => selectedPrefectures.includes(p));
+            return (
+              <button
+                key={a.area}
+                className={`chip${areaActive ? ' active' : ''}`}
+                onClick={() => toggleAreaFilter(a.area)}
+                data-testid={`chip-area-${a.area}`}
+              >
+                {a.area} {a.visited}/{a.total}
+              </button>
+            );
+          })}
         </div>
-        <div className="filter-row" role="toolbar" aria-label="都道府県で絞り込み">
+        <div className="filter-row" role="toolbar" aria-label="都道府県で絞り込み（複数選択可）">
           <span className="fg-label">都道府県</span>
+          <button
+            className={`chip${selectedPrefectures.length === 0 ? ' active' : ''}`}
+            onClick={() => toggleClearPref('all')}
+            data-testid="chip-pref-all"
+          >
+            全国
+          </button>
           {stats.byPref.map((p) => (
             <button
               key={p.pref}
-              className={`chip${prefFilter === p.pref ? ' active' : ''}`}
-              onClick={() => setPrefFilter(prefFilter === p.pref ? null : p.pref)}
+              className={`chip${selectedPrefectures.includes(p.pref) ? ' active' : ''}`}
+              onClick={() => toggleClearPref(p.pref)}
               data-testid={`chip-${p.pref}`}
             >
               {p.pref.replace('県', '')} {p.visited}/{p.total}
@@ -1182,7 +1219,7 @@ export default function App() {
           <MapView
             stations={STATIONS}
             visits={visits}
-            prefFilter={prefFilter}
+            selectedPrefectures={selectedPrefectures}
             statusFilter={statusFilter}
             facilityFilter={facilityFilter}
             onOpenStation={handleOpenStation}

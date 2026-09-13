@@ -10,17 +10,17 @@ import { STOP_TYPE_COLOR, STOP_TYPE_GLYPH, poiDisplayName, stopTypeOf, type Poi 
 import {
   matchesFilter,
   matchesFacilityFilter,
-  matchesPrefOrArea,
+  matchesSelectedPrefectures,
   NO_FACILITY_FILTER,
   type FacilityFilter,
-  type PrefOrAreaFilter,
+  type SelectedPrefectures,
 } from '../lib/ui';
 import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 
 interface Props {
   stations: Station[];
   visits: VisitMap;
-  prefFilter: PrefOrAreaFilter;
+  selectedPrefectures: SelectedPrefectures;
   statusFilter: StatusFilter;
   /** 道の駅自体の設備条件（RVパーク・温泉）でマーカーを絞る。省略時は絞り込みなし */
   facilityFilter?: FacilityFilter;
@@ -365,7 +365,7 @@ function Legend({
 export default function MapView({
   stations,
   visits,
-  prefFilter,
+  selectedPrefectures,
   statusFilter,
   facilityFilter = NO_FACILITY_FILTER,
   onOpenStation,
@@ -567,7 +567,7 @@ export default function MapView({
     const target: L.LayerGroup = useCluster ? cluster : allLayer;
     const shown = stations.filter(
       (st) =>
-        matchesPrefOrArea(st, prefFilter) &&
+        matchesSelectedPrefectures(st, selectedPrefectures) &&
         matchesFilter(st, visits, statusFilter) &&
         matchesFacilityFilter(st, facilityFilter),
     );
@@ -610,7 +610,7 @@ export default function MapView({
   }, [
     stations,
     visits,
-    prefFilter,
+    selectedPrefectures,
     statusFilter,
     facilityFilter,
     now,
@@ -680,13 +680,15 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (!prefFilter) {
+    if (selectedPrefectures.length === 0) {
       map.fitBounds(stationsBounds(stations), { padding: [4, 4] });
       return;
     }
-    const pts = stations.filter((s) => matchesPrefOrArea(s, prefFilter)).map((s) => [s.lat, s.lng] as [number, number]);
+    const pts = stations
+      .filter((s) => matchesSelectedPrefectures(s, selectedPrefectures))
+      .map((s) => [s.lat, s.lng] as [number, number]);
     if (pts.length > 0) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
-  }, [prefFilter, stations]);
+  }, [selectedPrefectures, stations]);
 
   // ルート線
   useEffect(() => {
