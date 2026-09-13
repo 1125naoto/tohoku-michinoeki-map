@@ -640,6 +640,8 @@ export default function App() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   const stats = useMemo(() => computeStats(STATIONS, visits), [visits]);
+  /** 都道府県名 → 集計 の索引（地方ごとにグループ化して県ボタンを描画するため） */
+  const prefStatByName = useMemo(() => new Map(stats.byPref.map((p) => [p.pref, p])), [stats.byPref]);
   const selected = selectedId ? getStation(selectedId) : undefined;
   /** 絞り込み結果の駅一覧（地図のピン探しではなく、一覧タップで数秒で選べるようにするため） */
   const filteredStationList = useMemo(
@@ -1111,15 +1113,35 @@ export default function App() {
           >
             全国
           </button>
-          {stats.byPref.map((p) => (
-            <button
-              key={p.pref}
-              className={`chip${selectedPrefectures.includes(p.pref) ? ' active' : ''}`}
-              onClick={() => toggleClearPref(p.pref)}
-              data-testid={`chip-${p.pref}`}
-            >
-              {p.pref.replace('県', '')} {p.visited}/{p.total}
-            </button>
+        </div>
+        {/*
+          都道府県は47件あり、.filter-row(横スクロール1行)へ並べると実機で
+          「地方チップしか実質使えない」状態になる（スマホ幅では数件しか見えず、
+          任意の県を自由に複数タップするのが事実上不可能だった）。
+          地方ごとに見出し+折り返しグリッドで表示し、47県すべてを個別にタップできるようにする。
+          data-testid（chip-<県名>）は変更しない（複数選択のロジック・既存テストへの影響を避ける）。
+        */}
+        <div className="pref-select-groups" data-testid="pref-select-groups">
+          {stats.byArea.map((a) => (
+            <div className="pref-select-group" key={a.area}>
+              <div className="pref-select-group-title">{a.area}</div>
+              <div className="pref-select-group-chips">
+                {prefecturesInArea(a.area).map((pref) => {
+                  const p = prefStatByName.get(pref);
+                  if (!p) return null;
+                  return (
+                    <button
+                      key={p.pref}
+                      className={`chip${selectedPrefectures.includes(p.pref) ? ' active' : ''}`}
+                      onClick={() => toggleClearPref(p.pref)}
+                      data-testid={`chip-${p.pref}`}
+                    >
+                      {p.pref.replace('県', '')} {p.visited}/{p.total}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
         <div className="filter-row" role="toolbar" aria-label="表示状態で絞り込み">

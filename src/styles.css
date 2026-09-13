@@ -182,6 +182,16 @@ a {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   padding: 2px 0 6px;
+  /*
+   * 都道府県を地方ごとに折り返し表示するようになり、展開時の自然な高さが
+   * 画面幅によっては非常に大きくなり得る（.app-mainはflex:1; min-height:0のため、
+   * 上に無制限に積み上がるとmin-height:0まで潰れ、地図やa2hs-banner等と
+   * 画面上で重なってタップを奪う実害があった）。パネル自体に上限+内部スクロールを
+   * 持たせ、画面幅に関わらず地図側の表示領域を必ず確保する。
+   * 700px以下では下の@mediaでさらに小さい上限に上書きする。
+   */
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
 }
 .filter-row {
   display: flex;
@@ -228,6 +238,29 @@ a {
   color: #fff;
   border-color: var(--select);
   font-weight: 700;
+}
+
+/*
+ * 都道府県の個別選択（地方ごとに見出し+折り返し表示）。
+ * .filter-row(横スクロール1行)には47件を並べると実機で数件しか見えず、
+ * 任意の県を自由に複数選択するのが事実上できなかったため、折り返しレイアウトにする。
+ */
+.pref-select-groups {
+  padding: 4px 12px 6px;
+}
+.pref-select-group {
+  margin-bottom: 6px;
+}
+.pref-select-group-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-sub);
+  padding: 2px 0;
+}
+.pref-select-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 /* ===== 駅名・市町村テキスト検索 ===== */

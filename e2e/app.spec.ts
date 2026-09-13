@@ -544,6 +544,90 @@ test.describe('フィルターと達成率', () => {
     await expect(page.getByTestId('station-sheet')).toContainText('猪苗代');
   });
 
+  /**
+   * 実機QAで報告された不具合の回帰: 都道府県は内部的にはOR条件で複数選択できる設計だったが、
+   * 都道府県チップが横スクロール1行(.filter-row)に47件並んでおり、実機では
+   * 「地方チップでしか実質選べない」状態になっていた。地方ごとに見出し+折り返し表示へ変更し、
+   * 地方チップを一切使わずに任意の県を個別タップだけで自由に複数選択できることを確認する。
+   */
+  test('都道府県は地方チップを使わなくても県名を個別タップするだけで自由に複数選択できる @smoke', async ({ page }) => {
+    const FUKUSHIMA_STATION = 'mne-19862'; // 猪苗代（福島県）
+    const MIYAGI_STATION = 'mne-18961'; // 大谷海岸（宮城県）
+    const YAMAGATA_STATION = 'mne-19007'; // 鳥海（山形県）
+    const AOMORI_STATION = 'mne-18904'; // かわうち湖（青森県）
+    const AKITA_STATION = 'mne-18973'; // はちもり（秋田県）
+
+    await page.goto('/');
+    await closeLegend(page);
+    await openFilters(page);
+
+    // 0. 都道府県ボタンは地方ごとにグループ化された折り返し表示で47件描画される（地方見出しの直下）
+    await expect(page.getByTestId('pref-select-groups')).toBeVisible();
+    const prefButtonCount = await page.getByTestId('pref-select-groups').locator('button').count();
+    expect(prefButtonCount).toBe(47);
+
+    // 1. 初期状態は全国: 5県とも地図に出る
+    for (const sid of [FUKUSHIMA_STATION, MIYAGI_STATION, YAMAGATA_STATION, AOMORI_STATION, AKITA_STATION]) {
+      await expect(page.locator(`[data-sid="${sid}"]`)).toBeVisible();
+    }
+
+    // 2. 福島県を個別タップ → 福島のみ表示（地方チップには一切触れない）
+    await page.getByTestId('chip-福島県').click();
+    await expect(page.getByTestId('chip-福島県')).toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${MIYAGI_STATION}"]`)).toHaveCount(0);
+
+    // 3. 宮城県を追加タップ → 福島+宮城が同時表示（既存の福島選択は消えない＝トグル追加）
+    await page.getByTestId('chip-宮城県').click();
+    await expect(page.getByTestId('chip-宮城県')).toHaveClass(/active/);
+    await expect(page.getByTestId('chip-福島県')).toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${MIYAGI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${YAMAGATA_STATION}"]`)).toHaveCount(0);
+
+    // 4. 山形県も追加 → 3県同時表示
+    await page.getByTestId('chip-山形県').click();
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${MIYAGI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${YAMAGATA_STATION}"]`)).toBeVisible();
+
+    // 5. 宮城県だけ再タップ → 解除され、福島+山形のみ残る
+    await page.getByTestId('chip-宮城県').click();
+    await expect(page.getByTestId('chip-宮城県')).not.toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${YAMAGATA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${MIYAGI_STATION}"]`)).toHaveCount(0);
+
+    // 6. 「全国」で一発リセット → 全県表示へ戻る
+    await page.getByTestId('chip-pref-all').click();
+    await expect(page.getByTestId('chip-福島県')).not.toHaveClass(/active/);
+    await expect(page.getByTestId('chip-山形県')).not.toHaveClass(/active/);
+    for (const sid of [FUKUSHIMA_STATION, MIYAGI_STATION, YAMAGATA_STATION, AOMORI_STATION, AKITA_STATION]) {
+      await expect(page.locator(`[data-sid="${sid}"]`)).toBeVisible();
+    }
+
+    // 7. 別の組み合わせ（青森+秋田、離れた地方境界をまたがない例）も同様に成立する
+    await page.getByTestId('chip-青森県').click();
+    await page.getByTestId('chip-秋田県').click();
+    await expect(page.locator(`[data-sid="${AOMORI_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${AKITA_STATION}"]`)).toBeVisible();
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toHaveCount(0);
+
+    // 8. 都道府県チップ操作の間、絞り込みパネルはユーザーが閉じるまで開いたまま
+    await expect(page.getByTestId('chip-all')).toBeVisible();
+
+    // 9. status/facilityフィルターとのAND: 青森+秋田のうち「訪問済み」は0件でも落ちない
+    await page.getByTestId('filter-visited').click();
+    await expect(page.getByTestId('map-root')).toBeVisible();
+    await page.getByTestId('filter-all').click();
+
+    // 10. 地方ショートカットは引き続き共存する（地方チップを押せば一括切替も可能）
+    await page.getByTestId('chip-area-東北').click();
+    await expect(page.getByTestId('chip-area-東北')).toHaveClass(/active/);
+    await expect(page.locator(`[data-sid="${FUKUSHIMA_STATION}"]`)).toBeVisible();
+    await page.getByTestId('chip-pref-all').click();
+  });
+
   test('北海道追加後、東北と混線せず共存する（県フィルター切替・地図・詳細表示）@smoke', async ({ page }) => {
     const HOKKAIDO_STATION = 'mne-18899'; // わっかない（北海道最北端、孤立していてクラスタ化しない）
     const AOMORI_STATION = 'mne-18904'; // 青森県
