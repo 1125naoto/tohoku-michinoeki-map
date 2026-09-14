@@ -1,16 +1,11 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-14T04:35:32Z",
+  "updatedAt": "2026-09-14T07:49:53Z",
   "stations": {
     "mne-18904": {
-      "status": "ok",
-      "attempts": 1,
-      "lastAttemptAt": "2026-09-12T12:59:00Z",
-      "poiCount": 30,
-      "endpointsUsed": [
-        "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-        "https://overpass.private.coffee/api/interpreter"
-      ]
+      "status": "failed",
+      "attempts": 2,
+      "lastAttemptAt": "2026-09-14T07:05:27Z"
     },
     "mne-19695": {
       "status": "ok",
@@ -32,27 +27,30 @@
     },
     "mne-18967": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:18:06Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:35:07Z",
+      "poiCount": 100,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18963": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:18:23Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:35:15Z",
+      "poiCount": 179,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18958": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:18:33Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:35:23Z",
+      "poiCount": 139,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -77,9 +75,10 @@
     },
     "mne-18789": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:20:45Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:39:56Z",
+      "poiCount": 47,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -95,9 +94,10 @@
     },
     "mne-18791": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:22:18Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:40:51Z",
+      "poiCount": 76,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -131,9 +131,10 @@
     },
     "mne-18796": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:23:38Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:41:31Z",
+      "poiCount": 37,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -158,45 +159,50 @@
     },
     "mne-18799": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:24:31Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:41:44Z",
+      "poiCount": 104,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18801": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:25:06Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:41:53Z",
+      "poiCount": 59,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18802": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:25:17Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:42:00Z",
+      "poiCount": 49,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18803": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:25:25Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:42:11Z",
+      "poiCount": 35,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18804": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:25:41Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:42:25Z",
+      "poiCount": 134,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -212,9 +218,10 @@
     },
     "mne-18806": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:26:59Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:42:33Z",
+      "poiCount": 32,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -230,18 +237,20 @@
     },
     "mne-18808": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:28:05Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:43:14Z",
+      "poiCount": 86,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18809": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:28:38Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:43:22Z",
+      "poiCount": 36,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -257,9 +266,10 @@
     },
     "mne-18811": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:29:03Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:43:32Z",
+      "poiCount": 86,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -302,9 +312,10 @@
     },
     "mne-18816": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:31:57Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:43:40Z",
+      "poiCount": 165,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -320,9 +331,10 @@
     },
     "mne-18819": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:32:49Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:44:14Z",
+      "poiCount": 130,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -338,18 +350,20 @@
     },
     "mne-18821": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:33:08Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:45:09Z",
+      "poiCount": 24,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18822": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:33:42Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:45:42Z",
+      "poiCount": 90,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -365,54 +379,60 @@
     },
     "mne-18824": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:33:58Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:45:58Z",
+      "poiCount": 126,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18825": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:34:09Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:46:15Z",
+      "poiCount": 180,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18826": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:34:17Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:46:29Z",
+      "poiCount": 31,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18827": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:34:51Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:46:42Z",
+      "poiCount": 34,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18828": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:35:30Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:46:56Z",
+      "poiCount": 121,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18829": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:36:08Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:47:33Z",
+      "poiCount": 55,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -428,9 +448,10 @@
     },
     "mne-18836": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:42:56Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:50:40Z",
+      "poiCount": 0,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -473,9 +494,10 @@
     },
     "mne-18841": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:44:50Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:51:16Z",
+      "poiCount": 97,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -491,27 +513,30 @@
     },
     "mne-18843": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:46:09Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:51:55Z",
+      "poiCount": 90,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18844": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:46:47Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:52:32Z",
+      "poiCount": 32,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18845": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:47:30Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:53:10Z",
+      "poiCount": 86,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -527,45 +552,50 @@
     },
     "mne-18847": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:47:50Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:53:43Z",
+      "poiCount": 76,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18848": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:48:05Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:53:51Z",
+      "poiCount": 38,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18849": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:48:14Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:54:46Z",
+      "poiCount": 11,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18850": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:48:22Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:54:54Z",
+      "poiCount": 121,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18851": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:48:35Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:55:29Z",
+      "poiCount": 175,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -608,9 +638,10 @@
     },
     "mne-18856": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:49:49Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:55:39Z",
+      "poiCount": 88,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -626,18 +657,20 @@
     },
     "mne-18858": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:50:09Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:55:47Z",
+      "poiCount": 102,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18859": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:50:23Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:55:55Z",
+      "poiCount": 40,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -671,18 +704,20 @@
     },
     "mne-18863": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:52:16Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:56:02Z",
+      "poiCount": 125,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18864": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:52:50Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:56:41Z",
+      "poiCount": 61,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -734,27 +769,30 @@
     },
     "mne-18870": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:54:46Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:56:51Z",
+      "poiCount": 176,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18871": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:55:20Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:57:00Z",
+      "poiCount": 134,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18872": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:55:59Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:57:14Z",
+      "poiCount": 169,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -770,27 +808,30 @@
     },
     "mne-18874": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:56:16Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:57:22Z",
+      "poiCount": 97,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18875": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:56:27Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:57:55Z",
+      "poiCount": 84,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18876": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:56:35Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:58:10Z",
+      "poiCount": 154,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -806,18 +847,20 @@
     },
     "mne-18878": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:57:18Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:58:18Z",
+      "poiCount": 98,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18879": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:57:26Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:58:27Z",
+      "poiCount": 64,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -833,18 +876,20 @@
     },
     "mne-18881": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:58:07Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:58:59Z",
+      "poiCount": 83,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18882": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:58:18Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:59:07Z",
+      "poiCount": 93,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -860,18 +905,20 @@
     },
     "mne-18884": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:59:01Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:00:02Z",
+      "poiCount": 13,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
     },
     "mne-18885": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T13:59:10Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:00:57Z",
+      "poiCount": 14,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -887,9 +934,10 @@
     },
     "mne-18895": {
       "status": "ok",
+      "resultStatus": "ok",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T14:29:00Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:03:37Z",
+      "poiCount": 116,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -923,9 +971,10 @@
     },
     "mne-18899": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-12T14:30:33Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T07:04:32Z",
+      "poiCount": 100,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -5187,9 +5236,10 @@
     },
     "mne-23222": {
       "status": "ok",
+      "resultStatus": "partial",
       "attempts": 1,
-      "lastAttemptAt": "2026-09-13T05:36:23Z",
-      "poiCount": 30,
+      "lastAttemptAt": "2026-09-14T06:37:18Z",
+      "poiCount": 75,
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
@@ -9402,29 +9452,829 @@
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
+    },
+    "mne-18786": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:38:52Z",
+      "poiCount": 161,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18787": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:39:47Z",
+      "poiCount": 78,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18831": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:47:41Z",
+      "poiCount": 63,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18832": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:47:50Z",
+      "poiCount": 168,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18833": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:48:25Z",
+      "poiCount": 126,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18834": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:49:07Z",
+      "poiCount": 91,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18835": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T06:49:45Z",
+      "poiCount": 56,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18886": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:01:11Z",
+      "poiCount": 42,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18887": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:01:25Z",
+      "poiCount": 61,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18888": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:01:39Z",
+      "poiCount": 37,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18890": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:01:50Z",
+      "poiCount": 123,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18891": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:02:31Z",
+      "poiCount": 58,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18892": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:03:09Z",
+      "poiCount": 40,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18893": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:03:22Z",
+      "poiCount": 150,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18918": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:06:23Z",
+      "poiCount": 5,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18911": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:07:18Z",
+      "poiCount": 9,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18919": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:07:32Z",
+      "poiCount": 49,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18917": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:08:18Z",
+      "poiCount": 54,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18910": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:08:31Z",
+      "poiCount": 50,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18914": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:08:42Z",
+      "poiCount": 141,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18920": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:08:50Z",
+      "poiCount": 50,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18913": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:08:57Z",
+      "poiCount": 108,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18922": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:09:53Z",
+      "poiCount": 80,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18924": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:10:48Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18909": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:11:43Z"
+    },
+    "mne-18900": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:12:38Z"
+    },
+    "mne-18916": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:12:55Z",
+      "poiCount": 165,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18926": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:13:10Z",
+      "poiCount": 175,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18907": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:13:49Z",
+      "poiCount": 177,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18902": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:14:44Z",
+      "poiCount": 18,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18921": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:15:39Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18906": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:16:35Z"
+    },
+    "mne-18915": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:17:30Z"
+    },
+    "mne-18901": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:18:11Z",
+      "poiCount": 180,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18912": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:19:06Z"
+    },
+    "mne-18908": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:19:24Z",
+      "poiCount": 77,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18951": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:20:07Z",
+      "poiCount": 30,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18956": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:20:20Z",
+      "poiCount": 146,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18933": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:21:15Z",
+      "poiCount": 75,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18947": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:22:10Z"
+    },
+    "mne-18935": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:22:53Z",
+      "poiCount": 35,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18937": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:23:03Z",
+      "poiCount": 57,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18932": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:23:59Z",
+      "poiCount": 36,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18934": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:24:54Z",
+      "poiCount": 39,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18948": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:25:01Z",
+      "poiCount": 41,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18954": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:25:16Z",
+      "poiCount": 98,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18940": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:25:30Z",
+      "poiCount": 140,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18941": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:26:07Z",
+      "poiCount": 32,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18927": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:26:41Z",
+      "poiCount": 128,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18942": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:27:36Z",
+      "poiCount": 14,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18949": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:28:22Z",
+      "poiCount": 123,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18943": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:28:59Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18945": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:29:38Z",
+      "poiCount": 56,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18944": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:30:21Z",
+      "poiCount": 117,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18936": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:31:16Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18928": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:31:34Z",
+      "poiCount": 117,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18950": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:32:29Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18952": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:33:13Z",
+      "poiCount": 107,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18961": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:33:29Z",
+      "poiCount": 177,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18960": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:33:42Z",
+      "poiCount": 79,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18965": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:33:57Z",
+      "poiCount": 116,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18964": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:34:12Z",
+      "poiCount": 122,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18959": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:35:34Z",
+      "poiCount": 179,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18966": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:36:13Z",
+      "poiCount": 179,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18962": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:36:25Z",
+      "poiCount": 180,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18968": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:37:07Z",
+      "poiCount": 179,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18957": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:37:46Z",
+      "poiCount": 60,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18973": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:37:54Z",
+      "poiCount": 56,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18972": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:38:28Z",
+      "poiCount": 62,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18985": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:39:23Z",
+      "poiCount": 100,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18969": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:40:06Z",
+      "poiCount": 165,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18989": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:41:01Z"
+    },
+    "mne-18970": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:41:56Z"
+    },
+    "mne-18974": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:42:51Z",
+      "poiCount": 64,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18978": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:43:46Z",
+      "poiCount": 75,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18976": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:44:41Z",
+      "poiCount": 52,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18995": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:45:37Z"
+    },
+    "mne-18990": {
+      "status": "failed",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:46:32Z"
+    },
+    "mne-18988": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:47:15Z",
+      "poiCount": 82,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18984": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:48:01Z",
+      "poiCount": 180,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18982": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:48:17Z",
+      "poiCount": 179,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18996": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:48:31Z",
+      "poiCount": 180,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18993": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:48:41Z",
+      "poiCount": 77,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18983": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:49:36Z",
+      "poiCount": 69,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
+    },
+    "mne-18980": {
+      "status": "ok",
+      "resultStatus": "ok",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-14T07:49:53Z",
+      "poiCount": 180,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
     }
   },
   "endpointStats": {
     "https://overpass.private.coffee/api/interpreter": {
-      "success": 333,
+      "success": 334,
       "http_error": 0,
       "timeout": 0,
-      "network_error": 2045,
-      "retry": 328
+      "network_error": 2426,
+      "retry": 430
     },
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter": {
-      "success": 1961,
-      "http_error": 0,
+      "success": 2196,
+      "http_error": 8,
       "timeout": 0,
-      "network_error": 447,
-      "retry": 326
+      "network_error": 590,
+      "retry": 428
     },
     "https://overpass-api.de/api/interpreter": {
       "success": 46,
       "http_error": 156,
-      "timeout": 2119,
+      "timeout": 2500,
       "network_error": 22,
-      "retry": 325
+      "retry": 427
     }
   }
 }

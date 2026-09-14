@@ -13,6 +13,8 @@ import {
   loadVisits,
   migrateLegacyVisits,
   nextState,
+  saveRoutes,
+  saveTrip,
   saveVisits,
 } from './storage';
 
@@ -136,6 +138,27 @@ describe('永続化と耐障害性', () => {
     expect(loadRoutes()).toEqual([]);
     localStorage.setItem(KEYS.trip, JSON.stringify(12345));
     expect(loadTrip()).toBeNull();
+  });
+
+  it('保存成功時、saveVisits/saveRoutes/saveTripはtrueを返す（Astra監査P1: 呼び出し側が成否を判定できるように）', () => {
+    expect(saveVisits(applyState({}, 'mne-1', 'visited'))).toBe(true);
+    expect(saveRoutes([])).toBe(true);
+    expect(saveTrip(null)).toBe(true);
+  });
+
+  it('保存失敗時(setItemが例外を投げる場合)、saveVisits/saveRoutes/saveTripはfalseを返す（成功したと偽らない）', () => {
+    const store = localStorage as Storage;
+    const original = store.setItem.bind(store);
+    store.setItem = () => {
+      throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+    };
+    try {
+      expect(saveVisits(applyState({}, 'mne-1', 'visited'))).toBe(false);
+      expect(saveRoutes([])).toBe(false);
+      expect(saveTrip(null)).toBe(false);
+    } finally {
+      store.setItem = original;
+    }
   });
 
   it('全消去でv1/v2/ルート/旅行がすべて消える', () => {

@@ -256,6 +256,14 @@ export interface RouteLeg {
   toId: string | null;
   distanceKm: number;
   driveMin: number;
+  /**
+   * trueなら、この区間はOSRM(実道路)が正常応答した上で「到達不能」と判定した区間
+   * （水路・通行不可等）で、distanceKm/driveMinは概算モデルによる代替値。
+   * 通信障害による概算とは異なり、実道路データ上そもそも自動車で接続できない
+   * 可能性がある区間であることをUIで明示するためのフラグ。省略時はfalse相当
+   * （既存の保存ルートとの後方互換）。
+   */
+  unreachable?: boolean;
 }
 
 /** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
@@ -298,8 +306,15 @@ export interface PlannedRoute {
   /** 行きたい(wishlist)の駅数 */
   wantCount: number;
   returnAt: string;
-  /** 'road'=実道路時間(OSRM) / 'approx'=概算 */
+  /** 'road'=実道路時間(OSRM) / 'approx'=概算（OSRM通信自体が失敗した場合） */
   roadData: 'road' | 'approx';
+  /**
+   * trueなら、roadData==='road'でも一部区間がOSRM上「到達不能」と判定され
+   * 概算値で補完している（legs[].unreachableで該当区間を特定できる）。
+   * UIは「実道路時間を使用」を無条件で表示せず、この区間の存在を明示すること。
+   * 省略時はfalse相当（既存の保存ルートとの後方互換）。
+   */
+  hasUnreachableLeg?: boolean;
   /** 到着予定時刻で見た営業見込みの内訳 */
   hoursSummary: { open: number; closing: number; closed: number; unknown: number };
 }

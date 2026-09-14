@@ -3,11 +3,13 @@
   "lat": 42.212366,
   "lng": 139.876681,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T13:26:59Z",
+  "generatedAt": "2026-09-14T06:42:33Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -552,6 +554,42 @@
       "distanceM": 9834,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/1366090470"
+    },
+    {
+      "id": "osm:node/4297406567",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "太田神社　拝殿",
+      "lat": 42.267616,
+      "lng": 139.7809651,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9991,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4297406567"
+    },
+    {
+      "id": "osm:way/1366090471",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 42.2248284,
+      "lng": 139.9973053,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 10030,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1366090471"
     }
   ]
 }

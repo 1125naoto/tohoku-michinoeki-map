@@ -650,4 +650,140 @@ describe('food/otherクエリの分離（都市部でラーメン等が80件上�
     expect(ramenPoi).toBeDefined();
     expect(ramenPoi?.subcategory).toBe('ramen');
   });
+
+  it('foodIncomplete/otherIncompleteが完全成功では両方false、food全滅では foodIncomplete:true のみになる', async () => {
+    const okFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: [] }) });
+    vi.stubGlobal('fetch', okFetch);
+    const ok = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(ok.foodIncomplete).toBe(false);
+    expect(ok.otherIncomplete).toBe(false);
+
+    clearPoiCache();
+    const partialFetch = vi.fn().mockImplementation((_url: string, opts: { body: string }) => {
+      const body = decodeURIComponent(opts.body);
+      if (body.includes('restaurant|cafe|fast_food|bar|pub')) return Promise.reject(new Error('food down'));
+      return Promise.resolve({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+    });
+    vi.stubGlobal('fetch', partialFetch);
+    const partial = await searchNearbyPois(LAT + 1, LNG + 1, DEFAULT_RADIUS_M);
+    expect(partial.failed).toBe(false);
+    expect(partial.foodIncomplete).toBe(true);
+    expect(partial.otherIncomplete).toBe(false);
+  });
+
+  it('キャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る', async () => {
+    const partialFetch = vi.fn().mockImplementation((_url: string, opts: { body: string }) => {
+      const body = decodeURIComponent(opts.body);
+      if (body.includes('restaurant|cafe|fast_food|bar|pub')) return Promise.reject(new Error('food down'));
+      return Promise.resolve({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+    });
+    vi.stubGlobal('fetch', partialFetch);
+    const first = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(first.foodIncomplete).toBe(true);
+    const cached = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(cached.fromCache).toBe(true);
+    expect(cached.foodIncomplete).toBe(true);
+    expect(cached.otherIncomplete).toBe(false);
+  });
+
+  it('部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない', async () => {
+    // メモリキャッシュ(TTL 30分)だけを経過させ、劣化フォールバック(TTL 7日)は
+    // 有効なまま保つため、実時間を進める代わりにDate.nowを進める。
+    const realNow = Date.now();
+    const dateSpy = vi.spyOn(Date, 'now');
+
+    // 1回目: food/otherとも完全成功 → 劣化フォールバックに完全な結果が保存される
+    dateSpy.mockReturnValue(realNow);
+    const foodEls = makeElements(3);
+    // dedupePoisは名前+座標でも重複判定するため、id・名前・座標のいずれもfood側と衝突させない
+    const otherEls = makeElements(2).map((el) => ({
+      ...el,
+      id: el.id + 5000,
+      lat: el.lat + 1,
+      lon: el.lon + 1,
+      tags: { ...el.tags, name: `温泉${el.id}` },
+    }));
+    const fullFetch = vi.fn().mockImplementation((_url: string, opts: { body: string }) => {
+      const body = decodeURIComponent(opts.body);
+      if (body.includes('restaurant|cafe|fast_food|bar|pub')) {
+        return Promise.resolve({ ok: true, json: async () => ({ elements: foodEls }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ elements: otherEls }) });
+    });
+    vi.stubGlobal('fetch', fullFetch);
+    const first = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(first.pois.length).toBe(5);
+
+    // 2回目: メモリキャッシュを期限切れにする(31分後)。foodだけ全滅させる。
+    dateSpy.mockReturnValue(realNow + 31 * 60 * 1000);
+    const partialFetch = vi.fn().mockImplementation((_url: string, opts: { body: string }) => {
+      const body = decodeURIComponent(opts.body);
+      if (body.includes('restaurant|cafe|fast_food|bar|pub')) return Promise.reject(new Error('food down'));
+      return Promise.resolve({ ok: true, json: async () => ({ elements: makeElements(2) }) });
+    });
+    vi.stubGlobal('fetch', partialFetch);
+    const partial = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(partial.fromCache).toBe(false);
+    expect(partial.foodIncomplete).toBe(true);
+    expect(partial.pois.length).toBe(2); // 今回表示される分は部分結果のまま
+
+    // 3回目: さらにメモリキャッシュを期限切れにし(62分後)、food/otherとも全滅させる。
+    // 劣化フォールバックを読むが、それは1回目の完全な5件のはず
+    // (2回目の部分結果2件では上書きされていない)
+    dateSpy.mockReturnValue(realNow + 62 * 60 * 1000);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('down')));
+    const fallback = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(fallback.failed).toBe(false);
+    expect(fallback.fromCache).toBe(true);
+    expect(fallback.pois.length).toBe(5);
+  });
+});
+
+describe('応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）', () => {
+  it('HTTP 200でもremarkフィールドがあれば成功とみなさず、全滅時はfailed:trueになる', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ remark: 'runtime error: Query timed out.' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(true);
+    expect(res.foodIncomplete).toBe(true);
+    expect(res.otherIncomplete).toBe(true);
+    expect(res.pois).toEqual([]);
+  });
+
+  it('HTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(true);
+    expect(res.attemptLog.every((a) => a.outcome === 'malformed')).toBe(true);
+  });
+
+  it('foodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる', async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, opts: { body: string }) => {
+      const body = decodeURIComponent(opts.body);
+      if (body.includes('restaurant|cafe|fast_food|bar|pub')) {
+        return Promise.resolve({ ok: true, json: async () => ({ remark: 'runtime error' }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ elements: [] }) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(false);
+    expect(res.foodIncomplete).toBe(true);
+    expect(res.otherIncomplete).toBe(false);
+    expect(res.pois).toEqual([]); // otherは正常応答で「本当に0件」
+  });
+
+  it('正常なelements:0件の応答はmalformed扱いにならない（本当に周辺に無い場合と区別できる）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ elements: [] }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await searchNearbyPois(LAT, LNG, DEFAULT_RADIUS_M);
+    expect(res.failed).toBe(false);
+    expect(res.foodIncomplete).toBe(false);
+    expect(res.otherIncomplete).toBe(false);
+    expect(res.attemptLog.every((a) => a.outcome === 'ok')).toBe(true);
+  });
 });

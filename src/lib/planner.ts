@@ -301,33 +301,34 @@ export async function planCourses(
   const points: LatLng[] = [p.origin, ...cands.map((c) => c.st)];
   cands.forEach((c, i) => (c.mi = i + 1));
 
-  // 実道路時間（OSRM）→ 失敗時は概算へフォールバック
+  // 実道路時間（OSRM）→ 通信失敗時のみ概算へフォールバック。
+  // OSRMが正常応答した上で「到達不能」(Infinity)と判定したセルは、ここでは
+  // 一切書き換えない（providerが返した行列はrouting.ts内部キャッシュと
+  // 同一オブジェクトのため、ここで書き換えるとキャッシュそのものを汚染してしまう）。
+  // 到達不能セルを含む並び順はevaluateOrder()がnullを返して自然に除外されるため、
+  // 自動コース作成は「成立するルートのみ」を提案する（fallbackを渡さない＝
+  // 到達不能を概算で覆い隠さない）。
   let matrix: RouteMatrix;
   let roadData: 'road' | 'approx';
   const provider = opts.provider ?? osrmProvider;
   try {
     matrix = await provider.table(points, opts.signal);
     roadData = 'road';
-    // 到達不能セルは概算で補完
-    const est = estimateMatrix(points, p);
-    for (let i = 0; i < points.length; i++) {
-      for (let j = 0; j < points.length; j++) {
-        if (!Number.isFinite(matrix.durationsMin[i][j])) {
-          matrix.durationsMin[i][j] = est.durationsMin[i][j];
-          matrix.distancesKm[i][j] = est.distancesKm[i][j];
-        }
-      }
-    }
   } catch (e) {
     if (opts.signal?.aborted) throw e;
     matrix = estimateMatrix(points, p);
     roadData = 'approx';
   }
 
-  // 出発地点から直行した場合の到着時点の営業見込み（優先度・除外オプション用の概算）
+  // 出発地点から直行した場合の到着時点の営業見込み（優先度・除外オプション用の概算）。
+  // 出発地点から到達不能(Infinity)な候補はInvalid Dateを作らず'unknown'扱いにする
+  // （このcandは後段のevaluateOrder()がどのみち必ず除外するため、ここでは
+  // 安全にフォールスルーさせるだけでよい）。
   const departAtDate = new Date(p.departAt);
   let pool = cands.map((c) => {
-    const arrive = new Date(departAtDate.getTime() + Math.ceil(matrix.durationsMin[0][c.mi]) * 60000);
+    const directMin = matrix.durationsMin[0][c.mi];
+    if (!Number.isFinite(directMin)) return { ...c, hoursDirect: 'unknown' as const };
+    const arrive = new Date(departAtDate.getTime() + Math.ceil(directMin) * 60000);
     return { ...c, hoursDirect: statusAtArrival(c.st.id, arrive) };
   });
   if (!p.includeClosedHours) pool = pool.filter((c) => c.hoursDirect !== 'closed');

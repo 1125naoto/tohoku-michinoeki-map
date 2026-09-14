@@ -57,6 +57,7 @@ Phase 11（全国POI static cache生成）での変更点:
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -469,7 +470,9 @@ def generate_for_station(station, stats):
 
     # 「今回の取得」を失敗扱いにするのは両方全滅した場合のみ。
     # 片方だけ成功していれば、それだけでも保存する（部分的なデータ＞何も保存しない）。
-    if food_elements is None and other_elements is None:
+    food_incomplete = food_elements is None
+    other_incomplete = other_elements is None
+    if food_incomplete and other_incomplete:
         return None
 
     elements = (food_elements or []) + (other_elements or [])
@@ -477,7 +480,13 @@ def generate_for_station(station, stats):
     pois = [p for p in pois if p is not None]
     pois = dedupe_pois(pois)
     pois.sort(key=lambda p: p["distanceM"])
-    pois = pois[:POI_RESULT_LIMIT]
+    # Astra監査P1: ここでPOI_RESULT_LIMIT(30件)へ絞らない。src/lib/overpass.tsの
+    # ライブ検索と同じ理由（全カテゴリ横断で距離順に切ると、食べる/温泉等の少数派
+    # カテゴリがその他カテゴリの多数派に押し出されて静的キャッシュから消えてしまう。
+    # 実際に監査で「温泉facility=yesなのにonsenカテゴリPOIが0件」の駅の多くが
+    # ちょうど30件で頭打ちになっていたことから、この打ち切りが原因と確認した）。
+    # カテゴリ絞り込み前の全件を保存し、「すべて」表示時の上限適用はアプリ側
+    # （App.tsxのPOI_RESULT_LIMIT）に委ねる。
     endpoints_used = sorted({e for e in (food_endpoint, other_endpoint) if e})
     return {
         "stationId": station["id"],
@@ -489,7 +498,13 @@ def generate_for_station(station, stats):
         "schemaVersion": POI_SCHEMA_VERSION,
         "source": "overpass",
         "queryVersion": QUERY_VERSION,
-        "status": "ok",  # 正常応答（0件含む）。このファイルが存在すること自体が「取得成功」の証。
+        # "ok" = food/otherとも正常応答（0件含む）。"partial" = 片方のみ成功
+        # （Astra監査P1: 部分成功を"ok"として保存すると、未取得カテゴリを
+        # 「周辺に存在しない」と誤って断定してしまう不具合の原因だったため区別する。
+        # 追加フィールドのため既存の読み手（statusを見ないもの）には影響しない）。
+        "status": "partial" if (food_incomplete or other_incomplete) else "ok",
+        "foodIncomplete": food_incomplete,
+        "otherIncomplete": other_incomplete,
         "endpointsUsed": endpoints_used,
         "pois": pois,
     }
@@ -563,8 +578,9 @@ def print_stats(checkpoint):
     ok = sum(1 for v in stations.values() if v.get("status") == "ok")
     failed = sum(1 for v in stations.values() if v.get("status") == "failed")
     zero = sum(1 for v in stations.values() if v.get("status") == "ok" and v.get("poiCount") == 0)
+    partial = sum(1 for v in stations.values() if v.get("status") == "ok" and v.get("resultStatus") == "partial")
     print(f"チェックポイント集計（最終更新: {checkpoint.get('updatedAt')}）")
-    print(f"  記録済み駅数: {len(stations)}  成功: {ok}  失敗: {failed}  0件成功: {zero}")
+    print(f"  記録済み駅数: {len(stations)}  成功: {ok}  失敗: {failed}  0件成功: {zero}  部分成功: {partial}")
     print("  接続先統計:")
     for url, s in checkpoint.get("endpointStats", {}).items():
         print(f"    {url}: {s}")
@@ -645,14 +661,25 @@ def main():
             }
         else:
             out_path = OUT_DIR / f"{s['id']}.json"
-            with open(out_path, "w", encoding="utf-8") as f:
+            # Astra監査P1: 中断耐性のため、最終パスへ直接書かず一時ファイル→os.replace()で
+            # 原子的に置き換える。直接書き込みだと、実行中断（GitHub Actionsのタイムアウト・
+            # 強制終了等）がちょうど書き込み中に発生した場合、中身が壊れた（あるいは0バイトの）
+            # JSONファイルが public/data/poi/ に残り、それを静的キャッシュとして配信して
+            # しまう恐れがある。os.replace()は同一ファイルシステム上で原子的なため、
+            # 読み手は常に「更新前の完全なファイル」か「更新後の完全なファイル」のどちらかしか見ない。
+            tmp_path = out_path.with_suffix(".json.tmp")
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(result, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, out_path)
             poi_count = len(result["pois"])
-            note = "" if poi_count > 0 else "（正常応答・0件）"
+            is_partial = result["status"] == "partial"
+            note = "（部分成功: " + ("food欠落" if result["foodIncomplete"] else "other欠落") + "）" if is_partial \
+                else ("" if poi_count > 0 else "（正常応答・0件）")
             print(f"[{i + 1}/{len(stations)}] {s['pref']} {s['name']}: {poi_count}件{note} -> {out_path.name}")
             ok += 1
             checkpoint["stations"][s["id"]] = {
                 "status": "ok",
+                "resultStatus": result["status"],  # "ok" | "partial"（poi_cache_audit.pyでの検出用）
                 "attempts": 1,
                 "lastAttemptAt": now,
                 "poiCount": poi_count,

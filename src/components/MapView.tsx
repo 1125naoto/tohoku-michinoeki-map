@@ -356,6 +356,24 @@ function Legend({
               選んだ順番のまま、または回りやすい順に自動調整できます。
             </div>
           </details>
+          <details className="legend-details">
+            <summary>データの出典・通信について</summary>
+            <div className="legend-hint">
+              地図・道の駅周辺の情報は OpenStreetMap の登録データを使用しています（
+              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                出典・ライセンス ↗
+              </a>
+              ）。
+              <br />
+              「周辺スポットを探す」は OpenStreetMap の公開Overpass API、ルート検索は OSRM
+              （Project OSRM）の公開デモサーバーへ、検索・計算に必要な座標のみをそのつど送信します。
+              アカウント登録や利用履歴の保存は行っていません。
+              <br />
+              現在地は、位置情報の利用を許可した場合に上記の検索・ルート計算のためだけに使い、
+              それ以外の目的では送信しません。訪問記録・保存ルートはお使いの端末内（localStorage）
+              にのみ保存され、外部サーバーへは送信されません。
+            </div>
+          </details>
         </div>
       )}
     </div>

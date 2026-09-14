@@ -1,7 +1,11 @@
 name: 周辺スポット事前キャッシュの定期更新
 
 # scripts/fetch_poi_cache.py を実行し、public/data/poi/*.json を最新のOverpassデータで
-# 再生成する。変更があればmainへコミットし、既存のdeploy.ymlが自動的に公開へ反映する。
+# 再生成する。変更があればmainへコミットし、deploy.ymlをworkflow_dispatchで明示的に
+# 起動して公開へ反映する（Astra監査P1: 既定のGITHUB_TOKENによるpushは、GitHub Actionsの
+# 仕様上それ自体では他のworkflowのon:pushトリガーを起動しない。「pushすれば
+# deploy.ymlが自動的に反映する」という以前の想定は誤りで、実際にはこのjobが
+# コミット・pushするだけでは本番に反映されないまま次の定期実行を待つ状態になっていた）。
 # 秘密鍵・APIキーは不要（Overpassは無料公開API）。
 #
 # 全国1,237施設規模になったため、Phase 11（全国POI static cache生成）で
@@ -25,6 +29,8 @@ on:
 
 permissions:
   contents: write
+  # deploy.ymlをworkflow_dispatchで起動するために必要（下記「公開を起動」ステップ参照）
+  actions: write
 
 jobs:
   refresh:
@@ -42,26 +48,42 @@ jobs:
           python-version: '3.12'
 
       - name: 前回失敗した駅を少数だけ再試行（無限リトライはしない）
-        run: python scripts/fetch_poi_cache.py --retry-failed --max-stations 50 || true
+        # Astra監査P1: 以前は末尾の `|| true` で終了コードを常に握りつぶしていた。
+        # 個々の駅のAPI失敗は既にスクリプト内部でchecked（チェックポイントへfailed記録し
+        # 処理を継続）しており例外を投げない。ここで非0終了するのは、STATIONS_JSON読み込み
+        # 失敗・引数エラー・未捕捉の例外など「差分更新そのものが機能していない」構造的な
+        # 異常のみのため、握りつぶさずジョブを失敗させ気付けるようにする。
+        run: python scripts/fetch_poi_cache.py --retry-failed --max-stations 50
 
       - name: 未生成/期限切れの駅を差分更新（1回の実行では上限件数までにとどめる）
         run: >
           python scripts/fetch_poi_cache.py
           --stale-days 60
           --max-stations "${{ github.event.inputs.max_stations || '400' }}"
-          || true
 
       - name: 更新結果のサマリを表示
         run: python scripts/fetch_poi_cache.py --stats
 
       - name: 変更があればmainへコミット
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/data/poi/ data/poi_cache_checkpoint.json
           if git diff --cached --quiet; then
             echo "変更なし"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "周辺スポット事前キャッシュを更新 (自動生成・差分更新)"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: 公開を起動（deploy.ymlをworkflow_dispatchで明示的に起動する）
+        # 既定のGITHUB_TOKENによるpushはon:pushトリガーを起動しないため、
+        # このjob自身が明示的にdeploy.ymlを起動しない限り、更新したPOIデータは
+        # 次に別の理由でmainへpushされるまで公開に反映されない。
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main

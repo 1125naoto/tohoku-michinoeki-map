@@ -112,6 +112,8 @@ export default function ManualRouteBuilder({
     roadData: 'road' | 'approx';
     candidates: ManualCandidateLike[];
     params: ManualPlanParams;
+    /** 到達不能区間の補完専用（§manualRoute.ts ManualMatrixResult.fallback参照） */
+    fallback: RouteMatrix;
   } | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [optimizedOrderIds, setOptimizedOrderIds] = useState<string[]>([]);
@@ -171,14 +173,14 @@ export default function ManualRouteBuilder({
     setErrorMsg(null);
     try {
       const p = buildParams(orderMode);
-      const { matrix, roadData, candidates } = await buildManualMatrix(stations, selectedPois, selectedIds, p);
-      setCache({ matrix, roadData, candidates, params: p });
-      const selOrder = orderManual(candidates, matrix, { ...p, orderMode: 'selected' });
-      const optOrder = orderManual(candidates, matrix, { ...p, orderMode: 'optimized' });
+      const { matrix, roadData, candidates, fallback } = await buildManualMatrix(stations, selectedPois, selectedIds, p);
+      setCache({ matrix, roadData, candidates, params: p, fallback });
+      const selOrder = orderManual(candidates, matrix, { ...p, orderMode: 'selected' }, fallback);
+      const optOrder = orderManual(candidates, matrix, { ...p, orderMode: 'optimized' }, fallback);
       setSelectedOrderIds(selOrder.map((c) => c.st.id));
       setOptimizedOrderIds(optOrder.map((c) => c.st.id));
       const order = p.orderMode === 'selected' ? selOrder : optOrder;
-      proceedAfterOrder(p, matrix, roadData, order, selOrder, optOrder);
+      proceedAfterOrder(p, matrix, roadData, order, selOrder, optOrder, fallback);
     } catch {
       setErrorMsg('ルートを計算できませんでした。電波状況を確認してもう一度お試しください。');
       setPhase('settings');
@@ -192,6 +194,7 @@ export default function ManualRouteBuilder({
     order: ManualCandidateLike[],
     selOrder: ManualCandidateLike[],
     optOrder: ManualCandidateLike[],
+    fallback: RouteMatrix,
   ) => {
     const changed =
       p.orderMode === 'optimized' && selOrder.map((c) => c.st.id).join('>') !== optOrder.map((c) => c.st.id).join('>');
@@ -200,7 +203,7 @@ export default function ManualRouteBuilder({
       setPhase('order-review');
       return;
     }
-    checkBudget(p, matrix, roadData, order);
+    checkBudget(p, matrix, roadData, order, fallback);
   };
 
   const checkBudget = (
@@ -208,8 +211,9 @@ export default function ManualRouteBuilder({
     matrix: RouteMatrix,
     roadData: 'road' | 'approx',
     order: ManualCandidateLike[],
+    fallback: RouteMatrix,
   ) => {
-    const ev = evaluateManual(order, matrix, p);
+    const ev = evaluateManual(order, matrix, p, fallback);
     if (p.budgetMin != null && ev) {
       const margin = computeMarginMin(ev.totalMin);
       const withMargin = ev.totalMin + margin;
@@ -220,7 +224,7 @@ export default function ManualRouteBuilder({
         return;
       }
     }
-    finalize(p, matrix, roadData, order);
+    finalize(p, matrix, roadData, order, fallback);
   };
 
   const finalize = (
@@ -228,11 +232,12 @@ export default function ManualRouteBuilder({
     matrix: RouteMatrix,
     roadData: 'road' | 'approx',
     order: ManualCandidateLike[],
+    fallback: RouteMatrix,
   ) => {
     const title = '地図から選んだコース';
     const reason =
       p.orderMode === 'selected' ? '選んだ順番のまま作成しました' : '移動時間を短くするため、順番を調整しました';
-    const built = buildManualRoute(order, matrix, p, roadData, title, reason);
+    const built = buildManualRoute(order, matrix, p, roadData, title, reason, fallback);
     if (!built) {
       setErrorMsg('ルートを作成できませんでした。選択や設定を見直してください。');
       setPhase('settings');
@@ -292,16 +297,21 @@ export default function ManualRouteBuilder({
           <div className="btn-grid">
             <button
               className="btn-primary"
-              onClick={() => checkBudget(cache.params, cache.matrix, cache.roadData, activeOrder!)}
+              onClick={() => checkBudget(cache.params, cache.matrix, cache.roadData, activeOrder!, cache.fallback)}
               data-testid="order-review-keep"
             >
               この順番で進む
             </button>
             <button
               onClick={() => {
-                const selOrder = orderManual(cache.candidates, cache.matrix, { ...cache.params, orderMode: 'selected' });
+                const selOrder = orderManual(
+                  cache.candidates,
+                  cache.matrix,
+                  { ...cache.params, orderMode: 'selected' },
+                  cache.fallback,
+                );
                 setOrderMode('selected');
-                checkBudget({ ...cache.params, orderMode: 'selected' }, cache.matrix, cache.roadData, selOrder);
+                checkBudget({ ...cache.params, orderMode: 'selected' }, cache.matrix, cache.roadData, selOrder, cache.fallback);
               }}
               data-testid="order-review-revert"
             >
@@ -314,7 +324,7 @@ export default function ManualRouteBuilder({
   }
 
   if (phase === 'over-budget' && cache && activeOrder) {
-    const overEv = evaluateManual(activeOrder, cache.matrix, cache.params)!;
+    const overEv = evaluateManual(activeOrder, cache.matrix, cache.params, cache.fallback)!;
     const overMargin = computeMarginMin(overEv.totalMin);
     return (
       <div>
@@ -334,7 +344,13 @@ export default function ManualRouteBuilder({
             </button>
             <button
               onClick={() => {
-                const { kept, excluded } = fitToBudget(activeOrder, cache.matrix, cache.params, cache.params.budgetMin ?? 0);
+                const { kept, excluded } = fitToBudget(
+                  activeOrder,
+                  cache.matrix,
+                  cache.params,
+                  cache.params.budgetMin ?? 0,
+                  cache.fallback,
+                );
                 setFitKept(kept);
                 setExcludedNames(excluded.map((c) => c.st.name ?? resolveName(c.st.id)));
               }}
@@ -343,7 +359,7 @@ export default function ManualRouteBuilder({
               時間内に回れる分だけで作成
             </button>
             <button
-              onClick={() => finalize(cache.params, cache.matrix, cache.roadData, activeOrder)}
+              onClick={() => finalize(cache.params, cache.matrix, cache.roadData, activeOrder, cache.fallback)}
               data-testid="over-budget-force"
             >
               時間を超えてこのまま作成
@@ -363,7 +379,7 @@ export default function ManualRouteBuilder({
                   <button
                     className="btn-primary"
                     style={{ width: '100%' }}
-                    onClick={() => finalize(cache.params, cache.matrix, cache.roadData, fitKept)}
+                    onClick={() => finalize(cache.params, cache.matrix, cache.roadData, fitKept, cache.fallback)}
                     data-testid="over-budget-fit-confirm"
                   >
                     この{fitKept.length}件で作成する

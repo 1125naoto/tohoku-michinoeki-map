@@ -110,6 +110,10 @@ export const MIN_AUTO_RESULTS = 3;
 interface CacheEntry {
   at: number;
   pois: Poi[];
+  /** trueなら食べる系(food)クエリが取得できず、当時の結果はfood系が不完全だった */
+  foodIncomplete: boolean;
+  /** trueなら温泉・観光等(other)クエリが取得できず、当時の結果はother系が不完全だった */
+  otherIncomplete: boolean;
 }
 const cache = new Map<string, CacheEntry>();
 
@@ -223,8 +227,12 @@ export function peekCachedPois(lat: number, lng: number, radiusM: SearchRadiusM)
 export interface EndpointAttemptLog {
   url: string;
   radiusM: number;
-  /** 'aborted' = 他の接続先が先に成功した、または開始前に中断された（stagger race） */
-  outcome: 'ok' | 'http_error' | 'timeout' | 'network_error' | 'aborted';
+  /**
+   * 'aborted' = 他の接続先が先に成功した、または開始前に中断された（stagger race）。
+   * 'malformed' = HTTP 200だがOverpassのエラーremark(実行時エラー等)を含む、
+   * またはelements配列が存在しない応答（正常な0件成功と区別するため失敗扱いにする）。
+   */
+  outcome: 'ok' | 'http_error' | 'timeout' | 'network_error' | 'aborted' | 'malformed';
   status?: number;
   elementCount?: number;
 }
@@ -237,6 +245,14 @@ export interface PoiSearchResult {
   fromCache: boolean;
   /** 各接続先への試行ログ（キャッシュヒット時は空配列）。診断表示専用で挙動には影響しない */
   attemptLog: EndpointAttemptLog[];
+  /**
+   * trueなら食べる(food)クエリが全滅し、food系カテゴリ(ラーメン等)の結果が
+   * 欠けている可能性がある（=「周辺に無い」への断定はできない）。failed:falseでも
+   * 立ちうる（片方だけ成功した部分成功のケース）。
+   */
+  foodIncomplete: boolean;
+  /** trueなら温泉・観光等(other)クエリが全滅し、該当カテゴリの結果が欠けている可能性がある */
+  otherIncomplete: boolean;
 }
 
 /**
@@ -274,8 +290,25 @@ async function tryEndpoint(
       }
       return { elements: null, log: { url, radiusM, outcome: 'http_error', status: res.status } };
     }
-    const json = (await res.json()) as { elements?: OsmElement[] };
-    const elements = json.elements ?? [];
+    const json = (await res.json()) as { elements?: unknown; remark?: unknown };
+    // HTTP 200だけで成功と判定しない: Overpassはクエリのランタイムエラー
+    // （例: 一部タイムアウト）等をHTTP 200 + remarkフィールドで返すことがある。
+    // これを「正常応答・0件」として保存/表示すると、実際には取得できていない
+    // カテゴリを「周辺に存在しない」と誤って断定してしまうため、失敗として扱う
+    // （呼び出し側のstagger raceが他の接続先へフェイルオーバーする）。
+    if (typeof json.remark === 'string') {
+      if (import.meta.env.DEV) {
+        console.warn(`[overpass] ${url} → remark(実行時エラー疑い): ${json.remark}`);
+      }
+      return { elements: null, log: { url, radiusM, outcome: 'malformed', status: res.status } };
+    }
+    if (!Array.isArray(json.elements)) {
+      if (import.meta.env.DEV) {
+        console.warn(`[overpass] ${url} → elements配列が無い不正な応答`, json);
+      }
+      return { elements: null, log: { url, radiusM, outcome: 'malformed', status: res.status } };
+    }
+    const elements = json.elements as OsmElement[];
     return { elements, log: { url, radiusM, outcome: 'ok', status: res.status, elementCount: elements.length } };
   } catch (e) {
     if (outerSignal?.aborted) throw e; // 呼び出し元の意図的な中断は次の接続先へ回さず伝播する
@@ -373,7 +406,14 @@ export async function searchNearbyPois(
   const key = cacheKey(lat, lng, radiusM);
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at <= CACHE_TTL_MS) {
-    return { pois: hit.pois, failed: false, fromCache: true, attemptLog: [] };
+    return {
+      pois: hit.pois,
+      failed: false,
+      fromCache: true,
+      attemptLog: [],
+      foodIncomplete: hit.foodIncomplete,
+      otherIncomplete: hit.otherIncomplete,
+    };
   }
 
   // 前回の検索が残っていれば中断してから新しいリクエストを開始する
@@ -395,10 +435,14 @@ export async function searchNearbyPois(
 
     // 「今回の検索」自体を失敗扱いにするのは両方全滅した場合のみ。
     // 片方だけ成功していれば、それだけでも表示する（部分的なデータ＞何も出さない）。
-    if (foodRaced.elements === null && otherRaced.elements === null) {
+    // ただしfood/otherそれぞれの取得成否は呼び出し側が追跡できるよう返す
+    // （未取得カテゴリを「周辺に存在しない」と断定させないため）。
+    const foodIncomplete = foodRaced.elements === null;
+    const otherIncomplete = otherRaced.elements === null;
+    if (foodIncomplete && otherIncomplete) {
       const stale = readStaleFallback(key);
-      if (stale) return { pois: stale, failed: false, fromCache: true, attemptLog };
-      return { pois: [], failed: true, fromCache: false, attemptLog };
+      if (stale) return { pois: stale, failed: false, fromCache: true, attemptLog, foodIncomplete, otherIncomplete };
+      return { pois: [], failed: true, fromCache: false, attemptLog, foodIncomplete, otherIncomplete };
     }
 
     const elements = [...(foodRaced.elements ?? []), ...(otherRaced.elements ?? [])];
@@ -410,14 +454,17 @@ export async function searchNearbyPois(
     const pois = dedupePois(
       elements.map((el) => normalizeOsmElement(el, origin)).filter((p): p is Poi => p !== null),
     ).sort((a, b) => a.distanceM - b.distanceM);
-    cache.set(key, { at: Date.now(), pois });
+    cache.set(key, { at: Date.now(), pois, foodIncomplete, otherIncomplete });
     // 際限なく増やさない
     if (cache.size > 40) {
       const oldest = [...cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
       if (oldest) cache.delete(oldest[0]);
     }
-    writeStaleFallback(key, pois);
-    return { pois, failed: false, fromCache: false, attemptLog };
+    // food/otherの片方でも不完全だった場合、その欠けた結果を「前回成功時の
+    // 保存結果」として劣化フォールバックに書き込まない（完全な既存の保存結果を
+    // 不完全なデータで上書きして壊さないため）。
+    if (!foodIncomplete && !otherIncomplete) writeStaleFallback(key, pois);
+    return { pois, failed: false, fromCache: false, attemptLog, foodIncomplete, otherIncomplete };
   } finally {
     signal?.removeEventListener('abort', onOuterAbort);
     if (inFlightController === ctrl) inFlightController = null;

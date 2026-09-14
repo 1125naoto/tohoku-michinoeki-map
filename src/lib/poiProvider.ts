@@ -31,6 +31,10 @@ export interface PoiProviderResult {
   radiusUsed: SearchRadiusM;
   /** 接続先ごとの試行ログ（診断表示専用。無い場合は空配列） */
   attemptLog: EndpointAttemptLog[];
+  /** trueなら食べる(food)系カテゴリの結果が欠けている可能性がある（failed:falseでも立ちうる） */
+  foodIncomplete: boolean;
+  /** trueなら温泉・観光等(other)系カテゴリの結果が欠けている可能性がある */
+  otherIncomplete: boolean;
 }
 
 export interface PoiProvider {
@@ -47,12 +51,52 @@ export class StaticOsmPoiProvider implements PoiProvider {
   readonly name = 'static-osm' as const;
   constructor(private readonly stationId: string) {}
 
-  async search(_origin: PoiOrigin, radius: SearchRadiusM): Promise<PoiProviderResult> {
-    const cache = await loadStaticPoiCache(this.stationId);
+  async search(_origin: PoiOrigin, radius: SearchRadiusM, signal?: AbortSignal): Promise<PoiProviderResult> {
+    const cache = await loadStaticPoiCache(this.stationId, signal);
     if (!cache || cache.pois.length === 0) {
-      return { pois: [], failed: true, fromCache: false, radiusUsed: radius, attemptLog: [] };
+      return {
+        pois: [],
+        failed: true,
+        fromCache: false,
+        radiusUsed: radius,
+        attemptLog: [],
+        foodIncomplete: false,
+        otherIncomplete: false,
+      };
     }
-    return { pois: cache.pois, failed: false, fromCache: true, radiusUsed: cache.radiusM as SearchRadiusM, attemptLog: [] };
+    // Astra監査P1（static/liveの検索範囲不一致）: 静的キャッシュは常に
+    // cache.radiusM（国内一律10km）で生成されているため、要求範囲(radius)が
+    // それより狭い場合はそのまま全件を返さず、要求範囲内に絞り込んでから返す
+    // （そうしないと「3km検索」のつもりで最大10km先のPOIまで表示されてしまい、
+    // 表示中の検索範囲の意味とズレる。かつ、常に10km分が返るため3km圏に
+    // 本当は候補が少ない場合でも自動拡張[3→5→10km]が正しく働かなくなる）。
+    // 逆に要求範囲がキャッシュの生成範囲を超える場合（15km等）は、このキャッシュ
+    // だけでは応えられないため failed:true とし、呼び出し側をライブ検索へ回す。
+    if (radius > cache.radiusM) {
+      return {
+        pois: [],
+        failed: true,
+        fromCache: false,
+        radiusUsed: radius,
+        attemptLog: [],
+        foodIncomplete: false,
+        otherIncomplete: false,
+      };
+    }
+    const filtered = radius === cache.radiusM ? cache.pois : cache.pois.filter((p) => p.distanceM <= radius);
+    // fetch_poi_cache.pyはAstra監査P1対応でfood/other個別の成否を
+    // foodIncomplete/otherIncompleteとしてJSONへ記録するようになった（追加フィールド）。
+    // 旧生成ファイル（フィールド自体が無い）は「両方成功」相当としてfalseを返す
+    // （後方互換。生成当時は部分成功が"ok"として保存されていたため、これ以上は判定できない）。
+    return {
+      pois: filtered,
+      failed: false,
+      fromCache: true,
+      radiusUsed: radius,
+      attemptLog: [],
+      foodIncomplete: cache.foodIncomplete ?? false,
+      otherIncomplete: cache.otherIncomplete ?? false,
+    };
   }
 }
 
@@ -68,6 +112,8 @@ export class OverpassPoiProvider implements PoiProvider {
       fromCache: res.fromCache,
       radiusUsed: res.radiusUsed,
       attemptLog: res.attemptLog,
+      foodIncomplete: res.foodIncomplete,
+      otherIncomplete: res.otherIncomplete,
     };
   }
 }

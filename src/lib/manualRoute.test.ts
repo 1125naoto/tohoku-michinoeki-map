@@ -338,3 +338,102 @@ describe('道の駅＋周辺スポットの混合ルート', () => {
     expect(s.open + s.closing + s.closed + s.unknown).toBe(1); // 道の駅1件のみ集計
   });
 });
+
+describe('到達不能区間の扱い（Astra P1: 手動routeでは問題区間を明示）', () => {
+  /** ユーザーが選んだ2駅間だけが「OSRM正常応答の上での到達不能」になるProvider */
+  function makeProviderWithUnreachableLeg() {
+    const provider: RoutingProvider = {
+      name: 'fake-road-with-unreachable',
+      async table(points) {
+        const n = points.length;
+        const durationsMin: number[][] = [];
+        const distancesKm: number[][] = [];
+        for (let i = 0; i < n; i++) {
+          durationsMin.push([]);
+          distancesKm.push([]);
+          for (let j = 0; j < n; j++) {
+            // 出発地点(0)⇔選択1件目(1)だけ到達不能（離島/海峡相当の再現）
+            const unreachable = i !== j && ((i === 0 && j === 1) || (i === 1 && j === 0));
+            if (unreachable) {
+              durationsMin[i].push(Number.POSITIVE_INFINITY);
+              distancesKm[i].push(Number.POSITIVE_INFINITY);
+            } else {
+              durationsMin[i].push(i === j ? 0 : estimateLegMin(points[i], points[j], true, new Date('2026-09-05')));
+              distancesKm[i].push(i === j ? 0 : haversineKm(points[i], points[j]) * 1.3);
+            }
+          }
+        }
+        return { durationsMin, distancesKm };
+      },
+      route: () => Promise.reject(new Error('not needed')),
+    };
+    return provider;
+  }
+
+  it('一部区間が到達不能でもnullを返さず、その区間をunreachable:trueで明示する', async () => {
+    const selected = nearIds.slice(0, 3);
+    const provider = makeProviderWithUnreachableLeg();
+    const { matrix, candidates, fallback } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider,
+    });
+    const p = baseParams({ orderMode: 'selected' });
+    const order = orderManual(candidates, matrix, p, fallback);
+    const route = buildManualRoute(order, matrix, p, 'road', 't', 'r', fallback);
+    expect(route).not.toBeNull(); // ユーザーが選んだ地点を勝手に落として失敗にしない
+    expect(route!.roadData).toBe('road');
+    expect(route!.hasUnreachableLeg).toBe(true);
+    // 最初の区間(出発地点→1件目)が到達不能としてフラグされている
+    expect(route!.legs[0].unreachable).toBe(true);
+    // 到達不能区間でも有限の概算driveMinが入る（Infinityがそのまま表に出ない）
+    expect(Number.isFinite(route!.legs[0].driveMin)).toBe(true);
+    // 他の区間は通常どおり到達可能（不要にunreachable化していない）
+    expect(route!.legs.slice(1).every((l) => !l.unreachable)).toBe(true);
+  });
+
+  it('fallbackを渡さない場合は従来どおり到達不能を含む並びでnullを返す（後方互換）', async () => {
+    const selected = nearIds.slice(0, 3);
+    const provider = makeProviderWithUnreachableLeg();
+    const { matrix, candidates } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), { provider });
+    const p = baseParams({ orderMode: 'selected' });
+    const order = orderManual(candidates, matrix, p); // fallback省略
+    const route = buildManualRoute(order, matrix, p, 'road', 't', 'r'); // fallback省略
+    expect(route).toBeNull();
+  });
+
+  it('providerが返した行列オブジェクトを書き換えない（osrmProvider内部キャッシュの汚染防止）', async () => {
+    const selected = nearIds.slice(0, 3);
+    const provider = makeProviderWithUnreachableLeg();
+    let captured: { durationsMin: number[][] } | null = null;
+    const wrapped: RoutingProvider = {
+      name: 'capture',
+      table: async (points, signal) => {
+        const m = await provider.table(points, signal);
+        captured = m;
+        return m;
+      },
+      route: provider.route,
+    };
+    const { matrix, candidates, fallback } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider: wrapped,
+    });
+    const p = baseParams({ orderMode: 'selected' });
+    const order = orderManual(candidates, matrix, p, fallback);
+    buildManualRoute(order, matrix, p, 'road', 't', 'r', fallback);
+    expect(captured).not.toBeNull();
+    expect(captured!.durationsMin[0][1]).toBe(Number.POSITIVE_INFINITY); // 書き換えられていない
+  });
+
+  it('通信障害時（roadData=approx）は従来どおり到達不能フラグを立てず、概算全体として扱う', async () => {
+    const selected = nearIds.slice(0, 3);
+    const { matrix, candidates, fallback } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider: failProvider,
+    });
+    const p = baseParams({ orderMode: 'selected' });
+    const order = orderManual(candidates, matrix, p, fallback);
+    const route = buildManualRoute(order, matrix, p, 'approx', 't', 'r', fallback);
+    expect(route).not.toBeNull();
+    expect(route!.roadData).toBe('approx');
+    expect(route!.hasUnreachableLeg).toBeFalsy();
+    expect(route!.legs.every((l) => !l.unreachable)).toBe(true);
+  });
+});

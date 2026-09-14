@@ -237,6 +237,74 @@ describe('実道路時間と概算フォールバック', () => {
   });
 });
 
+describe('到達不能区間の扱い（Astra P1: 通信障害と到達不能の混同防止）', () => {
+  /**
+   * OSRMが正常応答した上で「一部の駅ペアだけ到達不能」と判定するケースを
+   * 決定的に再現するProvider（離島・海峡等で実際に起こりうる状況の模擬）。
+   */
+  function makeProviderWithUnreachablePair(unreachableIndex: number) {
+    const provider: RoutingProvider = {
+      name: 'fake-road-with-unreachable',
+      async table(points) {
+        const n = points.length;
+        const durationsMin: number[][] = [];
+        const distancesKm: number[][] = [];
+        for (let i = 0; i < n; i++) {
+          durationsMin.push([]);
+          distancesKm.push([]);
+          for (let j = 0; j < n; j++) {
+            const isUnreachablePair =
+              (i === 0 && j === unreachableIndex) || (i === unreachableIndex && j === 0);
+            if (i !== j && isUnreachablePair) {
+              durationsMin[i].push(Number.POSITIVE_INFINITY);
+              distancesKm[i].push(Number.POSITIVE_INFINITY);
+            } else {
+              durationsMin[i].push(i === j ? 0 : estimateLegMin(points[i], points[j], true, new Date('2026-09-05')));
+              distancesKm[i].push(i === j ? 0 : haversineKm(points[i], points[j]) * 1.3);
+            }
+          }
+        }
+        return { durationsMin, distancesKm };
+      },
+      route: () => Promise.reject(new Error('not needed')),
+    };
+    return provider;
+  }
+
+  it('出発地点から到達不能な駅を含む並びは提案されない（自動提案は成立するrouteのみ採用）', async () => {
+    const provider = makeProviderWithUnreachablePair(1); // 行列index1の駅（=最初の候補）を到達不能にする
+    const res = await planCourses(STATIONS, {}, baseParams({ maxStops: 3 }), { provider });
+    expect(res.roadData).toBe('road'); // OSRM自体は正常応答している
+    expect(res.courses.length).toBeGreaterThan(0); // 他の候補で成立するコースは提案される
+    for (const r of res.courses) {
+      for (const leg of r.legs) {
+        expect(Number.isFinite(leg.driveMin)).toBe(true);
+        // 到達不能を概算で覆い隠していない = unreachableフラグが立つ区間が無い
+        expect(leg.unreachable).toBeFalsy();
+      }
+    }
+  });
+
+  it('providerが返した行列オブジェクトを書き換えない（routing.ts内部キャッシュの汚染防止）', async () => {
+    const provider = makeProviderWithUnreachablePair(1);
+    let capturedMatrix: { durationsMin: number[][] } | null = null;
+    const wrapped: RoutingProvider = {
+      name: 'capture',
+      table: async (points, signal) => {
+        const m = await provider.table(points, signal);
+        capturedMatrix = m;
+        return m;
+      },
+      route: provider.route,
+    };
+    await planCourses(STATIONS, {}, baseParams({ maxStops: 3 }), { provider: wrapped });
+    // planCoursesが内部でセルを書き換えていたら、providerが返した同一オブジェクトの
+    // Infinityが消えているはず。書き換えていなければInfinityが残る。
+    expect(capturedMatrix).not.toBeNull();
+    expect(capturedMatrix!.durationsMin[0][1]).toBe(Number.POSITIVE_INFINITY);
+  });
+});
+
 describe('営業時間との連携', () => {
   const night = '2026-09-04T22:00:00+09:00'; // JST 22時 = ほぼ全駅が営業時間外
 

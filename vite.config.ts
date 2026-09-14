@@ -87,9 +87,9 @@ export default defineConfig({
       injectRegister: false, // main.tsx で手動登録
       filename: 'sw.js',
       manifest: {
-        name: '道の駅ナビ｜東北スタンプラリー＆ルート検索',
+        name: '道の駅ナビ｜全国スタンプラリー＆ルート検索',
         short_name: '道の駅ナビ',
-        description: '東北6県の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索アプリ',
+        description: '全国の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索アプリ',
         lang: 'ja',
         start_url: DEPLOY_BASE,
         scope: DEPLOY_BASE,

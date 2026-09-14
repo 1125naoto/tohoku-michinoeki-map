@@ -3,11 +3,13 @@
   "lat": 44.0690729,
   "lng": 144.9906685,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T13:59:01Z",
+  "generatedAt": "2026-09-14T07:00:02Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
-  "status": "ok",
+  "status": "partial",
+  "foodIncomplete": false,
+  "otherIncomplete": true,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -29,60 +31,6 @@
       "distanceM": 16,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/9751899267"
-    },
-    {
-      "id": "osm:way/379738514",
-      "category": "tourism",
-      "subcategory": "hakubutsukan",
-      "subcategories": [
-        "hakubutsukan"
-      ],
-      "name": "知床世界遺産センター",
-      "lat": 44.069558,
-      "lng": 144.9913386,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": "http://shiretoko-whcc.env.go.jp/",
-      "distanceM": 76,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/379738514"
-    },
-    {
-      "id": "osm:way/458993870",
-      "category": "lodging",
-      "subcategory": "guesthouse",
-      "subcategories": [
-        "guesthouse"
-      ],
-      "name": "しれとこペレケ",
-      "lat": 44.069651,
-      "lng": 144.9935835,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 242,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/458993870"
-    },
-    {
-      "id": "osm:way/458993829",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "ノーブルホテル",
-      "lat": 44.0703908,
-      "lng": 144.993471,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 268,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/458993829"
     },
     {
       "id": "osm:node/14026424302",
@@ -157,58 +105,22 @@
       "sourceUrl": "https://www.openstreetmap.org/node/13040590401"
     },
     {
-      "id": "osm:node/13040614301",
-      "category": "lodging",
-      "subcategory": "guesthouse",
+      "id": "osm:node/13040614401",
+      "category": "food",
+      "subcategory": "food_other",
       "subcategories": [
-        "guesthouse"
+        "food_other"
       ],
       "name": "Bon's Home",
-      "lat": 44.0702878,
-      "lng": 144.9944952,
+      "lat": 44.0703108,
+      "lng": 144.9944968,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 334,
+      "distanceM": 335,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/13040614301"
-    },
-    {
-      "id": "osm:node/13227352901",
-      "category": "lodging",
-      "subcategory": "hostel",
-      "subcategories": [
-        "hostel"
-      ],
-      "name": "Bon’s Home",
-      "lat": 44.0702979,
-      "lng": 144.9945349,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": "http://bonshome.com",
-      "distanceM": 338,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/13227352901"
-    },
-    {
-      "id": "osm:node/5884147286",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": null,
-      "lat": 44.0694775,
-      "lng": 144.9949273,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 343,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5884147286"
+      "sourceUrl": "https://www.openstreetmap.org/node/13040614401"
     },
     {
       "id": "osm:node/14019725701",
@@ -247,24 +159,6 @@
       "sourceUrl": "https://www.openstreetmap.org/node/5893195391"
     },
     {
-      "id": "osm:way/375641484",
-      "category": "tourism",
-      "subcategory": "meisho",
-      "subcategories": [
-        "meisho"
-      ],
-      "name": "ゴジラ岩",
-      "lat": 44.0725688,
-      "lng": 144.9933129,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 442,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/375641484"
-    },
-    {
       "id": "osm:node/5893195390",
       "category": "food",
       "subcategory": "food_other",
@@ -281,61 +175,6 @@
       "distanceM": 500,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/5893195390"
-    },
-    {
-      "id": "osm:way/458993977",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "北こぶし知床 ホテル＆リゾート",
-      "lat": 44.0718934,
-      "lng": 144.9955971,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 503,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/458993977"
-    },
-    {
-      "id": "osm:way/375641483",
-      "category": "tourism",
-      "subcategory": "meisho",
-      "subcategories": [
-        "meisho"
-      ],
-      "name": "オロンコ岩",
-      "lat": 44.0736655,
-      "lng": 144.9904189,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 511,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/375641483"
-    },
-    {
-      "id": "osm:way/379741256",
-      "category": "onsen",
-      "subcategory": "higaeri_onsen",
-      "subcategories": [
-        "higaeri_onsen",
-        "onsen"
-      ],
-      "name": "ウトロ温泉;夕陽台の湯",
-      "lat": 44.0721565,
-      "lng": 144.9986511,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 724,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/379741256"
     },
     {
       "id": "osm:way/375641482",
@@ -356,24 +195,6 @@
       "sourceUrl": "https://www.openstreetmap.org/way/375641482"
     },
     {
-      "id": "osm:node/3789932844",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "知床プリンスホテル風なみ季",
-      "lat": 44.0716636,
-      "lng": 145.0004945,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 836,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/3789932844"
-    },
-    {
       "id": "osm:way/375641479",
       "category": "food",
       "subcategory": "food_other",
@@ -390,132 +211,6 @@
       "distanceM": 917,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/375641479"
-    },
-    {
-      "id": "osm:node/13040634774",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "Iruka hotel",
-      "lat": 44.0667108,
-      "lng": 144.979566,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 925,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/13040634774"
-    },
-    {
-      "id": "osm:node/13854934801",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "The SUNSET Shiretoko",
-      "lat": 44.0732807,
-      "lng": 145.0006801,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 927,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/13854934801"
-    },
-    {
-      "id": "osm:node/3547590993",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": null,
-      "lat": 44.0624075,
-      "lng": 144.998498,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 970,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/3547590993"
-    },
-    {
-      "id": "osm:node/5772091853",
-      "category": "tourism",
-      "subcategory": "camp",
-      "subcategories": [
-        "camp"
-      ],
-      "name": null,
-      "lat": 44.0739103,
-      "lng": 145.001832,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": "+81152242722",
-      "website": "https://blog.shiretoko.asia/",
-      "distanceM": 1042,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5772091853"
-    },
-    {
-      "id": "osm:node/3789932867",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "知床第一ホテル",
-      "lat": 44.0706324,
-      "lng": 145.0042335,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 1098,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/3789932867"
-    },
-    {
-      "id": "osm:node/6583641986",
-      "category": "tourism",
-      "subcategory": "tenbo",
-      "subcategories": [
-        "tenbo"
-      ],
-      "name": "フレペの滝 展望台",
-      "lat": 44.0959619,
-      "lng": 145.0129553,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 3480,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/6583641986"
-    },
-    {
-      "id": "osm:way/547639847",
-      "category": "tourism",
-      "subcategory": "tenbo",
-      "subcategories": [
-        "tenbo"
-      ],
-      "name": null,
-      "lat": 44.0960132,
-      "lng": 145.0129546,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 3485,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/547639847"
     },
     {
       "id": "osm:node/13979940901",
@@ -536,22 +231,22 @@
       "sourceUrl": "https://www.openstreetmap.org/node/13979940901"
     },
     {
-      "id": "osm:way/288180380",
-      "category": "tourism",
-      "subcategory": "hakubutsukan",
+      "id": "osm:node/2538150330",
+      "category": "food",
+      "subcategory": "fastfood",
       "subcategories": [
-        "hakubutsukan"
+        "fastfood"
       ],
-      "name": "知床自然センター",
-      "lat": 44.0914853,
-      "lng": 145.0230154,
+      "name": null,
+      "lat": 44.1222792,
+      "lng": 145.080064,
       "address": null,
-      "openingHoursRaw": "Mo-Su 09:00-16:00",
+      "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 3590,
+      "distanceM": 9272,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/288180380"
+      "sourceUrl": "https://www.openstreetmap.org/node/2538150330"
     }
   ]
 }

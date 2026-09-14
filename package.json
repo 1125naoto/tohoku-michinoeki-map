@@ -3,14 +3,15 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "道の駅ナビ - 東北6県の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索PWA",
+  "description": "道の駅ナビ - 全国の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索PWA",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173 --strictPort",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "npm run build && playwright test",
+    "e2e:no-build": "playwright test",
     "gen-icons": "py -3 scripts/gen-icons.py"
   },
   "dependencies": {

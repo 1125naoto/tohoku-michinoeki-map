@@ -6,9 +6,9 @@
 import type { SavedRoute, TripState, VisitMap } from '../types';
 import {
   KEYS,
-  isSavedRoutes,
+  isSavedRoute,
   isTripState,
-  isVisitMap,
+  isVisitRecord,
   loadRoutes,
   loadTrip,
   loadVisits,
@@ -78,10 +78,20 @@ export function parseBackup(text: string): ParseResult {
   if (typeof o.schemaVersion !== 'number' || o.schemaVersion > BACKUP_SCHEMA_VERSION) {
     return { ok: false, error: '対応していないバックアップのバージョンです' };
   }
-  const visits = o.visits ?? {};
-  if (!isVisitMap(visits)) return { ok: false, error: '訪問記録の形式が不正です' };
-  const routes = o.routes ?? [];
-  if (!isSavedRoutes(routes)) return { ok: false, error: '保存ルートの形式が不正です' };
+  // visits/routesは「1件の壊れた記録」で復元全体を拒否しない: 個別に検証し、
+  // 不正な要素だけを除外する（Astra監査P1）。ただしフィールド自体が根本的に
+  // 配列/オブジェクトですらない場合は、ファイル自体が壊れているとみなし拒否する。
+  const rawVisits = o.visits ?? {};
+  if (typeof rawVisits !== 'object' || rawVisits === null || Array.isArray(rawVisits)) {
+    return { ok: false, error: '訪問記録の形式が不正です' };
+  }
+  const visits: VisitMap = {};
+  for (const [id, rec] of Object.entries(rawVisits as Record<string, unknown>)) {
+    if (isVisitRecord(rec)) visits[id] = rec;
+  }
+  const rawRoutes = o.routes ?? [];
+  if (!Array.isArray(rawRoutes)) return { ok: false, error: '保存ルートの形式が不正です' };
+  const routes: SavedRoute[] = rawRoutes.filter(isSavedRoute);
   const trip = o.trip ?? null;
   if (trip !== null && !isTripState(trip)) return { ok: false, error: '旅行中データの形式が不正です' };
   const map = (o.settings as { map?: unknown } | undefined)?.map;
@@ -133,9 +143,13 @@ export function applyBackup(data: BackupFile, mode: RestoreMode) {
     routes = [...data.routes, ...cur.filter((r) => !ids.has(r.id))];
     trip = data.trip ?? loadTrip();
   }
-  saveVisits(visits);
-  saveRoutes(routes);
-  saveTrip(trip);
+  // 復元は3キーへの書き込みを要するため、1つでも失敗したら呼び出し側へ伝える
+  // （Astra監査P1: 以前は戻り値を捨てており、容量超過等で一部だけ保存されなくても
+  // 画面上は「復元完了」に見えてしまっていた）。
+  const savedVisits = saveVisits(visits);
+  const savedRoutes = saveRoutes(routes);
+  const savedTrip = saveTrip(trip);
+  const saved = savedVisits && savedRoutes && savedTrip;
   saveMapSettings(data.settings.map);
   // 下書きは1件しか持てないためマージ対象にはならない: バックアップにあれば採用し、
   // 上書きモードでバックアップに無ければ削除する。統合モードでバックアップに無い場合は
@@ -150,7 +164,7 @@ export function applyBackup(data: BackupFile, mode: RestoreMode) {
   } else {
     manualDraft = loadRouteDraft();
   }
-  return { visits, routes, trip, mapSettings: data.settings.map, manualDraft };
+  return { visits, routes, trip, mapSettings: data.settings.map, manualDraft, saved };
 }
 
 /** バックアップの保存対象キー一覧（参考） */

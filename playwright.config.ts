@@ -12,6 +12,14 @@ export default defineConfig({
   webServer: {
     command: 'npm run preview',
     url: 'http://127.0.0.1:4173',
+    // dist/はGitHub Pagesビルドとこのpreviewサーバーの両方が読み書きしうる共有リソース
+    // （Astra監査P1: 過去に「buildとPlaywrightが同時にdist/へ触れて大量の偽陽性失敗を
+    // 起こした」実例あり）。この設定自体は「既にpreviewサーバーが動いていれば使い回す」
+    // だけで安全だが、構造的にビルドとの競合を避けるため、通常は直接 `npx playwright test`
+    // ではなく `npm run e2e`（package.json: `npm run build && playwright test` で
+    // ビルド完了後にのみ起動する一体化コマンド）を使うこと。dist/を書き換えるコマンド
+    // （npm run build 等）を、このpreviewサーバーが起動中の別プロセスとして同時に
+    // 実行しないこと。
     reuseExistingServer: true,
     timeout: 60_000,
   },

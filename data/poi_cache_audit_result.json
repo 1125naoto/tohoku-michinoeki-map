@@ -1,7 +1,12 @@
 {
   "generatedCacheFiles": 1235,
-  "zeroTotalCount": 2,
+  "zeroTotalCount": 3,
   "zeroTotal": [
+    {
+      "id": "mne-18836",
+      "pref": "北海道",
+      "name": "サロマ湖"
+    },
     {
       "id": "mne-18838",
       "pref": "北海道",
@@ -13,15 +18,20 @@
       "name": "水の郷日高川　龍游"
     }
   ],
-  "urbanPrefZeroCount": 1,
+  "urbanPrefZeroCount": 2,
   "urbanPrefZero": [
+    {
+      "id": "mne-18836",
+      "pref": "北海道",
+      "name": "サロマ湖"
+    },
     {
       "id": "mne-18838",
       "pref": "北海道",
       "name": "おうむ"
     }
   ],
-  "onsenFacilityButNoOnsenPoiCount": 32,
+  "onsenFacilityButNoOnsenPoiCount": 29,
   "onsenFacilityButNoOnsenPoi": [
     {
       "id": "mne-18790",
@@ -42,34 +52,16 @@
       "poiCount": 28
     },
     {
-      "id": "mne-18802",
-      "pref": "北海道",
-      "name": "サンフラワー北竜",
-      "poiCount": 30
-    },
-    {
       "id": "mne-18875",
       "pref": "北海道",
       "name": "鐘のなるまち・ちっぷべつ",
-      "poiCount": 30
+      "poiCount": 84
     },
     {
       "id": "mne-18880",
       "pref": "北海道",
       "name": "しほろ温泉",
       "poiCount": 6
-    },
-    {
-      "id": "mne-18966",
-      "pref": "宮城県",
-      "name": "上品の郷",
-      "poiCount": 30
-    },
-    {
-      "id": "mne-18982",
-      "pref": "秋田県",
-      "name": "てんのう",
-      "poiCount": 30
     },
     {
       "id": "mne-18987",
@@ -216,6 +208,217 @@
       "poiCount": 30
     }
   ],
-  "failedStationCount": 0,
-  "failedStations": []
+  "failedStationCount": 11,
+  "failedStations": [
+    "mne-18904",
+    "mne-18909",
+    "mne-18900",
+    "mne-18906",
+    "mne-18915",
+    "mne-18912",
+    "mne-18947",
+    "mne-18989",
+    "mne-18970",
+    "mne-18995",
+    "mne-18990"
+  ],
+  "partialStationCount": 28,
+  "partialStations": [
+    {
+      "id": "mne-18787",
+      "pref": "北海道",
+      "name": "スタープラザ　芦別",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18791",
+      "pref": "北海道",
+      "name": "江差",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18821",
+      "pref": "北海道",
+      "name": "なかさつない",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18836",
+      "pref": "北海道",
+      "name": "サロマ湖",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18849",
+      "pref": "北海道",
+      "name": "さらべつ",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18884",
+      "pref": "北海道",
+      "name": "うとろ・シリエトク",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18885",
+      "pref": "北海道",
+      "name": "しゃり",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18899",
+      "pref": "北海道",
+      "name": "わっかない",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18902",
+      "pref": "青森県",
+      "name": "虹の湖",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18911",
+      "pref": "青森県",
+      "name": "いまべつ",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18918",
+      "pref": "青森県",
+      "name": "みんまや",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18921",
+      "pref": "青森県",
+      "name": "とわだ",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18922",
+      "pref": "青森県",
+      "name": "つるた",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18924",
+      "pref": "青森県",
+      "name": "おがわら湖",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18932",
+      "pref": "岩手県",
+      "name": "いわいずみ",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18933",
+      "pref": "岩手県",
+      "name": "のだ",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18934",
+      "pref": "岩手県",
+      "name": "たろう",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18936",
+      "pref": "岩手県",
+      "name": "みずさわ",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18942",
+      "pref": "岩手県",
+      "name": "やまだ おいすた",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18950",
+      "pref": "岩手県",
+      "name": "厳美渓",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18967",
+      "pref": "宮城県",
+      "name": "みなみかた",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18974",
+      "pref": "秋田県",
+      "name": "かづの",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18975",
+      "pref": "秋田県",
+      "name": "かみおか",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18976",
+      "pref": "秋田県",
+      "name": "ことおか",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-18978",
+      "pref": "秋田県",
+      "name": "かみこあに",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18983",
+      "pref": "秋田県",
+      "name": "岩城",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    },
+    {
+      "id": "mne-18985",
+      "pref": "秋田県",
+      "name": "みねはま",
+      "foodIncomplete": false,
+      "otherIncomplete": true
+    },
+    {
+      "id": "mne-23222",
+      "pref": "兵庫県",
+      "name": "こんだ温泉ぬくもりの郷",
+      "foodIncomplete": true,
+      "otherIncomplete": false
+    }
+  ]
 }

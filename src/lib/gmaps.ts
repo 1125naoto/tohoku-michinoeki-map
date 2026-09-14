@@ -57,8 +57,15 @@ export function latLngUrl(p: LatLng): string {
 
 const fmt = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
-/** Google Maps URLs の経由地上限（origin/destinationを除く waypoints） */
-export const MAX_WAYPOINTS = 9;
+/**
+ * Google Maps URLsの `waypoints` パラメータ自体は最大9地点までを公式に許容するが、
+ * Astra監査P1（実機確認）でスマートフォンのGoogleマップアプリ（URLからアプリへ
+ * ハンドオフされた場合）は、それより少ない経由地数で一部が無視される・アプリ側の
+ * 上限に阻まれて経路が正しく開かないことが確認された。ここではモバイル実機で
+ * 確実に動く値まで保守的に下げる（overengineeringな機種判定はせず、
+ * 「常に安全に動く値」に統一することで挙動を一本化する）。
+ */
+export const MAX_WAYPOINTS = 3;
 
 /**
  * 経路URLを生成。経由地が上限を超える場合は複数区間URLに分割する。
@@ -68,7 +75,7 @@ export function directionsUrls(points: LatLng[], roadPref: RoadPref = 'highway_o
   if (points.length < 2) return [];
   const urls: string[] = [];
   const avoid = avoidParam(roadPref);
-  // 1URLに入る地点数 = origin + waypoints(≤9) + destination = 11
+  // 1URLに入る地点数 = origin + waypoints(≤MAX_WAYPOINTS) + destination
   const chunkSize = MAX_WAYPOINTS + 2;
   let start = 0;
   while (start < points.length - 1) {

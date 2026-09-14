@@ -47,7 +47,7 @@ const sampleRoute: SavedRoute = {
   id: 'r-1',
   name: 'テストコース',
   createdAt: '2026-08-10T00:00:00.000Z',
-  route: { stops: [] },
+  route: { stops: [], legs: [] },
   done: false,
 } as unknown as SavedRoute;
 
@@ -88,11 +88,34 @@ describe('バックアップの検証', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('バージョン');
   });
-  it('visitsの形式が不正なら拒否する', () => {
+  it('visits内の1件だけが不正な場合、そのレコードだけを除外し復元全体は拒否しない（Astra監査P1）', () => {
     const r = parseBackup(
-      JSON.stringify({ schemaVersion: 1, visits: { 'mne-1': { state: '謎の状態' } } })
+      JSON.stringify({
+        schemaVersion: 1,
+        visits: { 'mne-1': { state: '謎の状態' }, ...sampleVisits },
+      }),
     );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.visits['mne-1']).toBeUndefined(); // 不正な1件だけ除外される
+      expect(r.data.visits).toEqual(sampleVisits); // 他の正常な記録は残る
+    }
+  });
+
+  it('visitsフィールド自体が根本的に不正な形（配列等）なら拒否する', () => {
+    const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: ['not', 'an', 'object'] }));
     expect(r.ok).toBe(false);
+  });
+
+  it('routes内の1件だけが不正(legs欠落等)な場合、そのルートだけを除外し復元全体は拒否しない（Astra監査P1）', () => {
+    const brokenRoute = { id: 'r-broken', name: '壊れたコース', createdAt: '2026-08-10T00:00:00.000Z', route: { stops: [] }, done: false };
+    const r = parseBackup(
+      JSON.stringify({ schemaVersion: 1, visits: {}, routes: [sampleRoute, brokenRoute], trip: null }),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.routes.map((x) => x.id)).toEqual(['r-1']); // 壊れたルートだけ除外される
+    }
   });
   it('settings欠落時は初期値で補完する', () => {
     const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: sampleVisits }));

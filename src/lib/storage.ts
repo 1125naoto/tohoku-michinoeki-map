@@ -78,20 +78,70 @@ export function isVisitMap(v: unknown): v is VisitMap {
   return Object.values(v).every(isVisitRecord);
 }
 
-export function isSavedRoutes(v: unknown): v is SavedRoute[] {
-  if (!Array.isArray(v)) return false;
-  return v.every(
-    (r) =>
-      isRecord(r) &&
-      typeof r.id === 'string' &&
-      typeof r.name === 'string' &&
-      isRecord(r.route) &&
-      Array.isArray((r.route as Record<string, unknown>).stops),
+/** 立ち寄り先(周辺スポット)の座標等、RouteStop.poiとして最低限信頼できる形か */
+function isRouteStopPoi(v: unknown): boolean {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.id === 'string' &&
+    !!v.id &&
+    typeof v.lat === 'number' &&
+    Number.isFinite(v.lat) &&
+    typeof v.lng === 'number' &&
+    Number.isFinite(v.lng)
   );
 }
 
+/** PlannedRoute.stops の1件。stationId/日時/滞在時間は必須、poiは付いていれば座標を検証する */
+function isRouteStop(v: unknown): boolean {
+  if (!isRecord(v)) return false;
+  if (typeof v.stationId !== 'string' || !v.stationId) return false;
+  if (typeof v.arriveAt !== 'string' || typeof v.departAt !== 'string') return false;
+  if (typeof v.stayMin !== 'number' || !Number.isFinite(v.stayMin)) return false;
+  if (v.poi !== undefined && !isRouteStopPoi(v.poi)) return false;
+  return true;
+}
+
+/** PlannedRoute.legs の1件。fromId/toIdはnull許容、距離・時間は有限数であること */
+function isRouteLeg(v: unknown): boolean {
+  if (!isRecord(v)) return false;
+  if (v.fromId !== null && typeof v.fromId !== 'string') return false;
+  if (v.toId !== null && typeof v.toId !== 'string') return false;
+  if (typeof v.distanceKm !== 'number' || !Number.isFinite(v.distanceKm)) return false;
+  if (typeof v.driveMin !== 'number' || !Number.isFinite(v.driveMin)) return false;
+  return true;
+}
+
+/**
+ * 保存ルート1件を検証する（バックアップ復元等、信頼できない入力の境界で使う想定）。
+ * stops/legsの各要素の必須フィールドまで検証する（Astra監査P1: 以前はstopsが配列
+ * であること程度しか見ておらず、1件の要素破損がstationId解決やlegs参照箇所で
+ * クラッシュしうる状態だった）。
+ */
+export function isSavedRoute(v: unknown): v is SavedRoute {
+  if (!isRecord(v)) return false;
+  if (typeof v.id !== 'string' || !v.id) return false;
+  if (typeof v.name !== 'string') return false;
+  if (typeof v.done !== 'boolean') return false;
+  const route = v.route;
+  if (!isRecord(route)) return false;
+  if (!Array.isArray(route.stops) || !route.stops.every(isRouteStop)) return false;
+  if (!Array.isArray(route.legs) || !route.legs.every(isRouteLeg)) return false;
+  return true;
+}
+
+export function isSavedRoutes(v: unknown): v is SavedRoute[] {
+  if (!Array.isArray(v)) return false;
+  return v.every(isSavedRoute);
+}
+
+const STOP_PROGRESS_VALUES = ['pending', 'arrived', 'done', 'skipped'];
+
 export function isTripState(v: unknown): v is TripState {
-  return isRecord(v) && typeof v.savedRouteId === 'string' && isRecord(v.progress);
+  if (!isRecord(v)) return false;
+  if (typeof v.savedRouteId !== 'string' || !v.savedRouteId) return false;
+  if (typeof v.startedAt !== 'string') return false;
+  if (!isRecord(v.progress)) return false;
+  return Object.values(v.progress).every((p) => STOP_PROGRESS_VALUES.includes(p as string));
 }
 
 // ---- v1 → v2 移行 ----
@@ -162,23 +212,31 @@ export function loadVisits(): VisitMap {
   return safeLoad<VisitMap>(KEYS.visits, isVisitMap, {});
 }
 
-export function saveVisits(v: VisitMap): void {
-  safeSave(KEYS.visits, v);
+/**
+ * trueなら保存成功。falseの場合（容量超過・プライベートブラウジングでの
+ * 書き込み拒否等）、呼び出し側は「保存できた」と偽らず利用者に伝えること
+ * （Astra監査P1: 以前はこの戻り値を全呼び出し元が握りつぶしており、保存に
+ * 失敗していても画面上は成功したかのように見えてしまっていた）。
+ */
+export function saveVisits(v: VisitMap): boolean {
+  return safeSave(KEYS.visits, v);
 }
 
 export function loadRoutes(): SavedRoute[] {
   return safeLoad<SavedRoute[]>(KEYS.routes, isSavedRoutes, []);
 }
-export function saveRoutes(r: SavedRoute[]): void {
-  safeSave(KEYS.routes, r);
+/** 戻り値の意味は saveVisits と同じ */
+export function saveRoutes(r: SavedRoute[]): boolean {
+  return safeSave(KEYS.routes, r);
 }
 
 export function loadTrip(): TripState | null {
   const isTripOrNull = (v: unknown): v is TripState | null => v === null || isTripState(v);
   return safeLoad<TripState | null>(KEYS.trip, isTripOrNull, null);
 }
-export function saveTrip(t: TripState | null): void {
-  safeSave(KEYS.trip, t);
+/** 戻り値の意味は saveVisits と同じ */
+export function saveTrip(t: TripState | null): boolean {
+  return safeSave(KEYS.trip, t);
 }
 
 /** 全記録を削除（確認UIを通してからのみ呼ぶこと） */

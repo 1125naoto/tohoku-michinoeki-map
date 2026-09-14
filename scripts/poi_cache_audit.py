@@ -58,7 +58,12 @@ def main():
     zero_total = []
     onsen_mismatch = []
     urban_zero = []
+    partial_stations = []
     failed_stations = [sid for sid, v in checkpoint.get("stations", {}).items() if v.get("status") == "failed"]
+    # Astra監査P1: food/otherの片方のみ取得できた「部分成功」駅（status:"partial"）。
+    # チェックポイントのresultStatus（新規フィールド。旧実行では記録されていない）と、
+    # 各JSONファイル自体のstatusフィールドの両方から検出する（片方が欠けていても検出できるように）。
+    partial_from_checkpoint = {sid for sid, v in checkpoint.get("stations", {}).items() if v.get("resultStatus") == "partial"}
 
     for path in cache_files:
         sid = path.stem
@@ -71,6 +76,13 @@ def main():
         pois = cache.get("pois", [])
         pref = station["pref"] if station else None
         name = station["name"] if station else sid
+
+        if cache.get("status") == "partial" or sid in partial_from_checkpoint:
+            partial_stations.append({
+                "id": sid, "pref": pref, "name": name,
+                "foodIncomplete": cache.get("foodIncomplete"),
+                "otherIncomplete": cache.get("otherIncomplete"),
+            })
 
         if len(pois) == 0:
             zero_total.append({"id": sid, "pref": pref, "name": name})
@@ -94,6 +106,8 @@ def main():
         "onsenFacilityButNoOnsenPoi": onsen_mismatch,
         "failedStationCount": len(failed_stations),
         "failedStations": failed_stations,
+        "partialStationCount": len(partial_stations),
+        "partialStations": partial_stations,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
@@ -108,6 +122,9 @@ def main():
     for x in onsen_mismatch[:20]:
         print(f"    - [{x['pref']}] {x['name']} ({x['id']}) 総POI{x['poiCount']}件")
     print(f"生成失敗のまま(チェックポイント上failed): {len(failed_stations)}件 {failed_stations[:20]}")
+    print(f"部分成功(food/otherの片方のみ取得): {len(partial_stations)}件")
+    for x in partial_stations[:20]:
+        print(f"    - [{x['pref']}] {x['name']} ({x['id']}) foodIncomplete={x['foodIncomplete']} otherIncomplete={x['otherIncomplete']}")
     print(f"\n詳細: {OUT_PATH}")
 
 

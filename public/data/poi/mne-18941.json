@@ -3,7 +3,16 @@
   "lat": 39.5367746,
   "lng": 141.3404903,
   "radiusM": 10000,
-  "generatedAt": "2026-09-07T11:49:12Z",
+  "generatedAt": "2026-09-14T07:26:07Z",
+  "schemaVersion": 3,
+  "source": "overpass",
+  "queryVersion": 2,
+  "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
+  "endpointsUsed": [
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+  ],
   "pois": [
     {
       "id": "osm:way/1313595409",
@@ -544,6 +553,42 @@
       "distanceM": 9536,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/8846328844"
+    },
+    {
+      "id": "osm:node/7443958245",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "夏梨子山",
+      "lat": 39.5722027,
+      "lng": 141.2359643,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9789,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/7443958245"
+    },
+    {
+      "id": "osm:node/7293798044",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "諏訪沢森",
+      "lat": 39.4678392,
+      "lng": 141.2686872,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9834,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/7293798044"
     }
   ]
 }

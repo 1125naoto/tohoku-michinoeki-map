@@ -3,11 +3,13 @@
   "lat": 41.479134,
   "lng": 140.255731,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T13:34:51Z",
+  "generatedAt": "2026-09-14T06:46:42Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -552,6 +554,79 @@
       "distanceM": 8752,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/8671971442"
+    },
+    {
+      "id": "osm:node/6080070085",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "千軒神社",
+      "lat": 41.5592778,
+      "lng": 140.2713066,
+      "address": "北海道福島町",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9005,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6080070085"
+    },
+    {
+      "id": "osm:node/9062241240",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "天狗山",
+      "lat": 41.4097437,
+      "lng": 140.193851,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9281,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9062241240"
+    },
+    {
+      "id": "osm:node/4811134831",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "三社神社",
+      "lat": 41.4118396,
+      "lng": 140.176806,
+      "address": "北海道松前町871",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "https://www.hokkaidojinjacho.jp/data/02/02032.html",
+      "distanceM": 9963,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4811134831"
+    },
+    {
+      "id": "osm:way/685421375",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "松前温泉休養センター",
+      "lat": 41.4370958,
+      "lng": 140.1497295,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9994,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/685421375"
     }
   ]
 }

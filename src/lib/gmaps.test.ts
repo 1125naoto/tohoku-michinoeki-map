@@ -49,6 +49,30 @@ describe('Googleマップ連携', () => {
     }
   });
 
+  it('経由地の実用上限はモバイル実機で確認済みの3件（Astra P1: 公式API上限(9)のままだとモバイルアプリで経由地が無視される）', () => {
+    // この値を安易に9へ戻さないための回帰ガード。実機確認の結果である旨はgmaps.tsのコメント参照。
+    expect(MAX_WAYPOINTS).toBe(3);
+  });
+
+  it('20地点の混在ルート(道の駅+周辺スポット相当)でも、全区間が連結し全地点が経路に含まれる', () => {
+    const pts = Array.from({ length: 20 }, (_, i) => ({ lat: 37 + i * 0.05, lng: 140 + i * 0.05 }));
+    const urls = directionsUrls(pts);
+    expect(urls.length).toBeGreaterThan(1);
+    // 復元: 各区間のorigin→waypoints→destinationを連結すると元の点列に一致する
+    const rebuilt: string[] = [];
+    for (const url of urls) {
+      const dec = decodeURIComponent(url);
+      const origin = /origin=([^&]*)/.exec(dec)![1];
+      const destination = /destination=([^&]*)/.exec(dec)![1];
+      const wpMatch = /waypoints=([^&]*)/.exec(dec);
+      const waypoints = wpMatch ? wpMatch[1].split('|') : [];
+      if (rebuilt.length === 0) rebuilt.push(origin);
+      rebuilt.push(...waypoints, destination);
+    }
+    const expected = pts.map((p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`);
+    expect(rebuilt).toEqual(expected);
+  });
+
   it('地点が1つ以下ならURLを生成しない', () => {
     expect(directionsUrls([])).toEqual([]);
     expect(directionsUrls([{ lat: 37, lng: 140 }])).toEqual([]);

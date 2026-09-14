@@ -3,51 +3,17 @@
   "lat": 43.5255178,
   "lng": 142.1888941,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T13:05:56Z",
+  "generatedAt": "2026-09-14T06:39:47Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
-  "status": "ok",
+  "status": "partial",
+  "foodIncomplete": true,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
   "pois": [
-    {
-      "id": "osm:node/4989156621",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "ラ・フルール",
-      "lat": 43.52514,
-      "lng": 142.189375,
-      "address": null,
-      "openingHoursRaw": "11:00-19:00",
-      "phone": null,
-      "website": null,
-      "distanceM": 57,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4989156621"
-    },
-    {
-      "id": "osm:way/933672235",
-      "category": "food",
-      "subcategory": "shokudo",
-      "subcategories": [
-        "shokudo"
-      ],
-      "name": "ほっともっと",
-      "lat": 43.5257898,
-      "lng": 142.1868531,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 167,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/933672235"
-    },
     {
       "id": "osm:way/933672201",
       "category": "tourism",
@@ -65,24 +31,6 @@
       "distanceM": 193,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/933672201"
-    },
-    {
-      "id": "osm:node/4927744721",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "きんたろう",
-      "lat": 43.5252575,
-      "lng": 142.1851817,
-      "address": null,
-      "openingHoursRaw": "11:00-15:00, 17:00-20:00",
-      "phone": null,
-      "website": null,
-      "distanceM": 301,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4927744721"
     },
     {
       "id": "osm:way/933668201",
@@ -119,24 +67,6 @@
       "distanceM": 350,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/933668205"
-    },
-    {
-      "id": "osm:node/5950316605",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "まるとみ食堂",
-      "lat": 43.5275188,
-      "lng": 142.1847125,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 404,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5950316605"
     },
     {
       "id": "osm:way/933737841",
@@ -209,42 +139,6 @@
       "distanceM": 538,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/933175315"
-    },
-    {
-      "id": "osm:node/4967192621",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "グリーンぺぺ",
-      "lat": 43.5290815,
-      "lng": 142.183733,
-      "address": null,
-      "openingHoursRaw": "11:30-14:30, 17:00-20:00",
-      "phone": null,
-      "website": null,
-      "distanceM": 575,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4967192621"
-    },
-    {
-      "id": "osm:node/4989152123",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "ポロ",
-      "lat": 43.520884,
-      "lng": 142.1924521,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 590,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4989152123"
     },
     {
       "id": "osm:way/933737842",
@@ -463,42 +357,6 @@
       "sourceUrl": "https://www.openstreetmap.org/way/933217662"
     },
     {
-      "id": "osm:node/6038217231",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "だるまや",
-      "lat": 43.5176179,
-      "lng": 142.1872453,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 888,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/6038217231"
-    },
-    {
-      "id": "osm:node/5251403222",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "とん勝",
-      "lat": 43.5175759,
-      "lng": 142.1872506,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": "+81 1242 2 3388",
-      "website": null,
-      "distanceM": 893,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5251403222"
-    },
-    {
       "id": "osm:way/932730078",
       "category": "tourism",
       "subcategory": "jinja_tera",
@@ -551,6 +409,1014 @@
       "distanceM": 1074,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/932716609"
+    },
+    {
+      "id": "osm:way/935245882",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "くるみ公園",
+      "lat": 43.5175685,
+      "lng": 142.1812715,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1077,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935245882"
+    },
+    {
+      "id": "osm:way/935216846",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "秀岳寺",
+      "lat": 43.5199846,
+      "lng": 142.1775051,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1105,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935216846"
+    },
+    {
+      "id": "osm:way/934107449",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "そよかぜ公園",
+      "lat": 43.5270108,
+      "lng": 142.1753055,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1108,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934107449"
+    },
+    {
+      "id": "osm:way/933743506",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "さつき公園",
+      "lat": 43.5245836,
+      "lng": 142.1751744,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1111,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/933743506"
+    },
+    {
+      "id": "osm:way/932749848",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "みどり公園",
+      "lat": 43.5150913,
+      "lng": 142.1920083,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1186,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/932749848"
+    },
+    {
+      "id": "osm:way/934157999",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "弥生公園",
+      "lat": 43.5295718,
+      "lng": 142.1749244,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1213,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934157999"
+    },
+    {
+      "id": "osm:way/932749884",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "芦別寺",
+      "lat": 43.5152501,
+      "lng": 142.1944928,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1228,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/932749884"
+    },
+    {
+      "id": "osm:way/935230001",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "やまびこ公園",
+      "lat": 43.5171647,
+      "lng": 142.1777306,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1293,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935230001"
+    },
+    {
+      "id": "osm:way/934109353",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "渓水公園",
+      "lat": 43.5285419,
+      "lng": 142.1732315,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1307,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934109353"
+    },
+    {
+      "id": "osm:way/934107562",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "ことぶき公園",
+      "lat": 43.5263731,
+      "lng": 142.1722157,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1348,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934107562"
+    },
+    {
+      "id": "osm:way/932768420",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "こばと公園",
+      "lat": 43.5137297,
+      "lng": 142.1952951,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1409,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/932768420"
+    },
+    {
+      "id": "osm:way/933092300",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "日秀寺",
+      "lat": 43.5125704,
+      "lng": 142.1903024,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1444,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/933092300"
+    },
+    {
+      "id": "osm:node/8726700025",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "秋葉神社",
+      "lat": 43.5228047,
+      "lng": 142.2067483,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1471,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8726700025"
+    },
+    {
+      "id": "osm:node/13338358970",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "班渓山",
+      "lat": 43.5388816,
+      "lng": 142.1903372,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1491,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/13338358970"
+    },
+    {
+      "id": "osm:way/932773956",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "永昌寺",
+      "lat": 43.5126023,
+      "lng": 142.1948213,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1514,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/932773956"
+    },
+    {
+      "id": "osm:way/933079246",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "ひまわり公園",
+      "lat": 43.5113662,
+      "lng": 142.193235,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 1612,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/933079246"
+    },
+    {
+      "id": "osm:way/935271852",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "大照寺",
+      "lat": 43.5059817,
+      "lng": 142.1919899,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2187,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935271852"
+    },
+    {
+      "id": "osm:way/935640850",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "なまこ山総合運動公園",
+      "lat": 43.5075282,
+      "lng": 142.2050423,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2387,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935640850"
+    },
+    {
+      "id": "osm:node/5894436365",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "なまこ山",
+      "lat": 43.5043945,
+      "lng": 142.2009265,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2541,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5894436365"
+    },
+    {
+      "id": "osm:way/935670237",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "西林寺",
+      "lat": 43.4994205,
+      "lng": 142.1913086,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2908,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935670237"
+    },
+    {
+      "id": "osm:way/935663125",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "啓南公園",
+      "lat": 43.4978535,
+      "lng": 142.1961874,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 3132,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935663125"
+    },
+    {
+      "id": "osm:way/935677510",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "あかね公園",
+      "lat": 43.4973085,
+      "lng": 142.193441,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 3158,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935677510"
+    },
+    {
+      "id": "osm:way/935683616",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "ふるさと公園",
+      "lat": 43.4957747,
+      "lng": 142.185622,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 3318,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/935683616"
+    },
+    {
+      "id": "osm:way/936163562",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "星んこ公園",
+      "lat": 43.494957,
+      "lng": 142.2004595,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 3524,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/936163562"
+    },
+    {
+      "id": "osm:node/9901707494",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "上金剛山 展望台",
+      "lat": 43.4984047,
+      "lng": 142.2229502,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "https://go-to-ashibetsu.com/media/2021/02/01/209",
+      "distanceM": 4078,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9901707494"
+    },
+    {
+      "id": "osm:node/9910923827",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "芦別温泉スターライトホテル",
+      "lat": 43.5453517,
+      "lng": 142.2411962,
+      "address": "北海道芦別市",
+      "openingHoursRaw": "Mo-Su 06:00-22:00",
+      "phone": "+81 124 23 1155",
+      "website": "https://ofurocafe-seiyukan.com/",
+      "distanceM": 4758,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9910923827"
+    },
+    {
+      "id": "osm:node/9910923826",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen"
+      ],
+      "name": "おふろcafe星遊館",
+      "lat": 43.5454448,
+      "lng": 142.241151,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4760,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9910923826"
+    },
+    {
+      "id": "osm:node/10019781305",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": "ザランタン芦別",
+      "lat": 43.5524918,
+      "lng": 142.2366135,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4878,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10019781305"
+    },
+    {
+      "id": "osm:way/868947298",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "平岸中央公園",
+      "lat": 43.5381304,
+      "lng": 142.1240577,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5412,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868947298"
+    },
+    {
+      "id": "osm:way/868939523",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "本恵寺",
+      "lat": 43.5422253,
+      "lng": 142.121655,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5730,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868939523"
+    },
+    {
+      "id": "osm:way/868551808",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "平岸神社",
+      "lat": 43.5429703,
+      "lng": 142.1198126,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5897,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868551808"
+    },
+    {
+      "id": "osm:way/503805752",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "カナディアンワールド",
+      "lat": 43.5670518,
+      "lng": 142.2348775,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5922,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/503805752"
+    },
+    {
+      "id": "osm:way/868551751",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "曙町公園",
+      "lat": 43.5399522,
+      "lng": 142.1158162,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6106,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868551751"
+    },
+    {
+      "id": "osm:way/867641962",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "平岸公園",
+      "lat": 43.5418283,
+      "lng": 142.1149446,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6231,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/867641962"
+    },
+    {
+      "id": "osm:node/8198233348",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "里山",
+      "lat": 43.4692616,
+      "lng": 142.1930597,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6264,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8198233348"
+    },
+    {
+      "id": "osm:way/867641931",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "浄光寺",
+      "lat": 43.5416403,
+      "lng": 142.1133425,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6349,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/867641931"
+    },
+    {
+      "id": "osm:way/472077846",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "緑泉公園",
+      "lat": 43.4673233,
+      "lng": 142.1729875,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6597,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/472077846"
+    },
+    {
+      "id": "osm:node/13338358967",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "天狗山",
+      "lat": 43.5011571,
+      "lng": 142.269634,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7052,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/13338358967"
+    },
+    {
+      "id": "osm:way/868922359",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "茂尻本町公園",
+      "lat": 43.5376551,
+      "lng": 142.0943613,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7739,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868922359"
+    },
+    {
+      "id": "osm:node/10676212897",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "油谷大滝",
+      "lat": 43.5288675,
+      "lng": 142.290843,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8228,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10676212897"
+    },
+    {
+      "id": "osm:way/868958413",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "百戸北団地公園",
+      "lat": 43.5441604,
+      "lng": 142.0870757,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8465,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868958413"
+    },
+    {
+      "id": "osm:node/8204397842",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "鏡岳",
+      "lat": 43.5742575,
+      "lng": 142.2719176,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8611,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8204397842"
+    },
+    {
+      "id": "osm:way/868495735",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "茂尻駅前公園",
+      "lat": 43.5381615,
+      "lng": 142.0830818,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8645,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868495735"
+    },
+    {
+      "id": "osm:way/868543741",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "常照寺",
+      "lat": 43.5399914,
+      "lng": 142.0832769,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8665,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868543741"
+    },
+    {
+      "id": "osm:way/868543739",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "出雲公園",
+      "lat": 43.5397593,
+      "lng": 142.082814,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8697,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868543739"
+    },
+    {
+      "id": "osm:way/868543737",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "茂尻出雲神社",
+      "lat": 43.5400887,
+      "lng": 142.0825032,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8728,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868543737"
+    },
+    {
+      "id": "osm:way/868543681",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "浄覚寺",
+      "lat": 43.5395954,
+      "lng": 142.0805032,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8877,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868543681"
+    },
+    {
+      "id": "osm:way/868489641",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "光運寺",
+      "lat": 43.5382554,
+      "lng": 142.0790526,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8967,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868489641"
+    },
+    {
+      "id": "osm:way/868486227",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "全龍寺",
+      "lat": 43.5391671,
+      "lng": 142.0791675,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8975,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868486227"
+    },
+    {
+      "id": "osm:way/868486204",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "茂尻元町公園",
+      "lat": 43.5393365,
+      "lng": 142.0782171,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9054,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868486204"
+    },
+    {
+      "id": "osm:way/868963649",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "翠光苑",
+      "lat": 43.5457073,
+      "lng": 142.079942,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9065,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868963649"
+    },
+    {
+      "id": "osm:node/8198238666",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "御料山",
+      "lat": 43.5033479,
+      "lng": 142.2988314,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9202,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8198238666"
+    },
+    {
+      "id": "osm:node/10696782011",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "三又山",
+      "lat": 43.6024439,
+      "lng": 142.1381414,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9481,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10696782011"
+    },
+    {
+      "id": "osm:way/868972976",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "住友湖畔広場",
+      "lat": 43.5494768,
+      "lng": 142.0733938,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9684,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/868972976"
+    },
+    {
+      "id": "osm:node/8707973302",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": null,
+      "lat": 43.6131184,
+      "lng": 142.1895681,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9741,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8707973302"
+    },
+    {
+      "id": "osm:node/10696612979",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "丸山",
+      "lat": 43.4425593,
+      "lng": 142.2368359,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 10003,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10696612979"
     }
   ]
 }

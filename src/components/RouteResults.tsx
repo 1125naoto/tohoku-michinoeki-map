@@ -37,7 +37,13 @@ export function TimeBreakdownRow({ r }: { r: PlannedRoute }) {
         {r.params.returnToStart ? '帰着予定' : '到着予定'} {formatHM(new Date(r.returnAt))}
       </span>
       <span>総距離 約{r.totalKm}km</span>
-      <span>{r.roadData === 'road' ? '実道路時間を使用（渋滞は含みません）' : '概算時間を使用'}</span>
+      <span data-testid="road-data-summary">
+        {r.roadData === 'road'
+          ? r.hasUnreachableLeg
+            ? '実道路時間を使用（一部区間は概算）'
+            : '実道路時間を使用（渋滞は含みません）'
+          : '概算時間を使用'}
+      </span>
     </div>
   );
 }
@@ -94,6 +100,13 @@ function stopDisplayName(s: PlannedRoute['stops'][number], getStation: (id: stri
 
 /** 実道路/概算のバッジ */
 function RoadDataBadge({ r }: { r: PlannedRoute }) {
+  if (r.roadData === 'road' && r.hasUnreachableLeg) {
+    return (
+      <span className="badge want" data-testid="road-badge">
+        実道路時間（一部概算）
+      </span>
+    );
+  }
   return r.roadData === 'road' ? (
     <span className="badge visited" data-testid="road-badge">
       実道路時間を使用
@@ -111,6 +124,13 @@ function RoadDataNote({ r }: { r: PlannedRoute }) {
       {r.roadData === 'road'
         ? '実際の道路にもとづく時間ですが、リアルタイムの渋滞は反映していません。出発前にGoogleマップで最新の状況を確認してください。'
         : '所要時間は目安です。実際の経路・渋滞・通行止めはGoogleマップで確認してください。'}
+      {r.roadData === 'road' && r.hasUnreachableLeg && (
+        <>
+          <br />
+          ⚠️ 一部区間は実道路データ上、自動車での接続が確認できませんでした（下記のタイムラインで
+          ⚠️ マークが付いた区間）。その区間のみ概算値です。実際に走行可能か出発前に必ずご確認ください。
+        </>
+      )}
       <br />
       営業の見込みは通常営業時間に基づく目安です。臨時休業・季節変更は公式情報をご確認ください。
     </div>
@@ -162,9 +182,14 @@ export function RouteTimeline({
                 </span>
               )}
               <br />
-              <span className="leg">
+              <span className="leg" data-testid={leg.unreachable ? 'route-leg-unreachable' : undefined}>
                 ← 約{leg.distanceKm}km・{formatMin(leg.driveMin)} ／ 滞在{s.stayMin}分（
                 {formatHM(new Date(s.departAt))}発）
+                {leg.unreachable && (
+                  <span className="badge want" style={{ fontSize: 11, marginLeft: 4 }}>
+                    ⚠️ 実道路接続なし・概算
+                  </span>
+                )}
               </span>
               {state === 'done' && ' ✓'}
               {state === 'skipped' && '（スキップ）'}
@@ -178,8 +203,13 @@ export function RouteTimeline({
           <span>
             <b>{r.params.origin.label}</b> へ帰着
             <br />
-            <span className="leg">
+            <span className="leg" data-testid={r.legs[r.legs.length - 1]?.unreachable ? 'route-leg-unreachable' : undefined}>
               ← 約{r.legs[r.legs.length - 1]?.distanceKm}km・{formatMin(r.legs[r.legs.length - 1]?.driveMin ?? 0)}
+              {r.legs[r.legs.length - 1]?.unreachable && (
+                <span className="badge want" style={{ fontSize: 11, marginLeft: 4 }}>
+                  ⚠️ 実道路接続なし・概算
+                </span>
+              )}
             </span>
           </span>
         </li>

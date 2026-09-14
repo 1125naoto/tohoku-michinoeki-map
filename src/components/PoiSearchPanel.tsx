@@ -13,6 +13,7 @@ const OUTCOME_LABEL: Record<EndpointAttemptLog['outcome'], string> = {
   timeout: 'タイムアウト',
   network_error: '通信エラー',
   aborted: '他が先に成功（未使用）',
+  malformed: '応答異常（実行時エラー等）',
 };
 
 /** 一覧の並び順（近い順が既定）。OSMには評価データが無いため「評価順」は用意しない */
@@ -83,6 +84,10 @@ interface Props {
   revalidating: boolean;
   /** 直近の検索の接続先ごとの試行ログ（診断表示専用） */
   attemptLog: EndpointAttemptLog[];
+  /** trueなら食べる(food)系カテゴリの取得が不完全（0件表示でも「周辺に無い」と断定しない） */
+  foodIncomplete: boolean;
+  /** trueなら温泉・観光・宿泊等(other)系カテゴリの取得が不完全 */
+  otherIncomplete: boolean;
   onRetry: () => void;
   onGoogleFallback: () => void;
   onClose: () => void;
@@ -132,6 +137,8 @@ export default function PoiSearchPanel({
   fromCache,
   revalidating,
   attemptLog,
+  foodIncomplete,
+  otherIncomplete,
   onRetry,
   onGoogleFallback,
   onClose,
@@ -355,8 +362,16 @@ export default function PoiSearchPanel({
       {!loading && !failed && searched && resultCount === 0 && (
         <div className="msg info" style={{ marginTop: 8 }} data-testid="poi-empty">
           {/* 実機で「ラーメン」等の細分類が0件のとき「食べる自体が0件」と誤表示され紛らわしいと
-              判明したため、細分類だけが0件のケース（カテゴリ自体には結果がある）を区別する */}
-          {category && subcategory !== 'all' && categoryRawCount > 0 ? (
+              判明したため、細分類だけが0件のケース（カテゴリ自体には結果がある）を区別する。
+              さらに、該当カテゴリのOverpass取得自体が不完全(foodIncomplete/otherIncomplete)な
+              場合は「周辺に無い」と断定せず、取得できなかった旨を案内する（B3/Astra P1）。 */}
+          {(category === 'food' ? foodIncomplete : category ? otherIncomplete : foodIncomplete || otherIncomplete) ? (
+            <div data-testid="poi-empty-incomplete">
+              {category
+                ? `「${CATEGORY_LABEL[category]}」の情報を取得できませんでした。周辺に無いとは限りません。`
+                : '一部のカテゴリの情報を取得できませんでした。周辺に無いとは限りません。'}
+            </div>
+          ) : category && subcategory !== 'all' && categoryRawCount > 0 ? (
             <>
               {`「${subcategory === '__rainy__' ? '雨の日向け' : SUBCATEGORY_LABEL[subcategory as PoiSubcategory]}」では見つかりませんでした。「${CATEGORY_LABEL[category]}」の他の絞り込みでは${categoryRawCount}件見つかっています。`}
             </>
@@ -445,6 +460,19 @@ export default function PoiSearchPanel({
               <>
                 <br />
                 <span data-testid="poi-revalidating">🔄 最新の情報を確認しています…</span>
+              </>
+            )}
+            {!fromCache && (foodIncomplete || otherIncomplete) && (
+              <>
+                <br />
+                <span data-testid="poi-partial-warning">
+                  ⚠️ {foodIncomplete && otherIncomplete
+                    ? '一部カテゴリ'
+                    : foodIncomplete
+                      ? '「食べる」'
+                      : '「観光・温泉等」'}
+                  の情報を取得できませんでした。表示件数は実際より少ない可能性があります。
+                </span>
               </>
             )}
           </p>

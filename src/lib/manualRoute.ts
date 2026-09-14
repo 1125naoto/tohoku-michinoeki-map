@@ -62,6 +62,12 @@ export interface ManualMatrixResult {
   roadData: 'road' | 'approx';
   /** selectedIds の順で mi(1始まり) を割り当てた候補一覧 */
   candidates: ManualCandidate[];
+  /**
+   * 概算モデルによる代替行列。roadData==='road'のとき、matrix内の到達不能
+   * (Infinity)区間をこの値で補うためだけに使う（呼び出し側の各関数へ渡す）。
+   * matrix自体は書き換えない（osrmProviderの内部キャッシュと同一オブジェクトのため）。
+   */
+  fallback: RouteMatrix;
 }
 
 export interface ManualPlanOptions {
@@ -115,46 +121,48 @@ export async function buildManualMatrix(
   const candidates: ManualCandidate[] = points.map((pt, i) => ({ st: pt, mi: i + 1 }));
 
   const provider = opts.provider ?? osrmProvider;
+  const fallback = estimateMatrix(routePoints, p);
   let matrix: RouteMatrix;
   let roadData: 'road' | 'approx';
   try {
+    // providerが返すmatrixはrouting.ts内部キャッシュと同一オブジェクトのため、
+    // ここでは一切書き換えない（到達不能セルの補完は呼び出し側がfallbackを
+    // 都度参照して行う。§ManualMatrixResult.fallbackのコメント参照）。
     matrix = await provider.table(routePoints, opts.signal);
     roadData = 'road';
-    const est = estimateMatrix(routePoints, p);
-    for (let i = 0; i < routePoints.length; i++) {
-      for (let j = 0; j < routePoints.length; j++) {
-        if (!Number.isFinite(matrix.durationsMin[i][j])) {
-          matrix.durationsMin[i][j] = est.durationsMin[i][j];
-          matrix.distancesKm[i][j] = est.distancesKm[i][j];
-        }
-      }
-    }
   } catch (e) {
     if (opts.signal?.aborted) throw e;
-    matrix = estimateMatrix(routePoints, p);
+    matrix = fallback;
     roadData = 'approx';
   }
-  return { matrix, roadData, candidates };
+  return { matrix, roadData, candidates, fallback };
 }
 
 const stayAccessor = (c: ManualCandidate) => c.st.stayMin;
 
-/** 選んだ順のまま、または移動時間が短くなるよう自動調整した順序を返す */
+/**
+ * 選んだ順のまま、または移動時間が短くなるよう自動調整した順序を返す。
+ * fallbackを渡すと、到達不能区間があっても評価自体は打ち切らず概算で補って
+ * 順序調整を続行する（地図から選ぶルートはユーザーが選んだ地点を勝手に
+ * 落とさない方針のため）。
+ */
 export function orderManual(
   candidates: ManualCandidate[],
   matrix: RouteMatrix,
   p: Pick<ManualPlanParams, 'returnToStart' | 'orderMode'>,
+  fallback?: RouteMatrix,
 ): ManualCandidate[] {
   if (p.orderMode === 'selected') return candidates;
-  return twoOptOrder(candidates, matrix, stayAccessor, p.returnToStart);
+  return twoOptOrder(candidates, matrix, stayAccessor, p.returnToStart, fallback);
 }
 
 export function evaluateManual(
   order: ManualCandidate[],
   matrix: RouteMatrix,
   p: Pick<ManualPlanParams, 'returnToStart'>,
+  fallback?: RouteMatrix,
 ) {
-  return evaluateOrder(order, matrix, stayAccessor, p.returnToStart);
+  return evaluateOrder(order, matrix, stayAccessor, p.returnToStart, fallback);
 }
 
 export interface FitToBudgetResult {
@@ -174,17 +182,18 @@ export function fitToBudget(
   matrix: RouteMatrix,
   p: Pick<ManualPlanParams, 'returnToStart'>,
   budgetMin: number,
+  fallback?: RouteMatrix,
 ): FitToBudgetResult {
   let cur = [...order];
   const excluded: ManualCandidate[] = [];
   while (cur.length > 0) {
-    const ev = evaluateOrder(cur, matrix, stayAccessor, p.returnToStart);
+    const ev = evaluateOrder(cur, matrix, stayAccessor, p.returnToStart, fallback);
     if (ev && ev.totalMin + computeMarginMin(ev.totalMin) <= budgetMin) break;
     let bestIdx = -1;
     let bestTotal = Number.POSITIVE_INFINITY;
     for (let i = 0; i < cur.length; i++) {
       const trial = [...cur.slice(0, i), ...cur.slice(i + 1)];
-      const tev = evaluateOrder(trial, matrix, stayAccessor, p.returnToStart);
+      const tev = evaluateOrder(trial, matrix, stayAccessor, p.returnToStart, fallback);
       if (tev && tev.totalMin < bestTotal) {
         bestTotal = tev.totalMin;
         bestIdx = i;
@@ -232,7 +241,14 @@ export function computeMarginMin(totalMin: number): number {
   return Math.max(10, Math.round(totalMin * 0.1));
 }
 
-/** 確定した訪問順から PlannedRoute を組み立てる（自動コース作成の buildRoute と同じ構造） */
+/**
+ * 確定した訪問順から PlannedRoute を組み立てる（自動コース作成の buildRoute と同じ構造）。
+ *
+ * fallbackを渡すと、到達不能(Infinity)区間があっても構築自体は失敗させず、
+ * その区間だけ概算値(fallback)で補いつつ leg.unreachable=true を立てて
+ * 明示する（「手動routeでは問題区間を明示する」方針）。fallback省略時は
+ * 従来どおり到達不能を含む場合はnullを返す。
+ */
 export function buildManualRoute(
   order: ManualCandidate[],
   matrix: RouteMatrix,
@@ -240,9 +256,10 @@ export function buildManualRoute(
   roadData: 'road' | 'approx',
   title: string,
   reason: string,
+  fallback?: RouteMatrix,
 ): PlannedRoute | null {
   if (order.length === 0) return null;
-  const ev = evaluateOrder(order, matrix, stayAccessor, p.returnToStart);
+  const ev = evaluateOrder(order, matrix, stayAccessor, p.returnToStart, fallback);
   if (!ev) return null;
   const departAt = new Date(p.departAt);
   const stops: RouteStop[] = [];
@@ -252,12 +269,16 @@ export function buildManualRoute(
   let curId: string | null = null;
   let stayTotalMin = 0;
   for (const c of order) {
-    const driveMin = Math.ceil(matrix.durationsMin[cur][c.mi]);
+    const rawMin = matrix.durationsMin[cur][c.mi];
+    const unreachable = !Number.isFinite(rawMin);
+    const driveMin = Math.ceil(unreachable ? fallback!.durationsMin[cur][c.mi] : rawMin);
+    const distanceKm = unreachable ? fallback!.distancesKm[cur][c.mi] : matrix.distancesKm[cur][c.mi];
     legs.push({
       fromId: curId,
       toId: c.st.id,
-      distanceKm: Math.round(matrix.distancesKm[cur][c.mi] * 10) / 10,
+      distanceKm: Math.round(distanceKm * 10) / 10,
       driveMin,
+      ...(unreachable ? { unreachable: true } : {}),
     });
     t = new Date(t.getTime() + driveMin * 60000);
     const arriveAt = t.toISOString();
@@ -275,12 +296,16 @@ export function buildManualRoute(
     curId = c.st.id;
   }
   if (p.returnToStart) {
-    const driveMin = Math.ceil(matrix.durationsMin[cur][0]);
+    const rawMin = matrix.durationsMin[cur][0];
+    const unreachable = !Number.isFinite(rawMin);
+    const driveMin = Math.ceil(unreachable ? fallback!.durationsMin[cur][0] : rawMin);
+    const distanceKm = unreachable ? fallback!.distancesKm[cur][0] : matrix.distancesKm[cur][0];
     legs.push({
       fromId: curId,
       toId: null,
-      distanceKm: Math.round(matrix.distancesKm[cur][0] * 10) / 10,
+      distanceKm: Math.round(distanceKm * 10) / 10,
       driveMin,
+      ...(unreachable ? { unreachable: true } : {}),
     });
     t = new Date(t.getTime() + driveMin * 60000);
   }
@@ -324,6 +349,7 @@ export function buildManualRoute(
     stayTotalMin,
     marginMin: computeMarginMin(ev.totalMin),
     totalKm: Math.round(ev.totalKm * 10) / 10,
+    hasUnreachableLeg: ev.hasUnreachableLeg,
     // 達成率に影響するのは道の駅のみ（周辺スポットは含めない）
     newCount: stationCount,
     wantCount: 0,

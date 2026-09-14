@@ -101,6 +101,17 @@ export default function App() {
   const [visits, setVisits] = useState(() => loadVisits());
   const [savedRoutes, setSavedRoutes] = useState(() => loadRoutes());
   const [trip, setTrip] = useState<TripState | null>(() => loadTrip());
+  /**
+   * 端末への保存(localStorage)が失敗した場合true（容量超過・プライベートブラウジング
+   * での書き込み拒否等）。falseに戻すのは保存が実際に成功した時のみとし、
+   * 「保存できたことにして黙って続行」しない（Astra監査P1）。
+   */
+  const [storageWriteFailed, setStorageWriteFailed] = useState(false);
+  /** 失敗のみを記録する（一度失敗したら、後続の別の保存が成功しても勝手に消さない。
+   * ユーザーが状況を確認して閉じる操作をするまで警告を残す） */
+  const noteSaveResult = useCallback((ok: boolean) => {
+    if (!ok) setStorageWriteFailed(true);
+  }, []);
   const [tab, setTab] = useState<Tab>('map');
   const [selectedPrefectures, setSelectedPrefectures] = useState<SelectedPrefectures>([]);
   /** 都道府県チップのトグル（既に選択中なら解除、未選択なら追加）。'all'で全国（絞り込み解除）。 */
@@ -231,6 +242,9 @@ export default function App() {
   const [poiRawResults, setPoiRawResults] = useState<Poi[]>([]);
   /** 直近の検索の接続先ごとの試行ログ（診断表示専用。本番の公開URLでは表示しない） */
   const [poiAttemptLog, setPoiAttemptLog] = useState<EndpointAttemptLog[]>([]);
+  /** 直近の検索結果でfood(食べる)/other(観光・温泉等)系の取得が不完全だった場合true */
+  const [poiFoodIncomplete, setPoiFoodIncomplete] = useState(false);
+  const [poiOtherIncomplete, setPoiOtherIncomplete] = useState(false);
   const [poiDetail, setPoiDetail] = useState<Poi | null>(null);
   const poiAbortRef = useRef<AbortController | null>(null);
   // 旧コードとの互換用エイリアス（同じ意味の派生値。読みやすさのためだけに用意）
@@ -293,6 +307,8 @@ export default function App() {
       setSearchOrigin(o);
       setIsPoiPanelOpen(true);
       setPoiAutoExpanded(false);
+      setPoiFoodIncomplete(false);
+      setPoiOtherIncomplete(false);
 
       // stale-while-revalidate: 過去に成功した結果があれば通信を待たずに即表示し、
       // 裏で最新データを取得する。取得が失敗してもこの表示は消さない
@@ -316,7 +332,7 @@ export default function App() {
       // 現在地起点の検索（o.stationIdが無い）はここを通らず、必ず下のOverpassPoiProviderで
       // その場のlat/lngを中心にライブ検索する（駅中心の静的データを現在地検索に流用しない）。
       if (!hadCache && o.stationId) {
-        const staticResult = await new StaticOsmPoiProvider(o.stationId).search(o, radius);
+        const staticResult = await new StaticOsmPoiProvider(o.stationId).search(o, radius, ctrl.signal);
         if (ctrl.signal.aborted) return;
         if (!staticResult.failed && staticResult.pois.length > 0) {
           hadCache = true;
@@ -342,6 +358,8 @@ export default function App() {
           setPoiRawResults(res.pois);
           setPoiRequestStatus('ok');
           setPoiFromCache(res.fromCache);
+          setPoiFoodIncomplete(res.foodIncomplete);
+          setPoiOtherIncomplete(res.otherIncomplete);
         }
         if (res.radiusUsed !== radius) {
           setPoiRadius(res.radiusUsed);
@@ -703,10 +721,10 @@ export default function App() {
   const setState = useCallback((id: string, state: StationState) => {
     setVisits((prev) => {
       const next = applyState(prev, id, state);
-      saveVisits(next);
+      noteSaveResult(saveVisits(next));
       return next;
     });
-  }, []);
+  }, [noteSaveResult]);
 
   // ---- ルート ----
   const submitPlan = useCallback(async (params: PlanParams) => {
@@ -749,7 +767,7 @@ export default function App() {
 
   const persistRoutes = (rs: SavedRoute[]) => {
     setSavedRoutes(rs);
-    saveRoutes(rs);
+    noteSaveResult(saveRoutes(rs));
   };
 
   const saveRoute = useCallback(
@@ -776,20 +794,20 @@ export default function App() {
       if (!sr) sr = saveRoute(r, `${r.title} ${new Date(r.params.departAt).toLocaleDateString('ja-JP')}`);
       const t: TripState = { savedRouteId: sr.id, startedAt: new Date().toISOString(), progress: {} };
       setTrip(t);
-      saveTrip(t);
+      noteSaveResult(saveTrip(t));
       setTab('route');
     },
-    [saveRoute],
+    [saveRoute, noteSaveResult],
   );
 
   const setProgress = useCallback((stationId: string, p: StopProgress) => {
     setTrip((prev) => {
       if (!prev) return prev;
       const next = { ...prev, progress: { ...prev.progress, [stationId]: p } };
-      saveTrip(next);
+      noteSaveResult(saveTrip(next));
       return next;
     });
-  }, []);
+  }, [noteSaveResult]);
 
   const finishTrip = useCallback(
     (visitedIds: string[], stampIds: string[]) => {
@@ -802,7 +820,7 @@ export default function App() {
           next = applyState(next, id, 'visited');
         }
         for (const id of stampIds) next = applyState(next, id, 'stamped');
-        saveVisits(next);
+        noteSaveResult(saveVisits(next));
         return next;
       });
       if (trip) {
@@ -810,7 +828,7 @@ export default function App() {
         persistRoutes(rs);
       }
       setTrip(null);
-      saveTrip(null);
+      noteSaveResult(saveTrip(null));
       setRouteLine(null);
       setRouteStops(null);
       setRouteLineApprox(false);
@@ -819,7 +837,7 @@ export default function App() {
       setViewingSavedId(null);
       setCourseMode('choose');
     },
-    [trip],
+    [trip, noteSaveResult],
   );
 
   /**
@@ -921,7 +939,8 @@ export default function App() {
     const d = applied.manualDraft;
     setManualDraftSnapshot(d ?? DEFAULT_ROUTE_DRAFT);
     setPendingDraft(d && d.inProgress && d.selectedIds.length > 0 ? d : null);
-  }, []);
+    noteSaveResult(applied.saved);
+  }, [noteSaveResult]);
 
   // 最新の訪問記録をコールバックから参照するためのref
   const visitsRef = useRef(visits);
@@ -998,11 +1017,11 @@ export default function App() {
       const next = { ...cur };
       if (toast.prev) next[toast.stationId] = toast.prev;
       else delete next[toast.stationId];
-      saveVisits(next);
+      noteSaveResult(saveVisits(next));
       return next;
     });
     setToast(null);
-  }, [toast]);
+  }, [toast, noteSaveResult]);
 
   const closeSheet = useCallback(() => {
     setSelectedId(null);
@@ -1014,6 +1033,19 @@ export default function App() {
       {!online && !mapFullscreen && (
         <div className="offline-banner" data-testid="offline-banner">
           オフラインです。訪問記録・保存ルートは閲覧/更新できます。地図タイル・外部リンクは利用できません。
+        </div>
+      )}
+      {storageWriteFailed && !mapFullscreen && (
+        <div className="offline-banner" data-testid="storage-write-failed-banner">
+          端末への保存に失敗しました（空き容量不足、またはプライベートブラウジング等の制限の可能性があります）。
+          直前の変更が保存されていない場合があります。空き容量を確認するか、通常のブラウジングモードでお試しください。
+          <button
+            onClick={() => setStorageWriteFailed(false)}
+            style={{ marginLeft: 8 }}
+            data-testid="storage-write-failed-dismiss"
+          >
+            閉じる
+          </button>
         </div>
       )}
       {pendingDraft && (
@@ -1391,6 +1423,8 @@ export default function App() {
               autoExpanded={poiAutoExpanded}
               fromCache={poiFromCache}
               attemptLog={poiAttemptLog}
+              foodIncomplete={poiFoodIncomplete}
+              otherIncomplete={poiOtherIncomplete}
               revalidating={poiRevalidating}
               onRetry={runPoiSearchNow}
               onGoogleFallback={() => {
@@ -1508,7 +1542,7 @@ export default function App() {
                   setTrip((prev) => {
                     if (!prev) return prev;
                     const next = { ...prev, roadPref: rp };
-                    saveTrip(next);
+                    noteSaveResult(saveTrip(next));
                     return next;
                   })
                 }
