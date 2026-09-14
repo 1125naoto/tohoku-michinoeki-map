@@ -43,7 +43,13 @@ async function enterManualSelect(page: Page) {
 
 /**
  * 対象駅を画面中央へ寄せてからタップする。下部の選択バー・上部案内・凡例等の
- * 固定UIは画面端に配置されているため、中央にセンタリングすれば重ならず確実に押せる。
+ * 固定UIは画面端に配置されているため、中央にセンタリングすれば重ならず確実に押せる…
+ * はずだったが、desktopビューポート（横長）では地図領域自体の高さが小さく（実測217px程度）、
+ * 幾何中心が下部固定バー(.route-select-bar)の帯へ入ってしまうケースがあることが実測で
+ * 判明した（Astra再監査Final Gate: document.elementFromPointで実測・再現済み。iPhoneの
+ * 縦長ビューポートでは地図領域が十分縦に長く発生しなかった）。中心を求め直すのではなく、
+ * 実測したバーの領域を避けるぶんだけE2E専用フック(__panMapBy、実ユーザー機能ではない)で
+ * 上へずらしてからクリックする（アプリの挙動そのものは変更しない）。
  */
 async function tapStation(page: Page, id: string) {
   const coord = COORDS[id];
@@ -55,8 +61,50 @@ async function tapStation(page: Page, id: string) {
       coord,
     );
     await page.waitForTimeout(300);
+    await avoidSelectBarOverlap(page, id);
+    await waitForCenteredMarkerSettled(page, id);
   }
   await page.locator(`[data-sid="${id}"]`).click();
+}
+
+/**
+ * 対象マーカーが下部固定バー(.route-select-bar)の領域と重なっている場合、
+ * 重ならなくなるまでE2E専用フック(__panMapBy)で地図を上へずらす。
+ */
+async function avoidSelectBarOverlap(page: Page, id: string) {
+  const hasPan = await page.evaluate(() => typeof (window as unknown as { __panMapBy?: unknown }).__panMapBy === 'function');
+  if (!hasPan) return;
+  for (let i = 0; i < 5; i++) {
+    const markerBox = await page.locator(`[data-sid="${id}"]`).boundingBox();
+    const barBox = await page.getByTestId('route-select-bar').boundingBox().catch(() => null);
+    if (!markerBox || !barBox) return;
+    const markerCenterY = markerBox.y + markerBox.height / 2;
+    const overlap = markerCenterY + markerBox.height / 2 + 8 - barBox.y; // マーカー下端+余白がバー上端を超えている量
+    if (overlap <= 0) return; // 既に重なっていない
+    await page.evaluate((dy) => (window as unknown as { __panMapBy: (dx: number, dy: number) => void }).__panMapBy(0, dy), overlap);
+    await page.waitForTimeout(150);
+  }
+}
+
+/**
+ * __setMapView後、対象駅マーカー自身の現在位置の中心ピクセルに、実際にそのマーカーが
+ * （差し替え途中の別要素ではなく）存在する状態になるまで待つ。map-root自体の中心座標に
+ * 依存すると、ビューポート幅（desktop/iPhone等）によるレイアウト差でマーカーの実際の
+ * 位置とズレることがあったため、マーカー自身の座標を都度読み直す方式にした。
+ */
+async function waitForCenteredMarkerSettled(page: Page, id: string) {
+  await page.waitForFunction(
+    (sid) => {
+      const el = document.querySelector(`[data-sid="${sid}"]`);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+      const atPoint = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return atPoint != null && atPoint.closest(`[data-sid="${sid}"]`) != null;
+    },
+    id,
+    { timeout: 10000 },
+  );
 }
 
 async function pickOriginStation(page: Page, id: string) {

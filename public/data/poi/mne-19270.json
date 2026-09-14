@@ -3,11 +3,13 @@
   "lat": 37.525975,
   "lng": 137.324423,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T22:57:12Z",
+  "generatedAt": "2026-09-14T10:54:10Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -551,6 +553,42 @@
       "distanceM": 9654,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/4826903221"
+    },
+    {
+      "id": "osm:node/9572654164",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "広栗神社",
+      "lat": 37.453413,
+      "lng": 137.2606429,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9837,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9572654164"
+    },
+    {
+      "id": "osm:node/9572654174",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 37.4544573,
+      "lng": 137.2561431,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9977,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9572654174"
     }
   ]
 }

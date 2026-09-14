@@ -3,13 +3,16 @@
   "lat": 43.503071,
   "lng": 142.597342,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T14:33:56Z",
+  "generatedAt": "2026-09-14T16:10:48Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass-api.de/api/interpreter"
   ],
   "pois": [
     {
@@ -552,6 +555,78 @@
       "distanceM": 9609,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/8541273898"
+    },
+    {
+      "id": "osm:way/701741972",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Chiyoda Farm Restaurant",
+      "lat": 43.5426662,
+      "lng": 142.491315,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9616,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/701741972"
+    },
+    {
+      "id": "osm:node/10803779880",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": "千代田の丘キャンプ場",
+      "lat": 43.5435838,
+      "lng": 142.4914869,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9651,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10803779880"
+    },
+    {
+      "id": "osm:node/8266981440",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテル富良野思惟林",
+      "lat": 43.4191516,
+      "lng": 142.6322247,
+      "address": "北海道上富良野町",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "http://shiyuirin.jp/",
+      "distanceM": 9747,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8266981440"
+    },
+    {
+      "id": "osm:way/1161603328",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": null,
+      "lat": 43.5431451,
+      "lng": 142.4879461,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9882,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1161603328"
     }
   ]
 }

@@ -3,15 +3,35 @@
   "lat": 41.6780521,
   "lng": 140.4353634,
   "radiusM": 10000,
-  "generatedAt": "2026-09-12T14:31:37Z",
+  "generatedAt": "2026-09-14T16:09:30Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
   "pois": [
+    {
+      "id": "osm:node/8807391328",
+      "category": "food",
+      "subcategory": "italian",
+      "subcategories": [
+        "italian"
+      ],
+      "name": "どうなんde's",
+      "lat": 41.677805,
+      "lng": 140.4352642,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 29,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8807391328"
+    },
     {
       "id": "osm:node/2457644451",
       "category": "food",
@@ -29,6 +49,42 @@
       "distanceM": 96,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/2457644451"
+    },
+    {
+      "id": "osm:node/2457649777",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "おかめ",
+      "lat": 41.6772307,
+      "lng": 140.4361864,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 114,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2457649777"
+    },
+    {
+      "id": "osm:node/8807391327",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "美乃久鮨し店",
+      "lat": 41.677103,
+      "lng": 140.4362462,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 129,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/8807391327"
     },
     {
       "id": "osm:node/4807857410",
@@ -209,6 +265,24 @@
       "distanceM": 1598,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/4678039614"
+    },
+    {
+      "id": "osm:node/4678039623",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "その",
+      "lat": 41.6922824,
+      "lng": 140.451762,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2088,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4678039623"
     },
     {
       "id": "osm:way/742386860",
@@ -551,6 +625,96 @@
       "distanceM": 8345,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/737787791"
+    },
+    {
+      "id": "osm:way/737792358",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "知内町郷土資料館",
+      "lat": 41.6008686,
+      "lng": 140.4191006,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8688,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/737792358"
+    },
+    {
+      "id": "osm:node/9099498227",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "伊勢鉢山",
+      "lat": 41.7259702,
+      "lng": 140.5191708,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8764,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9099498227"
+    },
+    {
+      "id": "osm:node/4059883842",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": "知内町ファミリースポーツ広場キャンプ場",
+      "lat": 41.5987742,
+      "lng": 140.4136998,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8997,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4059883842"
+    },
+    {
+      "id": "osm:node/12771203063",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": "知内スターヒルズキャンピングヤード",
+      "lat": 41.5983811,
+      "lng": 140.4110348,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9087,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12771203063"
+    },
+    {
+      "id": "osm:way/987252872",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": null,
+      "lat": 41.5960473,
+      "lng": 140.391348,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9825,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/987252872"
     }
   ]
 }

@@ -3,33 +3,17 @@
   "lat": 33.0025623,
   "lng": 131.4480727,
   "radiusM": 10000,
-  "generatedAt": "2026-09-14T03:15:41Z",
+  "generatedAt": "2026-09-14T16:04:49Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
-  "status": "ok",
+  "status": "partial",
+  "foodIncomplete": true,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
   "pois": [
-    {
-      "id": "osm:node/5719492821",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "道の駅あさじ",
-      "lat": 33.0026173,
-      "lng": 131.448133,
-      "address": "Bungo Oono",
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 8,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5719492821"
-    },
     {
       "id": "osm:node/2535849437",
       "category": "tourism",
@@ -499,24 +483,6 @@
       "sourceUrl": "https://www.openstreetmap.org/way/1005521205"
     },
     {
-      "id": "osm:node/11586494069",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "慈世庵",
-      "lat": 32.9836544,
-      "lng": 131.3883441,
-      "address": null,
-      "openingHoursRaw": "Tu-Sa 10:00-15:30",
-      "phone": "0974-62-3914",
-      "website": "https://cafe-johane.webnode.jp/",
-      "distanceM": 5954,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/11586494069"
-    },
-    {
       "id": "osm:node/7999119085",
       "category": "tourism",
       "subcategory": "camp",
@@ -552,6 +518,480 @@
       "distanceM": 6284,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/171609652"
+    },
+    {
+      "id": "osm:node/1064972140",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": null,
+      "lat": 32.9718004,
+      "lng": 131.3894454,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6450,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1064972140"
+    },
+    {
+      "id": "osm:node/1423870388",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "旧竹田荘",
+      "lat": 32.9653239,
+      "lng": 131.3935455,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6558,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1423870388"
+    },
+    {
+      "id": "osm:node/1064971927",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": null,
+      "lat": 32.9713401,
+      "lng": 131.3883173,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6566,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1064971927"
+    },
+    {
+      "id": "osm:node/1423883394",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "竹田市立歴史資料館",
+      "lat": 32.965882,
+      "lng": 131.392692,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6582,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1423883394"
+    },
+    {
+      "id": "osm:node/10744343607",
+      "category": "onsen",
+      "subcategory": "kyukei",
+      "subcategories": [
+        "kyukei"
+      ],
+      "name": null,
+      "lat": 32.9655422,
+      "lng": 131.3876721,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6977,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10744343607"
+    },
+    {
+      "id": "osm:node/6515882332",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "岡城天然温泉:月のしずく",
+      "lat": 32.9718059,
+      "lng": 131.3826744,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6993,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6515882332"
+    },
+    {
+      "id": "osm:way/694007512",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "岡城天然温泉;月のしずく",
+      "lat": 32.9718733,
+      "lng": 131.3826047,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6995,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/694007512"
+    },
+    {
+      "id": "osm:node/10744343605",
+      "category": "onsen",
+      "subcategory": "kyukei",
+      "subcategories": [
+        "kyukei"
+      ],
+      "name": null,
+      "lat": 32.9658648,
+      "lng": 131.3850422,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7156,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10744343605"
+    },
+    {
+      "id": "osm:way/1138195250",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "竹田市総合運動公園",
+      "lat": 32.9610656,
+      "lng": 131.3885335,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7220,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1138195250"
+    },
+    {
+      "id": "osm:node/1423884144",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "豊後大野市清川歴史民俗資料室",
+      "lat": 32.968418,
+      "lng": 131.514779,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7289,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1423884144"
+    },
+    {
+      "id": "osm:way/1148785277",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "ふれいあい広場",
+      "lat": 32.9710241,
+      "lng": 131.5169303,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7317,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1148785277"
+    },
+    {
+      "id": "osm:node/6177950266",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": "沈堕の滝",
+      "lat": 32.9839617,
+      "lng": 131.5265869,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7609,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6177950266"
+    },
+    {
+      "id": "osm:way/1156947869",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": null,
+      "lat": 32.9595007,
+      "lng": 131.3833819,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7703,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1156947869"
+    },
+    {
+      "id": "osm:node/2093046677",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "鎧ヶ岳",
+      "lat": 33.0718343,
+      "lng": 131.4777151,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8183,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2093046677"
+    },
+    {
+      "id": "osm:node/2093046676",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "烏帽子岳",
+      "lat": 33.0733642,
+      "lng": 131.4839309,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8553,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2093046676"
+    },
+    {
+      "id": "osm:node/2093046678",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "雨乞岳",
+      "lat": 33.0751504,
+      "lng": 131.4903721,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8983,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2093046678"
+    },
+    {
+      "id": "osm:node/1064972111",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": null,
+      "lat": 32.9477767,
+      "lng": 131.3754086,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9114,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1064972111"
+    },
+    {
+      "id": "osm:node/5719356221",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "水神之森",
+      "lat": 33.0649852,
+      "lng": 131.3813514,
+      "address": "大分県",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9320,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5719356221"
+    },
+    {
+      "id": "osm:node/5404432053",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen"
+      ],
+      "name": "がに湯",
+      "lat": 33.0689323,
+      "lng": 131.382616,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9576,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5404432053"
+    },
+    {
+      "id": "osm:way/226828010",
+      "category": "lodging",
+      "subcategory": "guesthouse",
+      "subcategories": [
+        "guesthouse"
+      ],
+      "name": "大分市立のつはる少年自然の家",
+      "lat": 33.0788219,
+      "lng": 131.4968147,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9620,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/226828010"
+    },
+    {
+      "id": "osm:node/6517530193",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "長湯温泉療養文化館;御前湯",
+      "lat": 33.0707528,
+      "lng": 131.384441,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9627,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6517530193"
+    },
+    {
+      "id": "osm:node/6517534790",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "ラムネ温泉館",
+      "lat": 33.0683762,
+      "lng": 131.3800434,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9684,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6517534790"
+    },
+    {
+      "id": "osm:way/694204432",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "ラムネ温泉館",
+      "lat": 33.0683626,
+      "lng": 131.3798587,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9694,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/694204432"
+    },
+    {
+      "id": "osm:way/694203491",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "温泉交流館;みつばちの湯",
+      "lat": 33.0667274,
+      "lng": 131.3747417,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9881,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/694203491"
+    },
+    {
+      "id": "osm:node/6517510642",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen"
+      ],
+      "name": "クアパーク長湯",
+      "lat": 33.0668422,
+      "lng": 131.3736618,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9960,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6517510642"
+    },
+    {
+      "id": "osm:way/694203208",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen"
+      ],
+      "name": "クアパーク長湯",
+      "lat": 33.0668406,
+      "lng": 131.3736469,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9961,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/694203208"
     }
   ]
 }

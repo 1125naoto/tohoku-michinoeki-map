@@ -3,11 +3,13 @@
   "lat": 35.1889597,
   "lng": 134.930123,
   "radiusM": 10000,
-  "generatedAt": "2026-09-13T05:35:33Z",
+  "generatedAt": "2026-09-14T08:13:01Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -552,6 +554,24 @@
       "distanceM": 9722,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/542764562"
+    },
+    {
+      "id": "osm:node/1164488744",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "遊楽里",
+      "lat": 35.1229663,
+      "lng": 135.0004028,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9730,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1164488744"
     }
   ]
 }

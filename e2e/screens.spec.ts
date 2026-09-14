@@ -14,6 +14,49 @@ async function noHorizontalScroll(page: import('@playwright/test').Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+/**
+ * __setMapView後、画面（map-root）中央ピクセルの要素が対象駅のマーカーに実際に
+ * 差し替わり終えている（Leafletの非同期アイコン再描画が完了している）ことを待つ
+ * （Astra再監査Final Gate: e2e/manual-route.spec.ts の同名関数と同じ根本原因への対処。
+ * 固定時間待機だけでは、直前の選択でマーカーアイコンが選択順バッジ付きへ非同期に
+ * 差し替わっている途中にクリックが競合し、「element was detached from the DOM」を
+ * 起こすことが実測で確認できたため）。
+ */
+/**
+ * 対象マーカーが下部固定バー(.route-select-bar)の領域と重なっている場合、
+ * 重ならなくなるまでE2E専用フック(__panMapBy)で地図を上へずらす
+ * （e2e/manual-route.spec.ts の同名処理と同じ根本原因への対処）。
+ */
+async function avoidSelectBarOverlap(page: import('@playwright/test').Page, id: string) {
+  const hasPan = await page.evaluate(() => typeof (window as unknown as { __panMapBy?: unknown }).__panMapBy === 'function');
+  if (!hasPan) return;
+  for (let i = 0; i < 5; i++) {
+    const markerBox = await page.locator(`[data-sid="${id}"]`).boundingBox();
+    const barBox = await page.getByTestId('route-select-bar').boundingBox().catch(() => null);
+    if (!markerBox || !barBox) return;
+    const markerCenterY = markerBox.y + markerBox.height / 2;
+    const overlap = markerCenterY + markerBox.height / 2 + 8 - barBox.y;
+    if (overlap <= 0) return;
+    await page.evaluate((dy) => (window as unknown as { __panMapBy: (dx: number, dy: number) => void }).__panMapBy(0, dy), overlap);
+    await page.waitForTimeout(150);
+  }
+}
+
+async function waitForCenteredMarkerSettled(page: import('@playwright/test').Page, id: string) {
+  await page.waitForFunction(
+    (sid) => {
+      const el = document.querySelector(`[data-sid="${sid}"]`);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+      const atPoint = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return atPoint != null && atPoint.closest(`[data-sid="${sid}"]`) != null;
+    },
+    id,
+    { timeout: 10000 },
+  );
+}
+
 test('主要画面のスクリーンショット @smoke', async ({ page }, testInfo) => {
   // 20画面以上を1テストで連続撮影するうえ、収録駅が約1000件に増えたことで
   // iPhone(WebKit)では1回の撮影・タップにそれぞれ数秒かかるようになったため、
@@ -105,6 +148,8 @@ test('主要画面のスクリーンショット @smoke', async ({ page }, testI
       [lat, lng],
     );
     await page.waitForTimeout(250);
+    await avoidSelectBarOverlap(page, id);
+    await waitForCenteredMarkerSettled(page, id);
     await page.locator(`[data-sid="${id}"]`).click();
   }
   await expect(page.getByTestId('route-select-count')).toContainText('3駅選択中');

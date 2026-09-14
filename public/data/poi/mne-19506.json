@@ -3,11 +3,13 @@
   "lat": 34.0930462,
   "lng": 135.4128144,
   "radiusM": 10000,
-  "generatedAt": "2026-09-13T05:46:48Z",
+  "generatedAt": "2026-09-14T13:29:57Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -551,6 +553,42 @@
       "distanceM": 9021,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/2528193101"
+    },
+    {
+      "id": "osm:node/10142973493",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "真国丹生神社",
+      "lat": 34.1701014,
+      "lng": 135.3799388,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9087,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10142973493"
+    },
+    {
+      "id": "osm:node/3265351761",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "白馬山",
+      "lat": 34.0158266,
+      "lng": 135.3721973,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9366,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3265351761"
     }
   ]
 }

@@ -3,11 +3,13 @@
   "lat": 34.3938706,
   "lng": 136.4085972,
   "radiusM": 10000,
-  "generatedAt": "2026-09-13T01:50:22Z",
+  "generatedAt": "2026-09-14T12:22:21Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -552,6 +554,60 @@
       "distanceM": 8891,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/607052643"
+    },
+    {
+      "id": "osm:node/12204973424",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": null,
+      "lat": 34.340706,
+      "lng": 136.3328218,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9128,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12204973424"
+    },
+    {
+      "id": "osm:node/6045035285",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": null,
+      "lat": 34.4635892,
+      "lng": 136.4660085,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9372,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6045035285"
+    },
+    {
+      "id": "osm:way/702959490",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "野原公園",
+      "lat": 34.4323863,
+      "lng": 136.5060798,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9915,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/702959490"
     }
   ]
 }

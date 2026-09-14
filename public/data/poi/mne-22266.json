@@ -3,7 +3,16 @@
   "lat": 38.189452824433396,
   "lng": 140.3120713889698,
   "radiusM": 10000,
-  "generatedAt": "2026-09-07T12:55:40Z",
+  "generatedAt": "2026-09-14T17:15:14Z",
+  "schemaVersion": 3,
+  "source": "overpass",
+  "queryVersion": 2,
+  "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
+  "endpointsUsed": [
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+  ],
   "pois": [
     {
       "id": "osm:node/3604282573",
@@ -78,6 +87,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/4349240289"
     },
     {
+      "id": "osm:node/5002782615",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテルナイト",
+      "lat": 38.218862,
+      "lng": 140.327086,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 3524,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782615"
+    },
+    {
       "id": "osm:node/3739851492",
       "category": "tourism",
       "subcategory": "camp",
@@ -94,6 +121,24 @@
       "distanceM": 3543,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/3739851492"
+    },
+    {
+      "id": "osm:node/5002782600",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "村社白山神社",
+      "lat": 38.2260144,
+      "lng": 140.3216036,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4150,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782600"
     },
     {
       "id": "osm:node/3610093893",
@@ -132,6 +177,114 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3612377901"
     },
     {
+      "id": "osm:node/5132386124",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "称念寺",
+      "lat": 38.15844,
+      "lng": 140.2811609,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4381,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132386124"
+    },
+    {
+      "id": "osm:node/5132411232",
+      "category": "lodging",
+      "subcategory": "guesthouse",
+      "subcategories": [
+        "guesthouse"
+      ],
+      "name": "旅の宿さいとう",
+      "lat": 38.1591395,
+      "lng": 140.2796227,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4405,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132411232"
+    },
+    {
+      "id": "osm:node/5132391424",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "御菓子司吉田屋",
+      "lat": 38.1588757,
+      "lng": 140.2797429,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4421,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132391424"
+    },
+    {
+      "id": "osm:node/5132411240",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ふぢ金旅館",
+      "lat": 38.1607873,
+      "lng": 140.2765089,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4452,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132411240"
+    },
+    {
+      "id": "osm:node/5132386127",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "愛宕神社",
+      "lat": 38.1591464,
+      "lng": 140.2787386,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4455,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132386127"
+    },
+    {
+      "id": "osm:node/5132391428",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "観音寺",
+      "lat": 38.1586143,
+      "lng": 140.2783114,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4524,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5132391428"
+    },
+    {
       "id": "osm:node/3603961576",
       "category": "food",
       "subcategory": "fastfood",
@@ -168,6 +321,114 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3631423366"
     },
     {
+      "id": "osm:node/5002782437",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "武田菓子店",
+      "lat": 38.232212,
+      "lng": 140.3141313,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4758,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782437"
+    },
+    {
+      "id": "osm:node/5130413747",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "十五屋",
+      "lat": 38.1559588,
+      "lng": 140.2772714,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4809,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130413747"
+    },
+    {
+      "id": "osm:node/5130420923",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "大国屋菓子店",
+      "lat": 38.1541572,
+      "lng": 140.2762628,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5020,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130420923"
+    },
+    {
+      "id": "osm:node/5130261562",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "ふらんどーる洋菓子店",
+      "lat": 38.1525599,
+      "lng": 140.2778354,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5078,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130261562"
+    },
+    {
+      "id": "osm:node/5130414022",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "だんご本舗たかはし",
+      "lat": 38.1523672,
+      "lng": 140.2769021,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5144,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130414022"
+    },
+    {
+      "id": "osm:node/5130395125",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "黄金山神社",
+      "lat": 38.1519308,
+      "lng": 140.2768896,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5183,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130395125"
+    },
+    {
       "id": "osm:node/3610093895",
       "category": "food",
       "subcategory": "food_other",
@@ -184,6 +445,42 @@
       "distanceM": 5187,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/3610093895"
+    },
+    {
+      "id": "osm:node/5130395126",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "稲毛屋",
+      "lat": 38.1521662,
+      "lng": 140.2761751,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5200,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130395126"
+    },
+    {
+      "id": "osm:node/5002782587",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "杵屋本店",
+      "lat": 38.236284,
+      "lng": 140.3144465,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5212,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782587"
     },
     {
       "id": "osm:node/3631423373",
@@ -204,6 +501,78 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3631423373"
     },
     {
+      "id": "osm:node/5130288623",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "旧長谷川製糸場跡",
+      "lat": 38.1494416,
+      "lng": 140.2783692,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5336,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130288623"
+    },
+    {
+      "id": "osm:node/5130287224",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "蟹仙洞",
+      "lat": 38.1491379,
+      "lng": 140.278858,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5341,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130287224"
+    },
+    {
+      "id": "osm:node/5130414026",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "金子屋まんじゅう店",
+      "lat": 38.1522688,
+      "lng": 140.272363,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5399,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130414026"
+    },
+    {
+      "id": "osm:node/5002782579",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "TuTu",
+      "lat": 38.237971,
+      "lng": 140.30893,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 645 2511",
+      "website": null,
+      "distanceM": 5402,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782579"
+    },
+    {
       "id": "osm:node/2360019749",
       "category": "tourism",
       "subcategory": "keishou",
@@ -220,6 +589,60 @@
       "distanceM": 5409,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/2360019749"
+    },
+    {
+      "id": "osm:node/5130414725",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "十一屋 上山店",
+      "lat": 38.1505247,
+      "lng": 140.2736301,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5480,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130414725"
+    },
+    {
+      "id": "osm:node/5130287228",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "茶囲夢",
+      "lat": 38.1464419,
+      "lng": 140.2786623,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5604,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130287228"
+    },
+    {
+      "id": "osm:node/5130288640",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "円通寺",
+      "lat": 38.1446466,
+      "lng": 140.2757002,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5910,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130288640"
     },
     {
       "id": "osm:node/1232142386",
@@ -258,6 +681,132 @@
       "sourceUrl": "https://www.openstreetmap.org/node/5001260530"
     },
     {
+      "id": "osm:node/5001262467",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "おおたき居酒屋",
+      "lat": 38.2429638,
+      "lng": 140.3270752,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6093,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262467"
+    },
+    {
+      "id": "osm:node/5001262466",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテルキャピタルイン山形",
+      "lat": 38.2432205,
+      "lng": 140.3272966,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 634 7400",
+      "website": null,
+      "distanceM": 6125,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262466"
+    },
+    {
+      "id": "osm:node/5001262473",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "スナックこれから",
+      "lat": 38.2428799,
+      "lng": 140.3293537,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6130,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262473"
+    },
+    {
+      "id": "osm:node/5001262472",
+      "category": "food",
+      "subcategory": "italian",
+      "subcategories": [
+        "italian"
+      ],
+      "name": "ヴィラッジオ",
+      "lat": 38.2435703,
+      "lng": 140.3280728,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 665 5329",
+      "website": null,
+      "distanceM": 6178,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262472"
+    },
+    {
+      "id": "osm:node/5001262937",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "福満稲荷神社",
+      "lat": 38.2438197,
+      "lng": 140.3272535,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6189,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262937"
+    },
+    {
+      "id": "osm:node/5001262465",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "エビス",
+      "lat": 38.2446597,
+      "lng": 140.3264742,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6266,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262465"
+    },
+    {
+      "id": "osm:node/5001262934",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋北海漁舟群",
+      "lat": 38.2447744,
+      "lng": 140.3283262,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6313,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262934"
+    },
+    {
       "id": "osm:node/5001262463",
       "category": "food",
       "subcategory": "food_other",
@@ -274,6 +823,42 @@
       "distanceM": 6448,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/5001262463"
+    },
+    {
+      "id": "osm:node/5001341621",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "小林旅館",
+      "lat": 38.246498,
+      "lng": 140.329075,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 622 8576",
+      "website": null,
+      "distanceM": 6515,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341621"
+    },
+    {
+      "id": "osm:node/5001262931",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "続おそばに",
+      "lat": 38.2467625,
+      "lng": 140.3278722,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6520,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262931"
     },
     {
       "id": "osm:node/5001262461",
@@ -312,6 +897,42 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3093340579"
     },
     {
+      "id": "osm:node/5001341021",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋マンハッタン",
+      "lat": 38.2466921,
+      "lng": 140.3292931,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6540,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341021"
+    },
+    {
+      "id": "osm:node/5001340722",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ビジネスホテル ヨシダ",
+      "lat": 38.2468032,
+      "lng": 140.3293469,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 632 5420",
+      "website": null,
+      "distanceM": 6553,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340722"
+    },
+    {
       "id": "osm:node/3093340802",
       "category": "lodging",
       "subcategory": "hotel",
@@ -348,6 +969,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/5001262460"
     },
     {
+      "id": "osm:node/5001340724",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "モクカフェ",
+      "lat": 38.2467146,
+      "lng": 140.3303206,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 666 6771",
+      "website": null,
+      "distanceM": 6564,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340724"
+    },
+    {
       "id": "osm:node/5001262459",
       "category": "food",
       "subcategory": "food_other",
@@ -366,6 +1005,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/5001262459"
     },
     {
+      "id": "osm:node/5001340723",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋半十郎",
+      "lat": 38.2468127,
+      "lng": 140.3300376,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6568,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340723"
+    },
+    {
       "id": "osm:node/3093340809",
       "category": "lodging",
       "subcategory": "hotel",
@@ -382,6 +1039,24 @@
       "distanceM": 6592,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/3093340809"
+    },
+    {
+      "id": "osm:node/5001341022",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "なかの",
+      "lat": 38.2470791,
+      "lng": 140.330103,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 633 2101",
+      "website": null,
+      "distanceM": 6599,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341022"
     },
     {
       "id": "osm:node/5001262458",
@@ -438,6 +1113,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3093365896"
     },
     {
+      "id": "osm:node/5001341622",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "隠れや",
+      "lat": 38.2472307,
+      "lng": 140.3302772,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6619,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341622"
+    },
+    {
       "id": "osm:node/3093340810",
       "category": "lodging",
       "subcategory": "hotel",
@@ -474,6 +1167,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3093340798"
     },
     {
+      "id": "osm:node/5001341028",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "昭和ホルモン亭",
+      "lat": 38.2475149,
+      "lng": 140.3304103,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6652,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341028"
+    },
+    {
       "id": "osm:node/3093340543",
       "category": "food",
       "subcategory": "food_other",
@@ -490,6 +1201,24 @@
       "distanceM": 6654,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/3093340543"
+    },
+    {
+      "id": "osm:node/5001341025",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "松屋",
+      "lat": 38.2477266,
+      "lng": 140.3298676,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 615 4021",
+      "website": null,
+      "distanceM": 6664,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341025"
     },
     {
       "id": "osm:node/3093340559",
@@ -510,6 +1239,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3093340559"
     },
     {
+      "id": "osm:node/5001342428",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Dining Bar Libero",
+      "lat": 38.2477395,
+      "lng": 140.330516,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6678,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342428"
+    },
+    {
       "id": "osm:node/3093340803",
       "category": "lodging",
       "subcategory": "hotel",
@@ -528,6 +1275,24 @@
       "sourceUrl": "https://www.openstreetmap.org/node/3093340803"
     },
     {
+      "id": "osm:node/5001263323",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "鳥放題 山形駅前店",
+      "lat": 38.2480182,
+      "lng": 140.3290509,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6679,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001263323"
+    },
+    {
       "id": "osm:node/5001262455",
       "category": "food",
       "subcategory": "ramen",
@@ -544,6 +1309,1896 @@
       "distanceM": 6681,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/5001262455"
+    },
+    {
+      "id": "osm:node/4871552621",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": null,
+      "lat": 38.2480977,
+      "lng": 140.328789,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6683,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4871552621"
+    },
+    {
+      "id": "osm:node/5001260525",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "ミスタードーナツ",
+      "lat": 38.2481055,
+      "lng": 140.3290903,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6689,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001260525"
+    },
+    {
+      "id": "osm:node/5001341625",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "魚きがるに酒場",
+      "lat": 38.2478493,
+      "lng": 140.3304725,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6689,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341625"
+    },
+    {
+      "id": "osm:node/5001341624",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "マーキガルニ",
+      "lat": 38.2479583,
+      "lng": 140.3305056,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6702,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341624"
+    },
+    {
+      "id": "osm:node/5001262930",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "あきよし",
+      "lat": 38.2481874,
+      "lng": 140.3294435,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 633 3133",
+      "website": null,
+      "distanceM": 6705,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262930"
+    },
+    {
+      "id": "osm:node/5001262453",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ささや",
+      "lat": 38.2482423,
+      "lng": 140.329176,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 623 2337",
+      "website": null,
+      "distanceM": 6706,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262453"
+    },
+    {
+      "id": "osm:node/5001262456",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "修ちゃんラーメン",
+      "lat": 38.2481916,
+      "lng": 140.329849,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6714,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262456"
+    },
+    {
+      "id": "osm:node/3093340794",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテルメトロポリタン山形",
+      "lat": 38.2485724,
+      "lng": 140.3278453,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "https://yamagata.metropolitan.jp/",
+      "distanceM": 6717,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3093340794"
+    },
+    {
+      "id": "osm:node/5001262457",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "利休",
+      "lat": 38.2483098,
+      "lng": 140.329503,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 641 2389",
+      "website": null,
+      "distanceM": 6719,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262457"
+    },
+    {
+      "id": "osm:node/4871552622",
+      "category": "food",
+      "subcategory": "fastfood",
+      "subcategories": [
+        "fastfood"
+      ],
+      "name": "ロッテリア",
+      "lat": 38.2486004,
+      "lng": 140.3279591,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6722,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4871552622"
+    },
+    {
+      "id": "osm:node/5001262452",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "勘兵衛",
+      "lat": 38.2484173,
+      "lng": 140.3292566,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6726,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262452"
+    },
+    {
+      "id": "osm:node/5001340726",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "立ち呑み酒場 招き豚",
+      "lat": 38.2481636,
+      "lng": 140.3306286,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6727,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340726"
+    },
+    {
+      "id": "osm:node/5001342422",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "とんこつラーメン来門",
+      "lat": 38.2482737,
+      "lng": 140.3300587,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6727,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342422"
+    },
+    {
+      "id": "osm:node/5001262451",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "串こまち 山形店",
+      "lat": 38.248367,
+      "lng": 140.3297906,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6731,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262451"
+    },
+    {
+      "id": "osm:node/5001341322",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "代官山Sushi Dining一艸亭",
+      "lat": 38.2483078,
+      "lng": 140.3302711,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6735,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341322"
+    },
+    {
+      "id": "osm:node/5001342426",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ブルーマーケット ブラザーズ",
+      "lat": 38.2483306,
+      "lng": 140.3304298,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6740,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342426"
+    },
+    {
+      "id": "osm:node/5001342425",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Cocktail & Dream Blue Market",
+      "lat": 38.2484139,
+      "lng": 140.3303314,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6747,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342425"
+    },
+    {
+      "id": "osm:node/5001342424",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋天晴",
+      "lat": 38.2484471,
+      "lng": 140.3301694,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6748,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342424"
+    },
+    {
+      "id": "osm:node/5001262450",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "牛たん焼とだて",
+      "lat": 38.24849,
+      "lng": 140.3299968,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6749,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262450"
+    },
+    {
+      "id": "osm:node/5001263322",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "酒菜一",
+      "lat": 38.2485221,
+      "lng": 140.3298477,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6749,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001263322"
+    },
+    {
+      "id": "osm:node/5001262929",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Dondontei",
+      "lat": 38.2485534,
+      "lng": 140.3297151,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6750,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262929"
+    },
+    {
+      "id": "osm:node/5001262928",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "やきとり呑どん",
+      "lat": 38.2486025,
+      "lng": 140.329592,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6753,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262928"
+    },
+    {
+      "id": "osm:node/5001262449",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "麺藤田",
+      "lat": 38.2486774,
+      "lng": 140.3293918,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6757,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262449"
+    },
+    {
+      "id": "osm:node/5001342427",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "かいぐい屋",
+      "lat": 38.2484424,
+      "lng": 140.330824,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6761,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342427"
+    },
+    {
+      "id": "osm:node/4871553022",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "スターバックス",
+      "lat": 38.2489729,
+      "lng": 140.3279899,
+      "address": null,
+      "openingHoursRaw": "Mo-Su 07:00-20:00",
+      "phone": null,
+      "website": null,
+      "distanceM": 6763,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4871553022"
+    },
+    {
+      "id": "osm:node/5001262927",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "札幌ラーメンどさんこ 駅前店",
+      "lat": 38.2486577,
+      "lng": 140.3299721,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6766,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262927"
+    },
+    {
+      "id": "osm:node/5001340725",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "九州男児",
+      "lat": 38.248624,
+      "lng": 140.3303731,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6771,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340725"
+    },
+    {
+      "id": "osm:node/3093340795",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "Hotel α-1 山形",
+      "lat": 38.2473162,
+      "lng": 140.3362232,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6771,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3093340795"
+    },
+    {
+      "id": "osm:node/5001341027",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋やまぎし",
+      "lat": 38.2486503,
+      "lng": 140.3305004,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6776,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341027"
+    },
+    {
+      "id": "osm:node/5001341323",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋さる家",
+      "lat": 38.2487356,
+      "lng": 140.330394,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6784,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341323"
+    },
+    {
+      "id": "osm:node/5001262446",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "宝来寿司",
+      "lat": 38.2488733,
+      "lng": 140.3297328,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6785,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262446"
+    },
+    {
+      "id": "osm:node/5001262447",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "やきとり小柳",
+      "lat": 38.2488496,
+      "lng": 140.3298705,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6785,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262447"
+    },
+    {
+      "id": "osm:node/5001262441",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "シャンティリストランテバル",
+      "lat": 38.2488539,
+      "lng": 140.3307047,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 665 5151",
+      "website": null,
+      "distanceM": 6803,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262441"
+    },
+    {
+      "id": "osm:node/4019191430",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "とかみふれあいセンター",
+      "lat": 38.2375265,
+      "lng": 140.2638251,
+      "address": "山形県山形市",
+      "openingHoursRaw": "10:00-16:30",
+      "phone": "+81-23-647-5262",
+      "website": null,
+      "distanceM": 6808,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4019191430"
+    },
+    {
+      "id": "osm:node/3093340807",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテルサンルート山形",
+      "lat": 38.248941,
+      "lng": 140.33058,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "http://www.sunroute-yamagata.com/",
+      "distanceM": 6810,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3093340807"
+    },
+    {
+      "id": "osm:node/5001262926",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "東屋ダイニング",
+      "lat": 38.2489378,
+      "lng": 140.3307601,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 633 6300",
+      "website": null,
+      "distanceM": 6813,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262926"
+    },
+    {
+      "id": "osm:node/5002314421",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "山形駅西口ワシントンホテル",
+      "lat": 38.249743,
+      "lng": 140.326807,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 647 1111",
+      "website": null,
+      "distanceM": 6826,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002314421"
+    },
+    {
+      "id": "osm:node/5002314521",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "山形県産業科学館",
+      "lat": 38.2498408,
+      "lng": 140.3262947,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 647 0771",
+      "website": null,
+      "distanceM": 6829,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002314521"
+    },
+    {
+      "id": "osm:node/5001262423",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "こんなかんじで Dining Ricco",
+      "lat": 38.2494088,
+      "lng": 140.3293602,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 643 0429",
+      "website": null,
+      "distanceM": 6836,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262423"
+    },
+    {
+      "id": "osm:node/5001262440",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ナチナタウン",
+      "lat": 38.24922,
+      "lng": 140.3309117,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 674 8489",
+      "website": null,
+      "distanceM": 6847,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262440"
+    },
+    {
+      "id": "osm:node/5001262921",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "山形駅個室物語 竹取御殿",
+      "lat": 38.2495056,
+      "lng": 140.3294104,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6847,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262921"
+    },
+    {
+      "id": "osm:node/5001262922",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "千年の宴",
+      "lat": 38.2496789,
+      "lng": 140.32949,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6868,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262922"
+    },
+    {
+      "id": "osm:node/5001260523",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Bar Le dauthir",
+      "lat": 38.2496593,
+      "lng": 140.3306554,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6889,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001260523"
+    },
+    {
+      "id": "osm:node/5001262438",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "川なり",
+      "lat": 38.2498581,
+      "lng": 140.3308056,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 631 0994",
+      "website": null,
+      "distanceM": 6913,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262438"
+    },
+    {
+      "id": "osm:node/5001260522",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ビジネスホテルおかざわ",
+      "lat": 38.2499904,
+      "lng": 140.3300833,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 633 1616",
+      "website": null,
+      "distanceM": 6913,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001260522"
+    },
+    {
+      "id": "osm:node/5001262425",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋串でん",
+      "lat": 38.2502044,
+      "lng": 140.3298645,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6932,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262425"
+    },
+    {
+      "id": "osm:node/5001340730",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "なごみ処 一縁",
+      "lat": 38.2499422,
+      "lng": 140.3315108,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6937,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340730"
+    },
+    {
+      "id": "osm:node/5001262424",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "本場博多あぶり居酒屋佐のちゃん",
+      "lat": 38.2503137,
+      "lng": 140.3299158,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6945,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262424"
+    },
+    {
+      "id": "osm:node/5001262428",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "江戸寿司",
+      "lat": 38.2506096,
+      "lng": 140.3295356,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6969,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262428"
+    },
+    {
+      "id": "osm:node/5001262427",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "スナックまこと",
+      "lat": 38.2508361,
+      "lng": 140.3291097,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6986,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262427"
+    },
+    {
+      "id": "osm:node/5001262426",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "ホテルイーストワン",
+      "lat": 38.2509095,
+      "lng": 140.3297138,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 635 0303",
+      "website": null,
+      "distanceM": 7005,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262426"
+    },
+    {
+      "id": "osm:node/5001263321",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "そね田やきとりや",
+      "lat": 38.2509781,
+      "lng": 140.3294427,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7008,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001263321"
+    },
+    {
+      "id": "osm:node/5001341629",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Amusement Bar Clover",
+      "lat": 38.2494217,
+      "lng": 140.3368143,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7010,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341629"
+    },
+    {
+      "id": "osm:node/5001342441",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "文六鮨",
+      "lat": 38.2505321,
+      "lng": 140.3322733,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7017,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342441"
+    },
+    {
+      "id": "osm:node/5001340732",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "空海",
+      "lat": 38.2502073,
+      "lng": 140.3340193,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7022,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340732"
+    },
+    {
+      "id": "osm:node/5001340734",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "池田屋",
+      "lat": 38.2495714,
+      "lng": 140.3369086,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7028,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340734"
+    },
+    {
+      "id": "osm:node/5001342443",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "北海ラーメン",
+      "lat": 38.2501856,
+      "lng": 140.3348381,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7040,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001342443"
+    },
+    {
+      "id": "osm:node/3610396396",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "Big Boy 山形城南町店",
+      "lat": 38.2518739,
+      "lng": 140.3256382,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7041,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3610396396"
+    },
+    {
+      "id": "osm:node/5130287240",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "三本松稲荷神社",
+      "lat": 38.1348834,
+      "lng": 140.271148,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7044,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130287240"
+    },
+    {
+      "id": "osm:node/5001262430",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "もと紀",
+      "lat": 38.251545,
+      "lng": 140.3294938,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 625 4035",
+      "website": null,
+      "distanceM": 7070,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262430"
+    },
+    {
+      "id": "osm:node/2360073462",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "富神山",
+      "lat": 38.234719,
+      "lng": 140.254724,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7102,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2360073462"
+    },
+    {
+      "id": "osm:node/5002314657",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "かすみだんごや",
+      "lat": 38.2523898,
+      "lng": 140.3261925,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7106,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002314657"
+    },
+    {
+      "id": "osm:node/5001341327",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "La Seine",
+      "lat": 38.2504264,
+      "lng": 140.337411,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7132,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341327"
+    },
+    {
+      "id": "osm:node/3093340816",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "山形グランドホテル",
+      "lat": 38.250686,
+      "lng": 140.33707,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7150,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3093340816"
+    },
+    {
+      "id": "osm:node/5001341628",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "中国料理 桃花苑",
+      "lat": 38.2506335,
+      "lng": 140.3374952,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7156,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001341628"
+    },
+    {
+      "id": "osm:node/3610093912",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "扇屋 山形春日町店",
+      "lat": 38.2534797,
+      "lng": 140.3205878,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7158,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3610093912"
+    },
+    {
+      "id": "osm:node/5001340736",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "れんげ草",
+      "lat": 38.2506153,
+      "lng": 140.3382611,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7175,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340736"
+    },
+    {
+      "id": "osm:node/5001262925",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ステーキ鉄板焼 神室",
+      "lat": 38.2521763,
+      "lng": 140.3324468,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7198,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262925"
+    },
+    {
+      "id": "osm:node/5001264321",
+      "category": "food",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
+      "name": "焼肉千歳山形",
+      "lat": 38.2521573,
+      "lng": 140.3330958,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7210,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001264321"
+    },
+    {
+      "id": "osm:node/5001262437",
+      "category": "food",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
+      "name": "玄海焼肉店",
+      "lat": 38.2522175,
+      "lng": 140.3329466,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7213,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001262437"
+    },
+    {
+      "id": "osm:node/5130261557",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "日吉神社",
+      "lat": 38.1340236,
+      "lng": 140.2690519,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7220,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130261557"
+    },
+    {
+      "id": "osm:node/5001344025",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "旅館仙台屋",
+      "lat": 38.2521065,
+      "lng": 140.3355057,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 642 0913",
+      "website": null,
+      "distanceM": 7261,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001344025"
+    },
+    {
+      "id": "osm:node/5002314646",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "コセキ菓子店",
+      "lat": 38.2543179,
+      "lng": 140.322829,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7274,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002314646"
+    },
+    {
+      "id": "osm:node/5001340737",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "居酒屋味山海",
+      "lat": 38.251676,
+      "lng": 140.3387241,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7300,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5001340737"
+    },
+    {
+      "id": "osm:node/3491222129",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "番紅花　ばんこう花",
+      "lat": 38.249431,
+      "lng": 140.3472113,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7342,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3491222129"
+    },
+    {
+      "id": "osm:node/3491219935",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ダイニング ヘリアン",
+      "lat": 38.2483025,
+      "lng": 140.3512162,
+      "address": "山形県山形市31",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7383,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3491219935"
+    },
+    {
+      "id": "osm:node/4871553221",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": null,
+      "lat": 38.2549256,
+      "lng": 140.3280241,
+      "address": null,
+      "openingHoursRaw": "Mo-Su 05:00-22:00",
+      "phone": null,
+      "website": null,
+      "distanceM": 7412,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4871553221"
+    },
+    {
+      "id": "osm:node/5033317823",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "専称寺",
+      "lat": 38.2517832,
+      "lng": 140.3464523,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7554,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5033317823"
+    },
+    {
+      "id": "osm:node/5130261559",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "庄司製菓",
+      "lat": 38.1273121,
+      "lng": 140.2759901,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7596,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5130261559"
+    },
+    {
+      "id": "osm:node/4345740791",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "どさん娘蔵王のいえ",
+      "lat": 38.1650964,
+      "lng": 140.3950659,
+      "address": "山形県山形市4",
+      "openingHoursRaw": "Mo-Su 11:30-14:30,18:00-21:00",
+      "phone": "+81 23-694-9093",
+      "website": "https://www.zao-minsyuku.com/dosanko/",
+      "distanceM": 7744,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4345740791"
+    },
+    {
+      "id": "osm:node/5033632022",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": null,
+      "lat": 38.1721076,
+      "lng": 140.3981667,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7769,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5033632022"
+    },
+    {
+      "id": "osm:node/4662997790",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": "蔵王ロープウェイ",
+      "lat": 38.1618738,
+      "lng": 140.395,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7871,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4662997790"
+    },
+    {
+      "id": "osm:node/5033186321",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": null,
+      "lat": 38.2565708,
+      "lng": 140.3411856,
+      "address": null,
+      "openingHoursRaw": "Mo-Su 09:00-16:30",
+      "phone": null,
+      "website": null,
+      "distanceM": 7885,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5033186321"
+    },
+    {
+      "id": "osm:node/2418522207",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "文翔館（旧山形県庁舎）",
+      "lat": 38.2566803,
+      "lng": 140.3412244,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7897,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2418522207"
+    },
+    {
+      "id": "osm:node/3610093901",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": null,
+      "lat": 38.2601475,
+      "lng": 140.3234865,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7924,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3610093901"
+    },
+    {
+      "id": "osm:node/3610093902",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "すき家 山形城西店",
+      "lat": 38.2605987,
+      "lng": 140.322182,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7960,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3610093902"
+    },
+    {
+      "id": "osm:node/3602608286",
+      "category": "food",
+      "subcategory": "fastfood",
+      "subcategories": [
+        "fastfood"
+      ],
+      "name": "モスバーガー",
+      "lat": 38.2613476,
+      "lng": 140.3111625,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7995,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3602608286"
+    },
+    {
+      "id": "osm:node/3602517948",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "ラーメン",
+      "lat": 38.2624773,
+      "lng": 140.314071,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8122,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3602517948"
+    },
+    {
+      "id": "osm:node/3719379651",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "そば",
+      "lat": 38.2625517,
+      "lng": 140.3143687,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8131,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3719379651"
+    },
+    {
+      "id": "osm:node/5002782526",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "後藤米菓",
+      "lat": 38.2617172,
+      "lng": 140.3307368,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 643 0222",
+      "website": null,
+      "distanceM": 8199,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782526"
+    },
+    {
+      "id": "osm:node/5002782529",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "耕雲寺",
+      "lat": 38.2626956,
+      "lng": 140.3291071,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8279,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782529"
+    },
+    {
+      "id": "osm:node/5002782627",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "青林寺",
+      "lat": 38.2634952,
+      "lng": 140.3303558,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8387,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782627"
+    },
+    {
+      "id": "osm:node/5002782629",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "村社稲荷神社",
+      "lat": 38.2646126,
+      "lng": 140.3311644,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8522,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782629"
+    },
+    {
+      "id": "osm:node/5002782630",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "正覚寺",
+      "lat": 38.2653473,
+      "lng": 140.3289164,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8566,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782630"
+    },
+    {
+      "id": "osm:node/5002782531",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "おやつショップでびゅー",
+      "lat": 38.2648371,
+      "lng": 140.3323146,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8567,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782531"
+    },
+    {
+      "id": "osm:node/5002782631",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "龍門寺",
+      "lat": 38.2656743,
+      "lng": 140.329622,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8613,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782631"
+    },
+    {
+      "id": "osm:node/5002782539",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "エマーブル洋菓子店",
+      "lat": 38.2670115,
+      "lng": 140.3185041,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8642,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782539"
+    },
+    {
+      "id": "osm:node/5002782725",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "大山製菓",
+      "lat": 38.266903,
+      "lng": 140.3294291,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8745,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782725"
+    },
+    {
+      "id": "osm:node/4785351466",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": "蔵王猿倉スキー場",
+      "lat": 38.1283848,
+      "lng": 140.3753635,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23-679-2211",
+      "website": "http://www.zao-sarukura.co.jp/",
+      "distanceM": 8760,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4785351466"
+    },
+    {
+      "id": "osm:node/939727865",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": null,
+      "lat": 38.2678339,
+      "lng": 140.3284489,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8832,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/939727865"
+    },
+    {
+      "id": "osm:node/5002782726",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": "山形ファミリーボウル",
+      "lat": 38.2685773,
+      "lng": 140.3292911,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 23 684 1601",
+      "website": null,
+      "distanceM": 8926,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782726"
+    },
+    {
+      "id": "osm:node/5002782535",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "西得寺",
+      "lat": 38.2690876,
+      "lng": 140.3253653,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8931,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5002782535"
+    },
+    {
+      "id": "osm:node/4791154057",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "番かふぇ",
+      "lat": 38.1028311,
+      "lng": 140.2988498,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9701,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4791154057"
+    },
+    {
+      "id": "osm:node/4960766321",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": null,
+      "lat": 38.2719983,
+      "lng": 140.2755222,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9718,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4960766321"
+    },
+    {
+      "id": "osm:node/3602608287",
+      "category": "food",
+      "subcategory": "fastfood",
+      "subcategories": [
+        "fastfood"
+      ],
+      "name": "サフラーバーガー",
+      "lat": 38.2777487,
+      "lng": 140.3196951,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9841,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3602608287"
     }
   ]
 }

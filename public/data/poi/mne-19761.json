@@ -3,11 +3,13 @@
   "lat": 32.96456913,
   "lng": 131.8386843,
   "radiusM": 10000,
-  "generatedAt": "2026-09-14T03:16:07Z",
+  "generatedAt": "2026-09-14T16:06:10Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
-  "status": "ok",
+  "status": "partial",
+  "foodIncomplete": false,
+  "otherIncomplete": true,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -31,24 +33,6 @@
       "sourceUrl": "https://www.openstreetmap.org/node/4317850189"
     },
     {
-      "id": "osm:node/6483595204",
-      "category": "onsen",
-      "subcategory": "higaeri_onsen",
-      "subcategories": [
-        "higaeri_onsen"
-      ],
-      "name": "道の駅やよい;やよいの湯",
-      "lat": 32.9649459,
-      "lng": 131.8387614,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 43,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/6483595204"
-    },
-    {
       "id": "osm:way/981249814",
       "category": "food",
       "subcategory": "food_other",
@@ -67,42 +51,6 @@
       "sourceUrl": "https://www.openstreetmap.org/way/981249814"
     },
     {
-      "id": "osm:way/981249815",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "HOTEL AZ",
-      "lat": 32.9549721,
-      "lng": 131.8605088,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2299,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/981249815"
-    },
-    {
-      "id": "osm:node/9171734618",
-      "category": "lodging",
-      "subcategory": "hotel",
-      "subcategories": [
-        "hotel"
-      ],
-      "name": "ホテル　AZ 大分佐伯店",
-      "lat": 32.9549228,
-      "lng": 131.8607034,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2318,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/9171734618"
-    },
-    {
       "id": "osm:way/920120219",
       "category": "food",
       "subcategory": "ramen",
@@ -119,24 +67,6 @@
       "distanceM": 2330,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/920120219"
-    },
-    {
-      "id": "osm:way/977763468",
-      "category": "onsen",
-      "subcategory": "kyukei",
-      "subcategories": [
-        "kyukei"
-      ],
-      "name": null,
-      "lat": 32.9562298,
-      "lng": 131.8616305,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2333,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/977763468"
     },
     {
       "id": "osm:way/962272235",
@@ -211,24 +141,6 @@
       "sourceUrl": "https://www.openstreetmap.org/way/920120203"
     },
     {
-      "id": "osm:way/767740034",
-      "category": "tourism",
-      "subcategory": "koen",
-      "subcategories": [
-        "koen"
-      ],
-      "name": null,
-      "lat": 32.9593413,
-      "lng": 131.8653707,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2557,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/767740034"
-    },
-    {
       "id": "osm:node/8637234619",
       "category": "food",
       "subcategory": "fastfood",
@@ -245,42 +157,6 @@
       "distanceM": 2745,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/8637234619"
-    },
-    {
-      "id": "osm:way/920120160",
-      "category": "tourism",
-      "subcategory": "koen",
-      "subcategories": [
-        "koen"
-      ],
-      "name": null,
-      "lat": 32.9626994,
-      "lng": 131.8697798,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2908,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/920120160"
-    },
-    {
-      "id": "osm:way/779583870",
-      "category": "tourism",
-      "subcategory": "koen",
-      "subcategories": [
-        "koen"
-      ],
-      "name": null,
-      "lat": 32.9606512,
-      "lng": 131.8716177,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 3103,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/779583870"
     },
     {
       "id": "osm:way/981249791",
@@ -355,202 +231,706 @@
       "sourceUrl": "https://www.openstreetmap.org/way/1097470553"
     },
     {
-      "id": "osm:node/5309376607",
-      "category": "tourism",
-      "subcategory": "keishou",
-      "subcategories": [
-        "keishou"
-      ],
-      "name": "椿山",
-      "lat": 32.9853688,
-      "lng": 131.800275,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 4265,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/5309376607"
-    },
-    {
-      "id": "osm:way/767740006",
-      "category": "tourism",
-      "subcategory": "koen",
-      "subcategories": [
-        "koen"
-      ],
-      "name": null,
-      "lat": 32.9544768,
-      "lng": 131.8849087,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 4456,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/767740006"
-    },
-    {
-      "id": "osm:way/981249786",
+      "id": "osm:way/979811430",
       "category": "food",
-      "subcategory": "sweets",
+      "subcategory": "ramen",
       "subcategories": [
-        "sweets"
+        "ramen"
       ],
-      "name": "シャトレーゼ",
-      "lat": 32.9560715,
-      "lng": 131.8858557,
-      "address": "大分県佐伯市5",
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": "https://www.chateraise.co.jp/shop/detail/670200?mode=gps",
-      "distanceM": 4501,
+      "name": "天津ラーメン",
+      "lat": 32.9559396,
+      "lng": 131.8917874,
+      "address": "大分県佐伯市15",
+      "openingHoursRaw": "Mo-Tu 11:30-14:30, 17:00-19:30; Th 11:30-15:00, 17:00-19:30; Fr-Su 11:30-14:30, 17:00-19:30",
+      "phone": "+81 972 23 2637",
+      "website": null,
+      "distanceM": 5046,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/981249786"
+      "sourceUrl": "https://www.openstreetmap.org/way/979811430"
     },
     {
-      "id": "osm:node/9259220253",
-      "category": "tourism",
-      "subcategory": "tenbo",
+      "id": "osm:way/1097932501",
+      "category": "food",
+      "subcategory": "yoshoku",
       "subcategories": [
-        "tenbo"
+        "yoshoku"
+      ],
+      "name": "ジョイフル",
+      "lat": 32.9530562,
+      "lng": 131.8930004,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5227,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1097932501"
+    },
+    {
+      "id": "osm:way/1034345344",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "まこと寿し",
+      "lat": 32.9571485,
+      "lng": 131.8947687,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5297,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1034345344"
+    },
+    {
+      "id": "osm:way/979811431",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "ぱーらー　ちゃんきー",
+      "lat": 32.9578634,
+      "lng": 131.8950651,
+      "address": "大分県佐伯市",
+      "openingHoursRaw": "11:00-20:00",
+      "phone": "+81 90 1874 7371",
+      "website": "https://ameblo.jp/parlorchunky/",
+      "distanceM": 5313,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/979811431"
+    },
+    {
+      "id": "osm:way/1041966653",
+      "category": "food",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
+      "name": "焼肉　佐伯園",
+      "lat": 32.9572638,
+      "lng": 131.8950221,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5319,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1041966653"
+    },
+    {
+      "id": "osm:way/1009208852",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "南国ラーメン",
+      "lat": 32.9569122,
+      "lng": 131.895342,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5354,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1009208852"
+    },
+    {
+      "id": "osm:way/1028296444",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "魚喜屋",
+      "lat": 32.9599899,
+      "lng": 131.8976957,
+      "address": null,
+      "openingHoursRaw": "Mo-Sa 17:00-22:00",
+      "phone": "+81 972 23 2250",
+      "website": null,
+      "distanceM": 5529,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1028296444"
+    },
+    {
+      "id": "osm:way/980147233",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "亀八寿司",
+      "lat": 32.9591681,
+      "lng": 131.897703,
+      "address": "大分県佐伯市",
+      "openingHoursRaw": "Tu-Su 11:00-23:00",
+      "phone": "+81 972 22 5818",
+      "website": "https://www.kamehachi-sushi.com/index.html",
+      "distanceM": 5539,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/980147233"
+    },
+    {
+      "id": "osm:way/1027286029",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "らーめん堂　楽天",
+      "lat": 32.9612158,
+      "lng": 131.8993165,
+      "address": "大分県佐伯市",
+      "openingHoursRaw": "Tu-Su 11:30-15:00",
+      "phone": null,
+      "website": null,
+      "distanceM": 5669,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1027286029"
+    },
+    {
+      "id": "osm:way/915454499",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "由布",
+      "lat": 32.9569553,
+      "lng": 131.900081,
+      "address": null,
+      "openingHoursRaw": "Mo,We-Su 11:00-14:30,17:00-22:00",
+      "phone": null,
+      "website": null,
+      "distanceM": 5790,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/915454499"
+    },
+    {
+      "id": "osm:way/915033249",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "お好み焼き屋",
+      "lat": 32.9556487,
+      "lng": 131.8998652,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5794,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/915033249"
+    },
+    {
+      "id": "osm:node/9067046449",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "波平食堂",
+      "lat": 32.9599111,
+      "lng": 131.9007407,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5813,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9067046449"
+    },
+    {
+      "id": "osm:way/1097895694",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "ほっかほっか亭",
+      "lat": 32.9632788,
+      "lng": 131.9020249,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5911,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1097895694"
+    },
+    {
+      "id": "osm:way/1097946495",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
       ],
       "name": null,
-      "lat": 32.9589412,
-      "lng": 131.8887817,
+      "lat": 32.9615545,
+      "lng": 131.9021083,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 4716,
+      "distanceM": 5927,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/9259220253"
+      "sourceUrl": "https://www.openstreetmap.org/way/1097946495"
     },
     {
-      "id": "osm:node/9485526917",
-      "category": "tourism",
-      "subcategory": "keishou",
+      "id": "osm:node/9480445539",
+      "category": "food",
+      "subcategory": "ramen",
       "subcategories": [
-        "keishou"
+        "ramen"
       ],
-      "name": "城山",
-      "lat": 32.9590092,
-      "lng": 131.8888336,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
+      "name": "麺処　聖",
+      "lat": 32.9740623,
+      "lng": 131.9017859,
+      "address": "大分県佐伯市10",
+      "openingHoursRaw": "Tu-Su 11:00-14:30, 17:00-20:15",
+      "phone": "+81 972 22 1850",
       "website": null,
-      "distanceM": 4719,
+      "distanceM": 5981,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/9485526917"
+      "sourceUrl": "https://www.openstreetmap.org/node/9480445539"
     },
     {
-      "id": "osm:way/727615713",
-      "category": "onsen",
-      "subcategory": "kyukei",
+      "id": "osm:way/915816417",
+      "category": "food",
+      "subcategory": "shokudo",
       "subcategories": [
-        "kyukei"
+        "shokudo"
       ],
-      "name": "佐伯弥生PA (上り)",
-      "lat": 33.0008998,
-      "lng": 131.8649778,
+      "name": "かつ弘　佐伯本店",
+      "lat": 32.9546173,
+      "lng": 131.9020794,
       "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 4726,
+      "openingHoursRaw": "11:00-15:00,17:00-22:00",
+      "phone": "+81 972-28-5955",
+      "website": "https://tonkatsu-katsuhiro.jp/",
+      "distanceM": 6017,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/727615713"
+      "sourceUrl": "https://www.openstreetmap.org/way/915816417"
     },
     {
-      "id": "osm:node/9259220285",
-      "category": "tourism",
-      "subcategory": "tenbo",
+      "id": "osm:way/977116575",
+      "category": "food",
+      "subcategory": "food_other",
       "subcategories": [
-        "tenbo"
+        "food_other"
       ],
-      "name": null,
-      "lat": 32.9597812,
-      "lng": 131.8890573,
+      "name": "ことぶき",
+      "lat": 32.9728634,
+      "lng": 131.9027087,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 4730,
+      "distanceM": 6044,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/9259220285"
+      "sourceUrl": "https://www.openstreetmap.org/way/977116575"
     },
     {
-      "id": "osm:way/983085421",
-      "category": "tourism",
-      "subcategory": "koen",
+      "id": "osm:way/934984620",
+      "category": "food",
+      "subcategory": "ramen",
       "subcategories": [
-        "koen"
+        "ramen"
       ],
-      "name": "城山歴史公園",
-      "lat": 32.9599359,
-      "lng": 131.8894611,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 4765,
+      "name": "ラーメン　白龍",
+      "lat": 32.9721451,
+      "lng": 131.9029188,
+      "address": "大分県佐伯市15",
+      "openingHoursRaw": "Mo-Sa 11:40-14:00,18:30-21:30",
+      "phone": "+81 972 22 8088",
+      "website": "https://www.lets-begin.info/saiki/hakuryu/",
+      "distanceM": 6051,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/983085421"
+      "sourceUrl": "https://www.openstreetmap.org/way/934984620"
     },
     {
-      "id": "osm:node/9255638147",
-      "category": "tourism",
-      "subcategory": "tenbo",
+      "id": "osm:node/9480445544",
+      "category": "food",
+      "subcategory": "fastfood",
       "subcategories": [
-        "tenbo"
+        "fastfood"
       ],
-      "name": null,
-      "lat": 32.9601357,
-      "lng": 131.8901822,
+      "name": "ローストチキンランド",
+      "lat": 32.9728269,
+      "lng": 131.9029339,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 4830,
+      "distanceM": 6064,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/9255638147"
+      "sourceUrl": "https://www.openstreetmap.org/node/9480445544"
     },
     {
-      "id": "osm:way/1002923942",
-      "category": "tourism",
-      "subcategory": "keishou",
+      "id": "osm:node/9480445545",
+      "category": "food",
+      "subcategory": "cafe",
       "subcategories": [
-        "keishou"
+        "cafe"
       ],
-      "name": null,
-      "lat": 32.9600831,
-      "lng": 131.8903351,
+      "name": "Marinage",
+      "lat": 32.9727028,
+      "lng": 131.9031126,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 4845,
+      "distanceM": 6078,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/1002923942"
+      "sourceUrl": "https://www.openstreetmap.org/node/9480445545"
     },
     {
-      "id": "osm:way/1002923940",
-      "category": "onsen",
-      "subcategory": "kyukei",
+      "id": "osm:way/932432927",
+      "category": "food",
+      "subcategory": "shokudo",
       "subcategories": [
-        "kyukei"
+        "shokudo"
       ],
-      "name": null,
-      "lat": 32.9598839,
-      "lng": 131.8904666,
+      "name": "天ぷら　麻耶",
+      "lat": 32.9731991,
+      "lng": 131.9030592,
       "address": null,
       "openingHoursRaw": null,
       "phone": null,
       "website": null,
-      "distanceM": 4859,
+      "distanceM": 6082,
       "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/way/1002923940"
+      "sourceUrl": "https://www.openstreetmap.org/way/932432927"
+    },
+    {
+      "id": "osm:way/934984632",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "豚ホル専門　こころ",
+      "lat": 32.9719938,
+      "lng": 131.9033156,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6086,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934984632"
+    },
+    {
+      "id": "osm:way/934984633",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "回",
+      "lat": 32.9720723,
+      "lng": 131.9033576,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6091,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934984633"
+    },
+    {
+      "id": "osm:node/9491705027",
+      "category": "food",
+      "subcategory": "sushi",
+      "subcategories": [
+        "sushi"
+      ],
+      "name": "寿司源",
+      "lat": 32.970051,
+      "lng": 131.903892,
+      "address": "大分県佐伯市20",
+      "openingHoursRaw": "Mo-We 11:30-21:00; Sa-Su 11:30-21:00",
+      "phone": "+81 972 22 0373",
+      "website": null,
+      "distanceM": 6114,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9491705027"
+    },
+    {
+      "id": "osm:way/977470324",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "喜楽",
+      "lat": 32.9723184,
+      "lng": 131.9036767,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6124,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/977470324"
+    },
+    {
+      "id": "osm:way/979779349",
+      "category": "food",
+      "subcategory": "yoshoku",
+      "subcategories": [
+        "yoshoku"
+      ],
+      "name": "ジョイフル",
+      "lat": 32.9696353,
+      "lng": 131.9040918,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6128,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/979779349"
+    },
+    {
+      "id": "osm:way/932913914",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "さくら",
+      "lat": 32.9725063,
+      "lng": 131.9037125,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6130,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/932913914"
+    },
+    {
+      "id": "osm:way/977470326",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "甚八",
+      "lat": 32.9722943,
+      "lng": 131.903807,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6136,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/977470326"
+    },
+    {
+      "id": "osm:way/977470331",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "めいと",
+      "lat": 32.9721895,
+      "lng": 131.903976,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6150,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/977470331"
+    },
+    {
+      "id": "osm:node/9160562433",
+      "category": "food",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
+      "name": "焼肉太陽",
+      "lat": 32.971837,
+      "lng": 131.9040656,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6153,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9160562433"
+    },
+    {
+      "id": "osm:way/934984638",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "太陽軒",
+      "lat": 32.9718143,
+      "lng": 131.9040845,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6154,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934984638"
+    },
+    {
+      "id": "osm:way/532860209",
+      "category": "food",
+      "subcategory": "yakiniku",
+      "subcategories": [
+        "yakiniku"
+      ],
+      "name": "高級焼肉　大将軍",
+      "lat": 32.9706029,
+      "lng": 131.9043933,
+      "address": "大分県佐伯市10205-7",
+      "openingHoursRaw": "11:30-15:00, 17:00-21:00",
+      "phone": "+81 972 28 5829",
+      "website": "https://daishogun-saiki.owst.jp/",
+      "distanceM": 6167,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/532860209"
+    },
+    {
+      "id": "osm:way/984590534",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "インドカレー　クシ",
+      "lat": 32.9710643,
+      "lng": 131.9043956,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6173,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/984590534"
+    },
+    {
+      "id": "osm:way/934984640",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "台湾料理　普天",
+      "lat": 32.9712245,
+      "lng": 131.9045245,
+      "address": "大分県佐伯市",
+      "openingHoursRaw": "11:00-14:30,17:00-24:00",
+      "phone": "+81 972 28 6999",
+      "website": "http://www.putian1.com/saeki",
+      "distanceM": 6187,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/934984640"
+    },
+    {
+      "id": "osm:node/9491705028",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "炭火焼二九八",
+      "lat": 32.972461,
+      "lng": 131.9047444,
+      "address": "大分県佐伯市13",
+      "openingHoursRaw": null,
+      "phone": "+81 972 20 0768",
+      "website": null,
+      "distanceM": 6225,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9491705028"
+    },
+    {
+      "id": "osm:node/9008959975",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "さいき海の市場○　軽食コーナー",
+      "lat": 32.9768316,
+      "lng": 131.9041352,
+      "address": "大分県佐伯市",
+      "openingHoursRaw": "Mo-Su 10:00-16:00",
+      "phone": "0120 167 077",
+      "website": "https://uminoichiba.jp/eatin/",
+      "distanceM": 6256,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9008959975"
+    },
+    {
+      "id": "osm:node/9227224675",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "上海ラーメン",
+      "lat": 32.9438694,
+      "lng": 131.9013816,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6286,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/9227224675"
+    },
+    {
+      "id": "osm:way/978701951",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "お食事　三男坊",
+      "lat": 32.9454879,
+      "lng": 131.9032027,
+      "address": "大分県佐伯市3",
+      "openingHoursRaw": "Mo 11:00-14:00, 18:00-21:45; We-Su 11:00-14:00, 18:00-21:45",
+      "phone": "+81 972 22 3955",
+      "website": "https://ameblo.jp/nana-hachiru",
+      "distanceM": 6383,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/978701951"
+    },
+    {
+      "id": "osm:way/967169451",
+      "category": "food",
+      "subcategory": "ramen",
+      "subcategories": [
+        "ramen"
+      ],
+      "name": "ラーメン亀甲",
+      "lat": 32.9314479,
+      "lng": 131.9245956,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8822,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/967169451"
     }
   ]
 }

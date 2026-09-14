@@ -3,11 +3,13 @@
   "lat": 26.70462572,
   "lng": 128.2802085,
   "radiusM": 10000,
-  "generatedAt": "2026-09-14T04:08:23Z",
+  "generatedAt": "2026-09-14T08:25:45Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -29,6 +31,24 @@
       "distanceM": 62,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/11215905557"
+    },
+    {
+      "id": "osm:node/11215905581",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": null,
+      "lat": 26.7052622,
+      "lng": 128.2805444,
+      "address": null,
+      "openingHoursRaw": "10:00-16:30",
+      "phone": null,
+      "website": null,
+      "distanceM": 78,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/11215905581"
     },
     {
       "id": "osm:node/4832279530",
@@ -137,6 +157,24 @@
       "distanceM": 2393,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/12298244827"
+    },
+    {
+      "id": "osm:node/1995215774",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "山原学びの森",
+      "lat": 26.7233932,
+      "lng": 128.264976,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 2578,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1995215774"
     },
     {
       "id": "osm:node/12298686417",
@@ -551,6 +589,960 @@
       "distanceM": 4711,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/12298686196"
+    },
+    {
+      "id": "osm:node/12298209619",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6721829,
+      "lng": 128.2458017,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 4970,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298209619"
+    },
+    {
+      "id": "osm:node/12298417474",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7224071,
+      "lng": 128.233407,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5052,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298417474"
+    },
+    {
+      "id": "osm:node/12298686195",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7448047,
+      "lng": 128.2560122,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5073,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298686195"
+    },
+    {
+      "id": "osm:node/12298715289",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7505113,
+      "lng": 128.2772708,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5111,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298715289"
+    },
+    {
+      "id": "osm:node/12298715288",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7505804,
+      "lng": 128.2720102,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5174,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298715288"
+    },
+    {
+      "id": "osm:node/12298311614",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7010937,
+      "lng": 128.2279104,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5210,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298311614"
+    },
+    {
+      "id": "osm:node/12298209618",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6687536,
+      "lng": 128.244923,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5310,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298209618"
+    },
+    {
+      "id": "osm:node/12298311722",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7127317,
+      "lng": 128.2273178,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5330,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298311722"
+    },
+    {
+      "id": "osm:node/4308657165",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "タカシジ山",
+      "lat": 26.7526233,
+      "lng": 128.2854338,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5362,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657165"
+    },
+    {
+      "id": "osm:node/1092768273",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "ヒロ・コーヒー・ファーム",
+      "lat": 26.6635459,
+      "lng": 128.2487984,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": "http://www.churashima.net/shima/special/cafe/okinawa/hirocoffeefarm/index.html",
+      "distanceM": 5532,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1092768273"
+    },
+    {
+      "id": "osm:node/5885018526",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "安田漁港",
+      "lat": 26.7413983,
+      "lng": 128.3186206,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5592,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5885018526"
+    },
+    {
+      "id": "osm:node/1995215739",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": null,
+      "lat": 26.6639935,
+      "lng": 128.2458685,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5662,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1995215739"
+    },
+    {
+      "id": "osm:node/1864039028",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": "カフェ 山甌",
+      "lat": 26.6681198,
+      "lng": 128.2402194,
+      "address": null,
+      "openingHoursRaw": "Mo-Th 11:00-18:00",
+      "phone": "+81 0980 43 2624",
+      "website": "https://www.mco.ne.jp/~yamagame/",
+      "distanceM": 5680,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1864039028"
+    },
+    {
+      "id": "osm:node/12298417473",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7242793,
+      "lng": 128.2261909,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5793,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298417473"
+    },
+    {
+      "id": "osm:node/12298417327",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7197236,
+      "lng": 128.2233839,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5889,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298417327"
+    },
+    {
+      "id": "osm:node/12298239863",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6886691,
+      "lng": 128.2235703,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5900,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298239863"
+    },
+    {
+      "id": "osm:node/12298302138",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6765514,
+      "lng": 128.2294951,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 5927,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298302138"
+    },
+    {
+      "id": "osm:node/12298163019",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6644707,
+      "lng": 128.2385866,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6086,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298163019"
+    },
+    {
+      "id": "osm:node/12298082883",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7041817,
+      "lng": 128.2187887,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6101,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298082883"
+    },
+    {
+      "id": "osm:node/3283340583",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "与那覇岳",
+      "lat": 26.7170815,
+      "lng": 128.2186617,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6268,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3283340583"
+    },
+    {
+      "id": "osm:node/4308657173",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "伊部岳",
+      "lat": 26.761207,
+      "lng": 128.2922734,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6405,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657173"
+    },
+    {
+      "id": "osm:node/4308657167",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "フエンチヂ岳",
+      "lat": 26.752379,
+      "lng": 128.2431595,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6460,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657167"
+    },
+    {
+      "id": "osm:node/12298301648",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6728892,
+      "lng": 128.2228343,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6704,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298301648"
+    },
+    {
+      "id": "osm:node/4308657181",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "照首山",
+      "lat": 26.7618201,
+      "lng": 128.2585849,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6713,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657181"
+    },
+    {
+      "id": "osm:node/12298301647",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6763619,
+      "lng": 128.2184034,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6898,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298301647"
+    },
+    {
+      "id": "osm:node/5885064096",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "伊部海岸",
+      "lat": 26.7541657,
+      "lng": 128.323268,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6974,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5885064096"
+    },
+    {
+      "id": "osm:node/12298082882",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6891424,
+      "lng": 128.211083,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7080,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298082882"
+    },
+    {
+      "id": "osm:node/12060615151",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.714382,
+      "lng": 128.209619,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7095,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12060615151"
+    },
+    {
+      "id": "osm:node/12298311581",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6630575,
+      "lng": 128.2248635,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7183,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298311581"
+    },
+    {
+      "id": "osm:node/12060598667",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.7061879,
+      "lng": 128.2051956,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7453,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12060598667"
+    },
+    {
+      "id": "osm:node/4308657172",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "伊湯岳",
+      "lat": 26.6911256,
+      "lng": 128.2064896,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7476,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657172"
+    },
+    {
+      "id": "osm:node/12298163072",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6507454,
+      "lng": 128.2346002,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7512,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298163072"
+    },
+    {
+      "id": "osm:node/12298162532",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.653241,
+      "lng": 128.2270526,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7781,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298162532"
+    },
+    {
+      "id": "osm:node/12298122885",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6715286,
+      "lng": 128.2083336,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8033,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298122885"
+    },
+    {
+      "id": "osm:node/12298083416",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6648156,
+      "lng": 128.2121692,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8080,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298083416"
+    },
+    {
+      "id": "osm:node/12298122884",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.676693,
+      "lng": 128.2048508,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8105,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298122884"
+    },
+    {
+      "id": "osm:node/12298123129",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6572114,
+      "lng": 128.2181002,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8116,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298123129"
+    },
+    {
+      "id": "osm:node/12060418385",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.705089,
+      "lng": 128.1982466,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8142,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12060418385"
+    },
+    {
+      "id": "osm:node/12298163118",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6440405,
+      "lng": 128.2340556,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8149,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298163118"
+    },
+    {
+      "id": "osm:node/12298082881",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6807416,
+      "lng": 128.2024213,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8171,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298082881"
+    },
+    {
+      "id": "osm:node/12298162649",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6478892,
+      "lng": 128.2275397,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8197,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298162649"
+    },
+    {
+      "id": "osm:node/12298123131",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6500801,
+      "lng": 128.2209431,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8453,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298123131"
+    },
+    {
+      "id": "osm:node/12298082880",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6684983,
+      "lng": 128.2021504,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8734,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298082880"
+    },
+    {
+      "id": "osm:node/12298082769",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6585116,
+      "lng": 128.2065311,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8937,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298082769"
+    },
+    {
+      "id": "osm:node/12298163119",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6395508,
+      "lng": 128.226215,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9008,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298163119"
+    },
+    {
+      "id": "osm:node/12298301340",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6734311,
+      "lng": 128.1949591,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9152,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298301340"
+    },
+    {
+      "id": "osm:node/12298301341",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6790135,
+      "lng": 128.1925367,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9164,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298301341"
+    },
+    {
+      "id": "osm:node/4308657186",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "赤又山",
+      "lat": 26.6923082,
+      "lng": 128.1888367,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9180,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4308657186"
+    },
+    {
+      "id": "osm:node/12298123130",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6517908,
+      "lng": 128.2088929,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9205,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298123130"
+    },
+    {
+      "id": "osm:node/12298163120",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6421618,
+      "lng": 128.2166741,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9386,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298163120"
+    },
+    {
+      "id": "osm:node/4407560190",
+      "category": "tourism",
+      "subcategory": "meisho",
+      "subcategories": [
+        "meisho"
+      ],
+      "name": "比地大滝",
+      "lat": 26.7109576,
+      "lng": 128.1854562,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9438,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4407560190"
+    },
+    {
+      "id": "osm:node/12296044767",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6624629,
+      "lng": 128.19709,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9496,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12296044767"
+    },
+    {
+      "id": "osm:node/12298301342",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": null,
+      "lat": 26.6738709,
+      "lng": 128.188043,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9774,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/12298301342"
     }
   ]
 }

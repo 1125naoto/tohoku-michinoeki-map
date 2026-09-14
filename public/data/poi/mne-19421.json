@@ -3,51 +3,17 @@
   "lat": 35.2018443,
   "lng": 136.2755566,
   "radiusM": 10000,
-  "generatedAt": "2026-09-13T01:57:09Z",
+  "generatedAt": "2026-09-14T12:35:38Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
-  "status": "ok",
+  "status": "partial",
+  "foodIncomplete": true,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
   "pois": [
-    {
-      "id": "osm:node/4279852878",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "ピッツェリア ウノ",
-      "lat": 35.2019816,
-      "lng": 136.2756477,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 17,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4279852878"
-    },
-    {
-      "id": "osm:node/4279852879",
-      "category": "food",
-      "subcategory": "shokudo",
-      "subcategories": [
-        "shokudo"
-      ],
-      "name": "幸楽食堂",
-      "lat": 35.2020035,
-      "lng": 136.2755354,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 18,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4279852879"
-    },
     {
       "id": "osm:node/5198018201",
       "category": "onsen",
@@ -83,24 +49,6 @@
       "distanceM": 1799,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/5792703831"
-    },
-    {
-      "id": "osm:node/4460449690",
-      "category": "food",
-      "subcategory": "cafe",
-      "subcategories": [
-        "cafe"
-      ],
-      "name": null,
-      "lat": 35.2183424,
-      "lng": 136.2837287,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 1979,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4460449690"
     },
     {
       "id": "osm:node/1834371978",
@@ -139,60 +87,6 @@
       "sourceUrl": "https://www.openstreetmap.org/node/5491349050"
     },
     {
-      "id": "osm:node/2285446591",
-      "category": "food",
-      "subcategory": "cafe",
-      "subcategories": [
-        "cafe"
-      ],
-      "name": "スターバックスコーヒー",
-      "lat": 35.219306,
-      "lng": 136.285484,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2141,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/2285446591"
-    },
-    {
-      "id": "osm:node/2285445293",
-      "category": "food",
-      "subcategory": "food_other",
-      "subcategories": [
-        "food_other"
-      ],
-      "name": "餃子の王将",
-      "lat": 35.219569,
-      "lng": 136.285385,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2164,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/2285445293"
-    },
-    {
-      "id": "osm:node/4460450189",
-      "category": "food",
-      "subcategory": "cafe",
-      "subcategories": [
-        "cafe"
-      ],
-      "name": null,
-      "lat": 35.2197814,
-      "lng": 136.285044,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 2173,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4460450189"
-    },
-    {
       "id": "osm:node/2697226616",
       "category": "tourism",
       "subcategory": "jinja_tera",
@@ -229,24 +123,6 @@
       "sourceUrl": "https://www.openstreetmap.org/node/1422941476"
     },
     {
-      "id": "osm:node/4535626199",
-      "category": "food",
-      "subcategory": "shokudo",
-      "subcategories": [
-        "shokudo"
-      ],
-      "name": "手打ちそば そば吉",
-      "lat": 35.2273962,
-      "lng": 136.2942131,
-      "address": "Route 3061615-1",
-      "openingHoursRaw": "Sa-Th 11:30-18:00",
-      "phone": "0749481477",
-      "website": "https://www.biwako.ne.jp/~sobakiti/",
-      "distanceM": 3308,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/4535626199"
-    },
-    {
       "id": "osm:node/2476552144",
       "category": "tourism",
       "subcategory": "meisho",
@@ -263,24 +139,6 @@
       "distanceM": 3666,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/2476552144"
-    },
-    {
-      "id": "osm:node/2475333702",
-      "category": "food",
-      "subcategory": "sushi",
-      "subcategories": [
-        "sushi"
-      ],
-      "name": "寿し みな月",
-      "lat": 35.1978985,
-      "lng": 136.2297574,
-      "address": null,
-      "openingHoursRaw": null,
-      "phone": null,
-      "website": null,
-      "distanceM": 4185,
-      "source": "overpass",
-      "sourceUrl": "https://www.openstreetmap.org/node/2475333702"
     },
     {
       "id": "osm:node/1422943161",
@@ -551,6 +409,1014 @@
       "distanceM": 6302,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/3502733596"
+    },
+    {
+      "id": "osm:node/3803416219",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "八坂神社",
+      "lat": 35.2524738,
+      "lng": 136.2435362,
+      "address": "彦根市戸賀町249",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6337,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3803416219"
+    },
+    {
+      "id": "osm:node/3502729278",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "新神社",
+      "lat": 35.2565845,
+      "lng": 136.2537983,
+      "address": "彦根市岡町字北屋敷156",
+      "openingHoursRaw": null,
+      "phone": "+86 749 22 3727",
+      "website": null,
+      "distanceM": 6400,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3502729278"
+    },
+    {
+      "id": "osm:node/1422943160",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "愛荘町立愛知川びんてまりの館",
+      "lat": 35.1708136,
+      "lng": 136.2145812,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6528,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422943160"
+    },
+    {
+      "id": "osm:node/3803414571",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "稲生神社",
+      "lat": 35.2591529,
+      "lng": 136.2592304,
+      "address": "彦根市芹川町大仏916",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6543,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3803414571"
+    },
+    {
+      "id": "osm:node/3779548603",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "鳴宮神社",
+      "lat": 35.2573528,
+      "lng": 136.2485526,
+      "address": "彦根市平田町1068",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6642,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3779548603"
+    },
+    {
+      "id": "osm:node/3729272382",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "彦根神社（HikoneJinjya）",
+      "lat": 35.2612923,
+      "lng": 136.25289,
+      "address": "彦根市後三条町宮立122",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 6923,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3729272382"
+    },
+    {
+      "id": "osm:node/2685011885",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "宝満寺",
+      "lat": 35.1725725,
+      "lng": 136.2067967,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7046,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/2685011885"
+    },
+    {
+      "id": "osm:node/5865079912",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "明専寺",
+      "lat": 35.2630523,
+      "lng": 136.2538351,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7086,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865079912"
+    },
+    {
+      "id": "osm:node/3779548604",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "鳴宮神社",
+      "lat": 35.2591433,
+      "lng": 136.2380362,
+      "address": "彦根市平田町530",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7226,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3779548604"
+    },
+    {
+      "id": "osm:node/3729349259",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "櫻神社",
+      "lat": 35.2668248,
+      "lng": 136.2657979,
+      "address": "彦根市外町227",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7280,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3729349259"
+    },
+    {
+      "id": "osm:node/4639509408",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "高室山",
+      "lat": 35.220174,
+      "lng": 136.3535087,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7369,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4639509408"
+    },
+    {
+      "id": "osm:node/1422943729",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "湖東歴史民俗資料館",
+      "lat": 35.143071,
+      "lng": 136.237325,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7402,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422943729"
+    },
+    {
+      "id": "osm:node/5865079908",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "後三条伏見稲荷神社",
+      "lat": 35.2649492,
+      "lng": 136.2470723,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7479,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865079908"
+    },
+    {
+      "id": "osm:node/5870334399",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "彦根城 土塁跡",
+      "lat": 35.2682057,
+      "lng": 136.2538545,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7638,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334399"
+    },
+    {
+      "id": "osm:node/5865098187",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "古川日登堂",
+      "lat": 35.2685633,
+      "lng": 136.2528689,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7700,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865098187"
+    },
+    {
+      "id": "osm:node/5870334699",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "唯念寺",
+      "lat": 35.2698038,
+      "lng": 136.2533677,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7821,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334699"
+    },
+    {
+      "id": "osm:node/5870334485",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "和菓子わかくさ屋",
+      "lat": 35.2697609,
+      "lng": 136.2510355,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7874,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334485"
+    },
+    {
+      "id": "osm:node/3817325383",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "荒神山神社",
+      "lat": 35.2335411,
+      "lng": 136.1978718,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7888,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3817325383"
+    },
+    {
+      "id": "osm:node/3817325382",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "荒神山",
+      "lat": 35.2336375,
+      "lng": 136.1977773,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7901,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3817325382"
+    },
+    {
+      "id": "osm:node/4831950521",
+      "category": "tourism",
+      "subcategory": "tourism_other",
+      "subcategories": [
+        "tourism_other"
+      ],
+      "name": "井伊直政公像",
+      "lat": 35.2723682,
+      "lng": 136.2628166,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7927,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4831950521"
+    },
+    {
+      "id": "osm:node/5870334696",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "善照寺",
+      "lat": 35.2701755,
+      "lng": 136.2504883,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7932,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334696"
+    },
+    {
+      "id": "osm:node/5870334407",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "たねや",
+      "lat": 35.271094,
+      "lng": 136.2540343,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7944,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334407"
+    },
+    {
+      "id": "osm:node/5870334686",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "彦華堂",
+      "lat": 35.2706975,
+      "lng": 136.2517153,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7956,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334686"
+    },
+    {
+      "id": "osm:node/5865080694",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "スイーツショップ トレフル",
+      "lat": 35.2704477,
+      "lng": 136.2493115,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 7992,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865080694"
+    },
+    {
+      "id": "osm:node/5870334487",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "洋菓子 三中井",
+      "lat": 35.2713383,
+      "lng": 136.2519037,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8020,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334487"
+    },
+    {
+      "id": "osm:node/5870334408",
+      "category": "food",
+      "subcategory": "sweets",
+      "subcategories": [
+        "sweets"
+      ],
+      "name": "どら焼き 虎てつ",
+      "lat": 35.2732024,
+      "lng": 136.2564595,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8122,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334408"
+    },
+    {
+      "id": "osm:node/1422944796",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "西堀榮三郎記念探検の殿堂",
+      "lat": 35.1322779,
+      "lng": 136.2469948,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8160,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422944796"
+    },
+    {
+      "id": "osm:node/5792703834",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "和田山",
+      "lat": 35.1749597,
+      "lng": 136.1910584,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8240,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5792703834"
+    },
+    {
+      "id": "osm:node/4588464189",
+      "category": "onsen",
+      "subcategory": "kyukei",
+      "subcategories": [
+        "kyukei"
+      ],
+      "name": null,
+      "lat": 35.2643813,
+      "lng": 136.2245459,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8356,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4588464189"
+    },
+    {
+      "id": "osm:node/582761736",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "開国記念館",
+      "lat": 35.2753394,
+      "lng": 136.2553264,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8376,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/582761736"
+    },
+    {
+      "id": "osm:node/582527746",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "埋木舎",
+      "lat": 35.2756183,
+      "lng": 136.2565319,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8383,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/582527746"
+    },
+    {
+      "id": "osm:node/5870334413",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "彦根北アートホテル",
+      "lat": 35.2761975,
+      "lng": 136.2592124,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": "+81 749 27 9900",
+      "website": "http://arthotel.co.jp",
+      "distanceM": 8400,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5870334413"
+    },
+    {
+      "id": "osm:node/5865098386",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "正覚院",
+      "lat": 35.2732216,
+      "lng": 136.2435611,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8452,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865098386"
+    },
+    {
+      "id": "osm:node/3729349262",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "木和田神社",
+      "lat": 35.2624679,
+      "lng": 136.2189234,
+      "address": "彦根市八坂町1088",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8479,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/3729349262"
+    },
+    {
+      "id": "osm:node/5865080692",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "善教寺",
+      "lat": 35.2744974,
+      "lng": 136.2470593,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8483,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865080692"
+    },
+    {
+      "id": "osm:node/5030444753",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": null,
+      "lat": 35.2134837,
+      "lng": 136.1828039,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8526,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5030444753"
+    },
+    {
+      "id": "osm:node/4389616467",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "仙琳寺",
+      "lat": 35.278392,
+      "lng": 136.2655262,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8560,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4389616467"
+    },
+    {
+      "id": "osm:node/4406247240",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": null,
+      "lat": 35.2765994,
+      "lng": 136.252837,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8565,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4406247240"
+    },
+    {
+      "id": "osm:node/5865080693",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "まめ大師尊弘法大師堂",
+      "lat": 35.2740581,
+      "lng": 136.2426513,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8568,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865080693"
+    },
+    {
+      "id": "osm:node/1913660174",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "圓常寺",
+      "lat": 35.2750322,
+      "lng": 136.2444633,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8614,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1913660174"
+    },
+    {
+      "id": "osm:node/5865079903",
+      "category": "lodging",
+      "subcategory": "guesthouse",
+      "subcategories": [
+        "guesthouse"
+      ],
+      "name": "ナツキハウス",
+      "lat": 35.2744492,
+      "lng": 136.2424944,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8614,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865079903"
+    },
+    {
+      "id": "osm:node/4309380563",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "佐和山",
+      "lat": 35.2796309,
+      "lng": 136.2694022,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8668,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4309380563"
+    },
+    {
+      "id": "osm:node/5865096688",
+      "category": "lodging",
+      "subcategory": "hotel",
+      "subcategories": [
+        "hotel"
+      ],
+      "name": "プロスペリティー馬場",
+      "lat": 35.2780102,
+      "lng": 136.2454163,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8901,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865096688"
+    },
+    {
+      "id": "osm:node/1913583951",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "北野神社",
+      "lat": 35.2778671,
+      "lng": 136.2440324,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8925,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1913583951"
+    },
+    {
+      "id": "osm:node/1913657390",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "北野寺",
+      "lat": 35.2780277,
+      "lng": 136.244356,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 8933,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1913657390"
+    },
+    {
+      "id": "osm:node/1913650433",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "教禅寺",
+      "lat": 35.2781794,
+      "lng": 136.2419221,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9021,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1913650433"
+    },
+    {
+      "id": "osm:node/1912885085",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "瘡守稲荷神社",
+      "lat": 35.2792513,
+      "lng": 136.2455891,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9027,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1912885085"
+    },
+    {
+      "id": "osm:node/4389652283",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "龍潭寺",
+      "lat": 35.2827945,
+      "lng": 136.2664548,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9039,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4389652283"
+    },
+    {
+      "id": "osm:node/4639509409",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "鍋尻山",
+      "lat": 35.2456315,
+      "lng": 136.3593904,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9039,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4639509409"
+    },
+    {
+      "id": "osm:node/1422943424",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "東近江市立近江商人郷土館",
+      "lat": 35.132663,
+      "lng": 136.221357,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9135,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422943424"
+    },
+    {
+      "id": "osm:node/4389648516",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "井伊神社",
+      "lat": 35.283818,
+      "lng": 136.2663953,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9153,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4389648516"
+    },
+    {
+      "id": "osm:node/1422943408",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "東近江市五個荘近江商人屋敷藤井彦四郎邸",
+      "lat": 35.157625,
+      "lng": 136.189222,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9260,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422943408"
+    },
+    {
+      "id": "osm:node/5792703832",
+      "category": "tourism",
+      "subcategory": "keishou",
+      "subcategories": [
+        "keishou"
+      ],
+      "name": "弁天山",
+      "lat": 35.2856421,
+      "lng": 136.2677997,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9344,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5792703832"
+    },
+    {
+      "id": "osm:node/4389672844",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "大洞弁財天",
+      "lat": 35.2855952,
+      "lng": 136.2651636,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9360,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/4389672844"
+    },
+    {
+      "id": "osm:node/5865080491",
+      "category": "tourism",
+      "subcategory": "tenbo",
+      "subcategories": [
+        "tenbo"
+      ],
+      "name": "松原下屋敷（お浜御殿）",
+      "lat": 35.2861399,
+      "lng": 136.2506347,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9643,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5865080491"
+    },
+    {
+      "id": "osm:node/1422944884",
+      "category": "tourism",
+      "subcategory": "hakubutsukan",
+      "subcategories": [
+        "hakubutsukan"
+      ],
+      "name": "近江商人博物館・中路融人記念館",
+      "lat": 35.1520794,
+      "lng": 136.1847417,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9937,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/1422944884"
     }
   ]
 }

@@ -3,11 +3,13 @@
   "lat": 33.0361891,
   "lng": 131.5029247,
   "radiusM": 10000,
-  "generatedAt": "2026-09-14T03:18:00Z",
+  "generatedAt": "2026-09-14T16:08:57Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -551,6 +553,114 @@
       "distanceM": 9796,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/way/1116254643"
+    },
+    {
+      "id": "osm:way/1116254641",
+      "category": "food",
+      "subcategory": "shokudo",
+      "subcategories": [
+        "shokudo"
+      ],
+      "name": "れと絽",
+      "lat": 32.9804869,
+      "lng": 131.58437,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9800,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1116254641"
+    },
+    {
+      "id": "osm:way/1116135061",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "いろは",
+      "lat": 32.9789655,
+      "lng": 131.5846217,
+      "address": "大分県豊後大野市",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9926,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1116135061"
+    },
+    {
+      "id": "osm:way/1116136607",
+      "category": "lodging",
+      "subcategory": "guesthouse",
+      "subcategories": [
+        "guesthouse"
+      ],
+      "name": "旅館 三国家",
+      "lat": 32.9800472,
+      "lng": 131.5857927,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9934,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1116136607"
+    },
+    {
+      "id": "osm:way/1116132566",
+      "category": "food",
+      "subcategory": "food_other",
+      "subcategories": [
+        "food_other"
+      ],
+      "name": "ひらお食堂",
+      "lat": 32.9823278,
+      "lng": 131.5883185,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9964,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/1116132566"
+    },
+    {
+      "id": "osm:node/10208611000",
+      "category": "food",
+      "subcategory": "cafe",
+      "subcategories": [
+        "cafe"
+      ],
+      "name": null,
+      "lat": 32.9782858,
+      "lng": 131.5846409,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9976,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/10208611000"
+    },
+    {
+      "id": "osm:way/733422125",
+      "category": "tourism",
+      "subcategory": "koen",
+      "subcategories": [
+        "koen"
+      ],
+      "name": "平吹児童公園",
+      "lat": 32.9806403,
+      "lng": 131.5871904,
+      "address": "大分豊後大野市",
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9995,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/733422125"
     }
   ]
 }

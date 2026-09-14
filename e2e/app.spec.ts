@@ -33,6 +33,30 @@ async function waitForStationIds(page: Page, timeoutMs = 20000): Promise<string[
  * 地図整定待ち: ディープリンク直後は地図が数百ms遅れて最終位置に落ち着くため、
  * 固定座標で実クリックする前にマーカー位置が安定するのを待つ。
  */
+/**
+ * 対象駅マーカーを安全にタップする。fitBounds直後は、そのタイミングでLeafletが
+ * マーカーアイコンを非同期に差し替えている場合があり（例: 別の絞り込み操作の直後）、
+ * 通常のclick()がその差し替えの瞬間と競合して「element was detached from the DOM」に
+ * なることが実測で確認できた（Astra再監査Final Gate）。マーカー自身の現在位置の中心
+ * ピクセルに実際にそのマーカーが存在する状態になるまで待ってからクリックする。
+ */
+async function clickStationMarker(page: Page, id: string) {
+  const locator = page.locator(`[data-sid="${id}"]`);
+  await locator.waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    (sid) => {
+      const el = document.querySelector(`[data-sid="${sid}"]`);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const atPoint = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return atPoint != null && atPoint.closest(`[data-sid="${sid}"]`) != null;
+    },
+    id,
+    { timeout: 10000 },
+  );
+  await locator.click();
+}
+
 async function stableBox(page: Page, locator: ReturnType<Page['locator']>) {
   let prev = await locator.boundingBox();
   for (let i = 0; i < 20; i++) {
@@ -652,7 +676,16 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(400); // fitBounds のズームアニメーション完了を待つ（マーカー重なりでクリックが不安定にならないため）
 
     // 3. 北海道の駅の詳細シートが正しく開く
-    await page.locator(`[data-sid="${HOKKAIDO_STATION}"]`).click();
+    // __setMapView is defined を待つ (Phase 10 hardening)。fitBoundsの広域ズームのままだと
+    // 近接する他駅のマーカーと重なりクリックが不安定になるため、対象駅へズームインしてから押す
+    // （他の地方テスト(関東/中部/近畿等)と同じ手法。Astra再監査Final Gateで本テストに漏れていたと判明）。
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
+    await page.evaluate(
+      ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
+      [45.41725, 141.677348],
+    );
+    await page.waitForTimeout(500);
+    await clickStationMarker(page, HOKKAIDO_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('わっかない');
     await page.keyboard.press('Escape');
@@ -700,7 +733,17 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(400);
 
     // 3. 関東の駅の詳細シートが正しく開く
-    await page.locator(`[data-sid="${KANTO_STATION}"]`).click();
+    // __setMapView is defined を待つ (Phase 10 hardening)。関東は全国展開後131駅まで増え
+    // 「単独選択可能」ではなくなり、fitBounds後の広域ズームのままだと近接する他駅の
+    // マーカーと重なりクリックが不安定になるため、対象駅へズームインしてから押す
+    // （他の地方テストと同じ手法。Astra再監査Final Gateで本テストに漏れていたと判明）。
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
+    await page.evaluate(
+      ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
+      [35.6866238, 139.3414749],
+    );
+    await page.waitForTimeout(500);
+    await clickStationMarker(page, KANTO_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('八王子滝山');
     await page.keyboard.press('Escape');
@@ -758,7 +801,15 @@ test.describe('フィルターと達成率', () => {
     await page.waitForTimeout(400);
 
     // 3. 北陸の駅の詳細シートが正しく開く
-    await page.locator(`[data-sid="${HOKURIKU_STATION}"]`).click();
+    // __setMapView is defined を待つ (Phase 10 hardening)。他の地方テストと同じ手法で
+    // 対象駅へズームインしてから押す（Astra再監査Final Gateで本テストに漏れていたと判明）。
+    await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', { timeout: 20000 });
+    await page.evaluate(
+      ([lat, lng]) => (window as unknown as { __setMapView: (a: number, b: number, c: number) => void }).__setMapView(lat, lng, 13),
+      [38.08365874, 138.4362432],
+    );
+    await page.waitForTimeout(500);
+    await clickStationMarker(page, HOKURIKU_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('あいぽーと佐渡');
     await page.keyboard.press('Escape');
@@ -829,7 +880,7 @@ test.describe('フィルターと達成率', () => {
       [36.8452608, 137.9004404],
     );
     await page.waitForTimeout(300);
-    await page.locator(`[data-sid="${CHUBU_STATION}"]`).click();
+    await clickStationMarker(page, CHUBU_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('小谷');
     await page.keyboard.press('Escape');
@@ -898,7 +949,7 @@ test.describe('フィルターと達成率', () => {
       [34.3594609, 136.7989126],
     );
     await page.waitForTimeout(500);
-    await page.locator(`[data-sid="${KINKI_STATION}"]`).click();
+    await clickStationMarker(page, KINKI_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('伊勢志摩');
     await page.keyboard.press('Escape');
@@ -970,7 +1021,7 @@ test.describe('フィルターと達成率', () => {
       [34.520201, 133.926904],
     );
     await page.waitForTimeout(500);
-    await page.locator(`[data-sid="${CHUGOKU_STATION}"]`).click();
+    await clickStationMarker(page, CHUGOKU_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('みやま公園');
     await page.keyboard.press('Escape');
@@ -1044,7 +1095,7 @@ test.describe('フィルターと達成率', () => {
       [33.99670576, 132.7722822],
     );
     await page.waitForTimeout(500);
-    await page.locator(`[data-sid="${SHIKOKU_STATION}"]`).click();
+    await clickStationMarker(page, SHIKOKU_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('風早の郷風和里');
     await page.keyboard.press('Escape');
@@ -1122,7 +1173,7 @@ test.describe('フィルターと達成率', () => {
       [33.8484732, 130.503451],
     );
     await page.waitForTimeout(500);
-    await page.locator(`[data-sid="${KYUSHU_STATION}"]`).click();
+    await clickStationMarker(page, KYUSHU_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('むなかた');
     await page.keyboard.press('Escape');
@@ -1179,7 +1230,7 @@ test.describe('フィルターと達成率', () => {
       [26.7319805, 128.1693617],
     );
     await page.waitForTimeout(500);
-    await page.locator(`[data-sid="${OKINAWA_STATION}"]`).click();
+    await clickStationMarker(page, OKINAWA_STATION);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await expect(page.getByTestId('station-sheet')).toContainText('ゆいゆい国頭');
     await page.keyboard.press('Escape');

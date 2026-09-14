@@ -3,11 +3,13 @@
   "lat": 34.5116756,
   "lng": 136.3068072,
   "radiusM": 10000,
-  "generatedAt": "2026-09-13T01:50:31Z",
+  "generatedAt": "2026-09-14T12:22:37Z",
   "schemaVersion": 3,
   "source": "overpass",
   "queryVersion": 2,
   "status": "ok",
+  "foodIncomplete": false,
+  "otherIncomplete": false,
   "endpointsUsed": [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
   ],
@@ -551,6 +553,79 @@
       "distanceM": 9464,
       "source": "overpass",
       "sourceUrl": "https://www.openstreetmap.org/node/5385637995"
+    },
+    {
+      "id": "osm:node/5689530748",
+      "category": "tourism",
+      "subcategory": "jinja_tera",
+      "subcategories": [
+        "jinja_tera"
+      ],
+      "name": "柿野神社",
+      "lat": 34.4720687,
+      "lng": 136.3987881,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9511,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/5689530748"
+    },
+    {
+      "id": "osm:node/6796522486",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen"
+      ],
+      "name": "いいたかの湯",
+      "lat": 34.4278316,
+      "lng": 136.3322256,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9610,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/6796522486"
+    },
+    {
+      "id": "osm:node/7827959285",
+      "category": "tourism",
+      "subcategory": "camp",
+      "subcategories": [
+        "camp"
+      ],
+      "name": "矢頭中宮キャンプ場",
+      "lat": 34.5831947,
+      "lng": 136.3682149,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9740,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/node/7827959285"
+    },
+    {
+      "id": "osm:way/706840317",
+      "category": "onsen",
+      "subcategory": "higaeri_onsen",
+      "subcategories": [
+        "higaeri_onsen",
+        "onsen"
+      ],
+      "name": "みつえ温泉;姫石の湯",
+      "lat": 34.5157882,
+      "lng": 136.1994277,
+      "address": null,
+      "openingHoursRaw": null,
+      "phone": null,
+      "website": null,
+      "distanceM": 9849,
+      "source": "overpass",
+      "sourceUrl": "https://www.openstreetmap.org/way/706840317"
     }
   ]
 }

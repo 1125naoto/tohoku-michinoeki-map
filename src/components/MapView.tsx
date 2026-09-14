@@ -519,6 +519,11 @@ export default function MapView({
       lng,
       z,
     ) => map.setView([lat, lng], z, { animate: false });
+    // E2E検証用: 中心をピクセル単位でずらす（横長で地図領域が縦に狭いビューポートでは、
+    // 幾何中心にセンタリングしても下部固定バーと重なることがあるため、そのバーを避けて
+    // 対象マーカーを安全な位置へ寄せるのに使う。実ユーザー向け機能ではない）
+    (window as unknown as { __panMapBy?: (dx: number, dy: number) => void }).__panMapBy = (dx, dy) =>
+      map.panBy([dx, dy], { animate: false });
     // 画面回転・visualViewport変化でもタイル欠け・ずれを起こさない
     const onResize = () => {
       const c = map.getCenter();
