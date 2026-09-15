@@ -16,14 +16,7 @@ import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
-import {
-  categoryLabelSearchUrl,
-  categoryNearbySearchUrl,
-  categoryStationSearchUrl,
-  navToPointUrl,
-  navToStationUrl,
-  stationSearchUrl,
-} from './lib/gmaps';
+import { latLngUrl, navToPointUrl, navToStationUrl, stationSearchUrl } from './lib/gmaps';
 import {
   filterSummary,
   filterStations,
@@ -49,7 +42,7 @@ import {
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, GOOGLE_DETAIL_KEYWORD, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
+import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
 import {
   peekCachedPois,
   DEFAULT_RADIUS_M,
@@ -842,22 +835,18 @@ export default function App() {
   }, []);
 
   /**
-   * 周辺スポットの「Googleマップでもっと探す」系CTA用URL。検索地点の種類に応じて
-   * 安全な（座標をqueryへ混ぜない）Maps URLを選ぶ（Fable Root Cause Audit BUG1修正）。
-   * 駅origin + カテゴリ未選択（すべて）: 既存stationSearchUrlをそのまま再利用
-   * 駅origin + カテゴリ指定: stationSearchUrlと同じ「名称+住所」方式にキーワードを乗せる
-   * 現在地origin: キーワードのみ（Google側が端末の現在地を使う）
-   * それ以外（ルート上の地点等）: 座標の代わりに表示ラベルをテキスト検索に使う
+   * 周辺スポットの「Googleマップで開く」系CTA用URL（Fable Root Cause Audit再監査結果）。
+   * Google Maps URLs公式仕様だけでは「指定した地点を検索中心に固定したままカテゴリ検索する」
+   * ことを保証できず（検索地点が端末の現在地扱いになる不具合の根本原因だった）、
+   * カテゴリ検索をGoogle側へ代行させる設計はやめる。ここでは「指定した道の駅/地点を
+   * 確実に開く」ことだけを依頼し、そこから先のカテゴリ検索はGoogleマップの
+   * 「周辺を検索」へ委ねる。駅origin: 既存stationSearchUrl（名称+住所）。
+   * それ以外のorigin（現在地・ルート上の地点等）: 既存latLngUrl（座標そのもの）。
    */
-  const googleMapsSearchUrlFor = useCallback(
-    (origin: PoiOrigin | null, category: PoiCategory | null, keyword: string): string => {
-      const station = origin?.stationId ? getStation(origin.stationId) : undefined;
-      if (station) return category ? categoryStationSearchUrl(keyword, station) : stationSearchUrl(station);
-      if (!origin || origin.label === '現在地') return categoryNearbySearchUrl(keyword);
-      return categoryLabelSearchUrl(keyword, origin.label);
-    },
-    [],
-  );
+  const googleMapsUrlFor = useCallback((origin: PoiOrigin): string => {
+    const station = origin.stationId ? getStation(origin.stationId) : undefined;
+    return station ? stationSearchUrl(station) : latLngUrl(origin);
+  }, []);
 
   const persistRoutes = (rs: SavedRoute[]) => {
     setSavedRoutes(rs);
@@ -1525,16 +1514,8 @@ export default function App() {
               otherIncomplete={poiOtherIncomplete}
               revalidating={poiRevalidating}
               onRetry={runPoiSearchNow}
-              googleFallbackUrl={googleMapsSearchUrlFor(
-                searchOrigin,
-                poiCategory,
-                poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット',
-              )}
-              googleDetailSearchUrl={googleMapsSearchUrlFor(
-                searchOrigin,
-                poiCategory,
-                poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット',
-              )}
+              googleFallbackUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
+              googleDetailSearchUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
               onClose={closePoiSearch}
               results={sortedPoiResults}
               sort={poiSort}

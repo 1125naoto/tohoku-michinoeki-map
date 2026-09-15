@@ -12,42 +12,27 @@ export function stationSearchUrl(st: Station): string {
 }
 
 /**
- * 「Googleマップでもっと探す」CTA用の検索URL群。
+ * 「Googleマップで開く」CTA（周辺スポットパネル）の設計方針。
  * アプリ内のOSM/Overpass由来POIは、道の駅ナビの主目的（道の駅発見・車旅・
  * 周辺スポット発見・旅行ルート作成）に沿った「周辺に何がありそうか」の
  * 発見用途であり、Google Mapsと同等の店舗網羅性は構造上保証できない
  * （OSMの登録・タグ品質・網羅率に依存するため）。そのため大分類ボタンを
  * 押した瞬間にGoogleマップへ飛ばすのではなく、アプリ内候補表示とは別に、
- * 「さらに探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
+ * 「さらに詳しく探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
  *
- * Google Maps URLs公式仕様（`/maps/search/?api=1&query=`）の範囲のみを使用。
- * Google Places API・有料APIは使わない。
- *
- * 実機不具合の根本原因（Owner iPhone QA・道の駅たまかわ）: 以前は
- * 「キーワード + 生の緯度,経度」を1つの自由テキストとして連結していたが
- * （例: `飲食店 37.222832,140.418137`）、Maps URLs Search actionにはその
- * 座標を検索中心として扱う公式パラメータが存在せず、Googleが自由テキストと
- * して解釈した結果、検索地点が実際の指定座標ではなく端末の現在地扱いに
- * なっていた。座標をqueryへ混ぜる方式は使わず、検索地点の性質に応じて
- * 以下を使い分ける。
+ * Fable 5.1 Root Cause Auditでの実機不具合（Owner iPhone QA・道の駅たまかわ）の
+ * 根本原因: 以前は「キーワード + 生の緯度,経度」を1つの自由テキストとして
+ * 連結してGoogleへ渡していたが（例: `飲食店 37.222832,140.418137`）、
+ * Maps URLs Search actionにはその座標を検索中心として扱う公式パラメータが
+ * 存在せず、Googleが自由テキストとして解釈した結果、検索地点が実際の
+ * 指定座標ではなく端末の現在地扱いになっていた。座標や駅名を挟んでも
+ * 「指定した地点を検索中心に固定したままカテゴリ検索する」こと自体が
+ * Maps URLs公式仕様では保証できないため、query調整による対処は行わない。
+ * 代わりに、CTAの役割を「Googleマップでカテゴリ検索まで代行する」から
+ * 「指定した道の駅/地点を確実に開く」だけに変更し、そこから先のカテゴリ
+ * 検索はGoogleマップ側の「周辺を検索」機能へ委ねる（stationSearchUrl /
+ * latLngUrlという既存の正常系をそのまま再利用する）。
  */
-
-/** 駅origin + カテゴリ指定時: 既存stationSearchUrlと同じ「名称+住所」方式にキーワードを乗せる（駅名を二重にしないこと） */
-export function categoryStationSearchUrl(keyword: string, st: Station): string {
-  const q = `${keyword} 道の駅${st.name} ${st.address}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-}
-
-/** 現在地origin時: キーワードのみを渡す（座標を混ぜない）。Google側が端末の現在地/表示中の地図範囲を検索中心に使う */
-export function categoryNearbySearchUrl(keyword: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(keyword)}`;
-}
-
-/** 駅でも現在地でもないorigin（ルート上の地点等）時: 座標の代わりに人が読める名称をテキスト検索に使う */
-export function categoryLabelSearchUrl(keyword: string, label: string): string {
-  const q = `${keyword} ${label}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-}
 
 /**
  * 道路の希望 → Google Maps URLs の avoid パラメータ。

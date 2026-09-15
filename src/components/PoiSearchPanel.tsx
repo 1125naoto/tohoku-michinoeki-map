@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, GOOGLE_DETAIL_KEYWORD, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
 import { isDiagnosticsHost } from '../lib/geolocation';
@@ -47,7 +47,7 @@ interface RouteStopOption {
 
 interface Props {
   stations: Station[];
-  origin: { lat: number; lng: number; label: string } | null;
+  origin: { lat: number; lng: number; label: string; stationId?: string } | null;
   originMode: PoiOriginMode;
   onChangeOriginMode: (m: PoiOriginMode) => void;
   onPickStation: (st: Station) => void;
@@ -310,18 +310,28 @@ export default function PoiSearchPanel({
         飛ばすのではなく、アプリ内候補（下の一覧）とは別に「さらに探したい場合は
         こちら」という二段構造にする。検索を実行していなくても、検索地点さえ決まって
         いれば押せる（Overpass通信には依存しない）。
+        Fable Root Cause Audit再監査結果: Google Maps URLs公式仕様だけでは
+        「指定した地点を検索中心に固定したままカテゴリ検索する」ことを保証できない
+        （検索地点が端末の現在地扱いになる不具合の根本原因）。そのためGoogle側へ
+        カテゴリ検索を代行させるのはやめ、「指定した道の駅/地点を確実に開く」ことだけを
+        依頼し、そこから先のカテゴリ検索はGoogleマップの「周辺を検索」へ委ねる。
       */}
       {origin && (
-        <a
-          className="btn-link"
-          style={{ width: '100%', marginTop: 6 }}
-          href={googleDetailSearchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="poi-google-detail-search"
-        >
-          🔍 Googleマップでもっと{category ? GOOGLE_DETAIL_KEYWORD[category] : '周辺スポット'}を探す
-        </a>
+        <>
+          <a
+            className="btn-link"
+            style={{ width: '100%', marginTop: 6 }}
+            href={googleDetailSearchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="poi-google-detail-search"
+          >
+            🗺 Googleマップで{origin.stationId ? 'この道の駅' : 'この地点'}を開く
+          </a>
+          <p className="msg info" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }} data-testid="poi-google-detail-guidance">
+            Googleマップで「周辺を検索」すると、飲食店・観光・温泉・宿泊などをさらに詳しく探せます。
+          </p>
+        </>
       )}
 
       {/*
@@ -447,9 +457,12 @@ export default function PoiSearchPanel({
               rel="noopener noreferrer"
               data-testid="poi-empty-google-fallback"
             >
-              🔍 Googleマップで探す
+              🗺 Googleマップで{origin?.stationId ? 'この道の駅' : 'この地点'}を開く
             </a>
           </div>
+          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--text-sub)' }} data-testid="poi-empty-google-fallback-guidance">
+            開いたら「周辺を検索」から飲食店・観光・温泉・宿泊などを詳しく探せます。
+          </p>
         </div>
       )}
       {!loading && failed && (
@@ -469,9 +482,12 @@ export default function PoiSearchPanel({
               rel="noopener noreferrer"
               data-testid="poi-google-fallback"
             >
-              🔍 Googleマップで検索
+              🗺 Googleマップで{origin?.stationId ? 'この道の駅' : 'この地点'}を開く
             </a>
           </div>
+          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--text-sub)' }} data-testid="poi-google-fallback-guidance">
+            開いたら「周辺を検索」から飲食店・観光・温泉・宿泊などを詳しく探せます。
+          </p>
         </div>
       )}
       {!loading && searched && (failed || resultCount === 0) && isDiagnosticsHost() && (
