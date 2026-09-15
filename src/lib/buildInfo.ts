@@ -15,6 +15,8 @@ export interface BuildInfo {
   commit: string;
   dirty: boolean;
   buildTime: string;
+  /** 'production'（本番/NAMI） | 'qa'。Owner向け診断表示専用（QAビルドか一目で分かるように） */
+  environment: string;
   poiDataVersion: string;
   poiDataFiles: number;
 }

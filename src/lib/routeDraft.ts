@@ -8,8 +8,9 @@
 import type { ManualOrderMode } from './manualRoute';
 import type { RoadPref } from '../types';
 import type { Poi, PoiCategory } from './poi';
+import { nsKey } from './storageNamespace';
 
-export const ROUTE_DRAFT_KEY = 'tohoku-me:manual-route-draft:v1';
+export const ROUTE_DRAFT_KEY = nsKey('tohoku-me:manual-route-draft:v1');
 
 export interface RouteDraft {
   selectedIds: string[];

@@ -9,6 +9,7 @@
  * フォールバックできるようにする。
  */
 import { dedupePois, normalizeOsmElement, POI_SCHEMA_VERSION, type OsmElement, type Poi } from './poi';
+import { nsKey } from './storageNamespace';
 
 /**
  * OpenStreetMap Wikiが案内する公開Overpassインスタンス（いずれもCORS対応・実接続確認済み、2026-09時点）。
@@ -56,8 +57,8 @@ const STALE_FALLBACK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
  * （旧ビルドが保存した旧分類の結果が、新ビルドでも静的キャッシュより優先されて
  *   表示され続ける不具合を防ぐ。旧キー 'tohoku-me:poi-last-ok:v1' は読まずに削除する）
  */
-const STALE_FALLBACK_KEY = 'tohoku-me:poi-last-ok:v2';
-const STALE_FALLBACK_LEGACY_KEYS = ['tohoku-me:poi-last-ok:v1'];
+const STALE_FALLBACK_KEY = nsKey('tohoku-me:poi-last-ok:v2');
+const STALE_FALLBACK_LEGACY_KEYS = [nsKey('tohoku-me:poi-last-ok:v1')];
 
 /** 保存済み結果を再利用してよい版。Poiスキーマ版と静的POIデータ版（ビルド時に埋め込み）の組 */
 export function poiCacheVersion(): string {

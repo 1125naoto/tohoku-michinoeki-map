@@ -7,6 +7,7 @@ declare const __BUILD_INFO__: {
   commit: string;
   dirty: boolean;
   buildTime: string;
+  environment: string;
   poiDataVersion: string;
   poiDataFiles: number;
 };

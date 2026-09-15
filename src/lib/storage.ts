@@ -5,15 +5,16 @@
  * - v1(status+stampフラグ) → v2(相互排他のstate) へ自動移行。v1データは消さずに残す
  */
 import type { SavedRoute, StationState, TripState, VisitMap, VisitRecord } from '../types';
+import { nsKey } from './storageNamespace';
 
 export const KEYS = {
-  visits: 'tohoku-me:visits:v2',
-  routes: 'tohoku-me:routes:v1',
-  trip: 'tohoku-me:trip:v1',
+  visits: nsKey('tohoku-me:visits:v2'),
+  routes: nsKey('tohoku-me:routes:v1'),
+  trip: nsKey('tohoku-me:trip:v1'),
 } as const;
 
 /** 旧形式（〜d6dc4af）の訪問記録キー。移行後もバックアップとして残す */
-export const LEGACY_VISITS_KEY = 'tohoku-me:visits:v1';
+export const LEGACY_VISITS_KEY = nsKey('tohoku-me:visits:v1');
 
 function getStore(): Storage | null {
   try {

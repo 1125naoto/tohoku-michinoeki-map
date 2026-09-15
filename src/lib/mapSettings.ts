@@ -3,6 +3,8 @@
  * localStorageへ保存し再読み込み後も維持する。訪問記録(v2)とはキーを分離。
  */
 
+import { nsKey } from './storageNamespace';
+
 export type MarkerMode = 'all' | 'cluster';
 export type LabelMode = 'auto' | 'always' | 'off';
 
@@ -13,7 +15,7 @@ export interface MapSettings {
   labelMode: LabelMode;
 }
 
-export const MAP_SETTINGS_KEY = 'tohoku-me:map-settings:v1';
+export const MAP_SETTINGS_KEY = nsKey('tohoku-me:map-settings:v1');
 
 export const DEFAULT_MAP_SETTINGS: MapSettings = {
   markerMode: 'all',

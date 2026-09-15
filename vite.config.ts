@@ -41,12 +41,16 @@ function poiDataVersion(): { version: string; files: number } {
   }
 }
 const poi = poiDataVersion();
+// QAビルドはVITE_STORAGE_NSを設定して起動する（localStorage/PWAキャッシュのorigin衝突対策と兼用）。
+// 未設定（本番/NAMI）では常に'production'のまま、既存の動作を一切変えない。
+const ENVIRONMENT_LABEL = process.env.VITE_STORAGE_NS ? 'qa' : 'production';
 const BUILD_INFO = {
   branch: gitOutput('git rev-parse --abbrev-ref HEAD'),
   commit: gitOutput('git rev-parse --short=12 HEAD'),
   // ビルドに影響する範囲だけを「未コミット変更あり」とみなす（ルート直下の作業用スクリプト等は除外）
   dirty: gitOutput('git status --porcelain -- src public scripts e2e vite.config.ts package.json package-lock.json index.html') !== '',
   buildTime: new Date().toISOString(),
+  environment: ENVIRONMENT_LABEL,
   poiDataVersion: poi.version,
   poiDataFiles: poi.files,
 };

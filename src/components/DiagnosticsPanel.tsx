@@ -137,6 +137,7 @@ export default function DiagnosticsPanel({ poi }: Props) {
     served !== 'loading' && served != null && served.poiDataVersion !== running.poiDataVersion;
 
   const rows: [string, string][] = [
+    ['環境', running.environment === 'qa' ? '⚠️ QA/staging（本番ではありません）' : '本番'],
     ['動作中のビルド', running.buildId],
     ['ブランチ / commit', `${running.branch} / ${running.commit}${running.dirty ? ' (+未コミット変更あり)' : ''}`],
     ['ビルド日時', running.buildTime],
@@ -151,7 +152,10 @@ export default function DiagnosticsPanel({ poi }: Props) {
     ],
     ['オンライン', online ? 'はい' : 'いいえ'],
     ['表示形態', displayMode()],
-    ['接続', `${typeof location !== 'undefined' ? location.protocol : '?'}//${typeof location !== 'undefined' ? location.hostname : '?'}`],
+    [
+      '接続',
+      `${typeof location !== 'undefined' ? location.protocol : '?'}//${typeof location !== 'undefined' ? location.hostname : '?'}${typeof location !== 'undefined' ? location.pathname : ''}`,
+    ],
     ['Secure Context', isSecure ? 'はい（位置情報を使えます）' : 'いいえ（HTTP接続のため位置情報は使えません）'],
     ['位置情報API', typeof navigator !== 'undefined' && 'geolocation' in navigator ? 'あり' : 'なし'],
     ['位置情報の許可状態', permission],
