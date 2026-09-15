@@ -49,6 +49,8 @@ interface Props {
   onRemoveFromSelection: (id: string) => void;
   onDone: (route: PlannedRoute) => void;
   onCancel: () => void;
+  /** ↻ 最初からやり直す（確認ダイアログはApp側が担当。ここでは要求するだけ） */
+  onRequestRestart: () => void;
   /** 下書きから復元する初期値（下書きが無ければ既定値のまま） */
   initialSettings?: {
     returnToStart: boolean;
@@ -85,6 +87,7 @@ export default function ManualRouteBuilder({
   onRemoveFromSelection,
   onDone,
   onCancel,
+  onRequestRestart,
   initialSettings,
   onSettingsChange,
 }: Props) {
@@ -695,6 +698,9 @@ export default function ManualRouteBuilder({
       </p>
       <button style={{ width: '100%', marginTop: 8 }} onClick={onCancel} data-testid="manual-cancel">
         ← 選択に戻る
+      </button>
+      <button style={{ width: '100%', marginTop: 8 }} onClick={onRequestRestart} data-testid="manual-request-restart">
+        ↻ 最初からやり直す
       </button>
     </div>
   );

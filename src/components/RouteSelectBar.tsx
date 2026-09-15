@@ -6,13 +6,15 @@ interface Props {
   onCreate: () => void;
   onClearAll: () => void;
   onExit: () => void;
+  /** ↻ 最初からやり直す（確認ダイアログはApp側が担当。ここでは要求するだけ） */
+  onRequestRestart: () => void;
 }
 
 /**
  * 地図下部に固定するコンパクトな選択バー（D/E仕様）。
  * 全画面解除・現在地・凡例・ズーム・Leaflet帰属・safe-areaと重ならない位置に置く。
  */
-export default function RouteSelectBar({ count, onShowList, onCreate, onClearAll, onExit }: Props) {
+export default function RouteSelectBar({ count, onShowList, onCreate, onClearAll, onExit, onRequestRestart }: Props) {
   const canCreate = count >= MIN_MANUAL_STATIONS;
   return (
     <div className="route-select-bar" data-testid="route-select-bar">
@@ -21,6 +23,9 @@ export default function RouteSelectBar({ count, onShowList, onCreate, onClearAll
         <div className="route-select-bar-sub">
           <button onClick={onClearAll} data-testid="route-select-clear-all">
             すべて解除
+          </button>
+          <button onClick={onRequestRestart} data-testid="route-select-restart">
+            ↻ やり直す
           </button>
           <button onClick={onExit} data-testid="route-select-exit">
             選択をやめる

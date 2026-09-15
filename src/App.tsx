@@ -924,6 +924,7 @@ export default function App() {
     setShowSelectionSheet(false);
     setRouteSelectedIds([]);
     setSelectedPois({});
+    setSelectedCustomStops({});
     setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
     clearRouteDraft();
     setViewingSavedId(null);
@@ -1406,6 +1407,7 @@ export default function App() {
               onCreate={proceedFromSelection}
               onClearAll={clearAllSelection}
               onExit={cancelManualSelection}
+              onRequestRestart={() => setPendingCourseAction('restart')}
             />
           )}
           {tab === 'map' && routeSelectMode && showSelectionSheet && (
@@ -1660,6 +1662,7 @@ export default function App() {
                   onRemoveFromSelection={removeFromSelection}
                   onDone={handleManualDone}
                   onCancel={cancelManualSelection}
+                  onRequestRestart={() => setPendingCourseAction('restart')}
                   initialSettings={{
                     returnToStart: manualDraftSnapshot.returnToStart,
                     orderMode: manualDraftSnapshot.orderMode,

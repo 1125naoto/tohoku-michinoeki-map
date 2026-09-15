@@ -69,7 +69,7 @@ interface Props {
   onBack: () => void;
   /** このコースを取り消す（確認はApp側のダイアログが担当。ここでは要求するだけ） */
   onRequestDiscard: () => void;
-  /** 最初から作り直す（同上） */
+  /** ↻ 最初からやり直す（同上） */
   onRequestRestart: () => void;
   /** 「保存」タブから開いた保存済みコースの名前（新規作成の結果ならnull。表示の区別用） */
   viewingSavedName?: string | null;
@@ -339,7 +339,7 @@ export default function RouteResults({
           ← 条件を変えてみる
         </button>
         <button style={{ width: '100%', marginTop: 8 }} onClick={onRequestRestart} data-testid="route-restart">
-          🔄 最初から作り直す
+          ↻ 最初からやり直す
         </button>
       </div>
     );
@@ -383,7 +383,7 @@ export default function RouteResults({
             ❌ このコースを取り消す
           </button>
           <button onClick={onRequestRestart} data-testid="route-restart">
-            🔄 最初から作り直す
+            ↻ 最初からやり直す
           </button>
         </div>
       </div>
@@ -462,7 +462,7 @@ export default function RouteResults({
             ❌ このコースを取り消す
           </button>
           <button onClick={onRequestRestart} data-testid="route-restart">
-            🔄 最初から作り直す
+            ↻ 最初からやり直す
           </button>
         </div>
       </div>
