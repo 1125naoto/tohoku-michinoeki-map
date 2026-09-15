@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   avoidParam,
-  categoryDetailSearchUrl,
+  categoryLabelSearchUrl,
+  categoryNearbySearchUrl,
+  categoryStationSearchUrl,
   directionsSegments,
   directionsUrls,
   MAX_WAYPOINTS,
@@ -22,20 +24,46 @@ describe('Googleマップ連携', () => {
     expect(dec).toContain(st.address);
   });
 
-  describe('categoryDetailSearchUrl（公開前UX整理: 「Googleマップでもっと探す」CTA）', () => {
-    it('公式仕様(/maps/search/?api=1&query=)のURLを生成し、検索語と検索地点の座標を含む', () => {
-      const url = categoryDetailSearchUrl('飲食店', { lat: 37.4004, lng: 140.3597 });
+  describe('カテゴリ別Googleマップ検索URL（「Googleマップでもっと探す」CTA / Fable Root Cause Audit BUG1修正）', () => {
+    // 実機不具合の回帰: 以前は「キーワード + 生の緯度,経度」を1つの自由テキストに
+    // 連結しており（例: `飲食店 37.222832,140.418137`）、Googleがこれを自由テキスト
+    // として解釈し、指定した道の駅ではなく端末の現在地が検索地点になっていた。
+    // 座標をqueryへ混ぜる方式を全面的に廃止したことを回帰ガードする。
+    it('categoryStationSearchUrl: 駅originは名称+住所方式（stationSearchUrlと同じ形）にキーワードを乗せる。座標を含まない', () => {
+      const st = STATIONS[0];
+      const url = categoryStationSearchUrl('飲食店', st);
       expect(url).toContain('https://www.google.com/maps/search/?api=1&query=');
       const dec = decodeURIComponent(url);
       expect(dec).toContain('飲食店');
-      expect(dec).toContain('37.400400');
-      expect(dec).toContain('140.359700');
+      expect(dec).toContain(`道の駅${st.name}`);
+      expect(dec).toContain(st.address);
+      // 駅名を二重にしない
+      expect(dec).not.toContain(`道の駅道の駅${st.name}`);
+      // 生の座標(小数点以下6桁形式)を含まない
+      expect(dec).not.toMatch(/\d{1,3}\.\d{6},\d{1,3}\.\d{6}/);
+    });
+
+    it('categoryNearbySearchUrl: 現在地originはキーワードのみ。座標を含まない（Google側が端末の現在地を使う）', () => {
+      const url = categoryNearbySearchUrl('観光スポット');
+      const dec = decodeURIComponent(url);
+      expect(dec).toBe('https://www.google.com/maps/search/?api=1&query=観光スポット');
+      expect(dec).not.toMatch(/\d{1,3}\.\d{6},\d{1,3}\.\d{6}/);
+    });
+
+    it('categoryLabelSearchUrl: 駅でも現在地でもないoriginは、座標の代わりにラベル名を使う', () => {
+      const url = categoryLabelSearchUrl('温泉', '3. 道の駅ばんだい');
+      const dec = decodeURIComponent(url);
+      expect(dec).toContain('温泉');
+      expect(dec).toContain('道の駅ばんだい');
+      expect(dec).not.toMatch(/\d{1,3}\.\d{6},\d{1,3}\.\d{6}/);
     });
 
     it('Google Places API等の有料APIキーを含まない（クエリのみのURL）', () => {
-      const url = categoryDetailSearchUrl('観光スポット', { lat: 37.4, lng: 140.36 });
-      expect(url).not.toContain('key=');
-      expect(url).not.toContain('places');
+      const st = STATIONS[0];
+      expect(categoryStationSearchUrl('観光スポット', st)).not.toContain('key=');
+      expect(categoryStationSearchUrl('観光スポット', st)).not.toContain('places');
+      expect(categoryNearbySearchUrl('宿泊施設')).not.toContain('key=');
+      expect(categoryLabelSearchUrl('宿泊施設', 'テスト')).not.toContain('key=');
     });
   });
 

@@ -89,9 +89,15 @@ interface Props {
   /** trueなら温泉・観光・宿泊等(other)系カテゴリの取得が不完全 */
   otherIncomplete: boolean;
   onRetry: () => void;
-  onGoogleFallback: () => void;
-  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる） */
-  onGoogleDetailSearch: () => void;
+  /**
+   * Googleマップの検索URL（0件/失敗時のフォールバックCTA用）。
+   * iOSでのwindow.open()経由の空タブ残留/白画面不具合対策（Fable Root Cause
+   * Audit BUG2修正）のため、既存の正常系（単一駅リンク等）と同じ
+   * <a target="_blank"> のネイティブアンカーで開く（window.open()は使わない）。
+   */
+  googleFallbackUrl: string;
+  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる）のURL。理由はgoogleFallbackUrl参照 */
+  googleDetailSearchUrl: string;
   onClose: () => void;
   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
   results: Poi[];
@@ -142,8 +148,8 @@ export default function PoiSearchPanel({
   foodIncomplete,
   otherIncomplete,
   onRetry,
-  onGoogleFallback,
-  onGoogleDetailSearch,
+  googleFallbackUrl,
+  googleDetailSearchUrl,
   onClose,
   results,
   sort,
@@ -306,13 +312,16 @@ export default function PoiSearchPanel({
         いれば押せる（Overpass通信には依存しない）。
       */}
       {origin && (
-        <button
+        <a
+          className="btn-link"
           style={{ width: '100%', marginTop: 6 }}
-          onClick={onGoogleDetailSearch}
+          href={googleDetailSearchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           data-testid="poi-google-detail-search"
         >
           🔍 Googleマップでもっと{category ? GOOGLE_DETAIL_KEYWORD[category] : '周辺スポット'}を探す
-        </button>
+        </a>
       )}
 
       {/*
@@ -431,9 +440,15 @@ export default function PoiSearchPanel({
             >
               📏 範囲を広げて探す
             </button>
-            <button onClick={onGoogleFallback} data-testid="poi-empty-google-fallback">
+            <a
+              className="btn-link"
+              href={googleFallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="poi-empty-google-fallback"
+            >
               🔍 Googleマップで探す
-            </button>
+            </a>
           </div>
         </div>
       )}
@@ -447,9 +462,15 @@ export default function PoiSearchPanel({
             <button onClick={expandRadius} disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value} data-testid="poi-expand-radius">
               📏 条件を変更
             </button>
-            <button onClick={onGoogleFallback} data-testid="poi-google-fallback">
+            <a
+              className="btn-link"
+              href={googleFallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="poi-google-fallback"
+            >
               🔍 Googleマップで検索
-            </button>
+            </a>
           </div>
         </div>
       )}

@@ -12,7 +12,7 @@ export function stationSearchUrl(st: Station): string {
 }
 
 /**
- * 「Googleマップでもっと探す」CTA用の検索URL。
+ * 「Googleマップでもっと探す」CTA用の検索URL群。
  * アプリ内のOSM/Overpass由来POIは、道の駅ナビの主目的（道の駅発見・車旅・
  * 周辺スポット発見・旅行ルート作成）に沿った「周辺に何がありそうか」の
  * 発見用途であり、Google Mapsと同等の店舗網羅性は構造上保証できない
@@ -21,11 +21,31 @@ export function stationSearchUrl(st: Station): string {
  * 「さらに探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
  *
  * Google Maps URLs公式仕様（`/maps/search/?api=1&query=`）の範囲のみを使用。
- * 検索半径を直接渡す公式パラメータは存在しないため、中心座標をqueryに含める
- * （Google側が実際の検索範囲を決める）。Google Places API・有料APIは使わない。
+ * Google Places API・有料APIは使わない。
+ *
+ * 実機不具合の根本原因（Owner iPhone QA・道の駅たまかわ）: 以前は
+ * 「キーワード + 生の緯度,経度」を1つの自由テキストとして連結していたが
+ * （例: `飲食店 37.222832,140.418137`）、Maps URLs Search actionにはその
+ * 座標を検索中心として扱う公式パラメータが存在せず、Googleが自由テキストと
+ * して解釈した結果、検索地点が実際の指定座標ではなく端末の現在地扱いに
+ * なっていた。座標をqueryへ混ぜる方式は使わず、検索地点の性質に応じて
+ * 以下を使い分ける。
  */
-export function categoryDetailSearchUrl(keyword: string, origin: LatLng): string {
-  const q = `${keyword} ${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`;
+
+/** 駅origin + カテゴリ指定時: 既存stationSearchUrlと同じ「名称+住所」方式にキーワードを乗せる（駅名を二重にしないこと） */
+export function categoryStationSearchUrl(keyword: string, st: Station): string {
+  const q = `${keyword} 道の駅${st.name} ${st.address}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+/** 現在地origin時: キーワードのみを渡す（座標を混ぜない）。Google側が端末の現在地/表示中の地図範囲を検索中心に使う */
+export function categoryNearbySearchUrl(keyword: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(keyword)}`;
+}
+
+/** 駅でも現在地でもないorigin（ルート上の地点等）時: 座標の代わりに人が読める名称をテキスト検索に使う */
+export function categoryLabelSearchUrl(keyword: string, label: string): string {
+  const q = `${keyword} ${label}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
 

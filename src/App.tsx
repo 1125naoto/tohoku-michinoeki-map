@@ -16,7 +16,14 @@ import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
-import { categoryDetailSearchUrl, navToPointUrl, navToStationUrl } from './lib/gmaps';
+import {
+  categoryLabelSearchUrl,
+  categoryNearbySearchUrl,
+  categoryStationSearchUrl,
+  navToPointUrl,
+  navToStationUrl,
+  stationSearchUrl,
+} from './lib/gmaps';
 import {
   filterSummary,
   filterStations,
@@ -834,6 +841,24 @@ export default function App() {
     }
   }, []);
 
+  /**
+   * 周辺スポットの「Googleマップでもっと探す」系CTA用URL。検索地点の種類に応じて
+   * 安全な（座標をqueryへ混ぜない）Maps URLを選ぶ（Fable Root Cause Audit BUG1修正）。
+   * 駅origin + カテゴリ未選択（すべて）: 既存stationSearchUrlをそのまま再利用
+   * 駅origin + カテゴリ指定: stationSearchUrlと同じ「名称+住所」方式にキーワードを乗せる
+   * 現在地origin: キーワードのみ（Google側が端末の現在地を使う）
+   * それ以外（ルート上の地点等）: 座標の代わりに表示ラベルをテキスト検索に使う
+   */
+  const googleMapsSearchUrlFor = useCallback(
+    (origin: PoiOrigin | null, category: PoiCategory | null, keyword: string): string => {
+      const station = origin?.stationId ? getStation(origin.stationId) : undefined;
+      if (station) return category ? categoryStationSearchUrl(keyword, station) : stationSearchUrl(station);
+      if (!origin || origin.label === '現在地') return categoryNearbySearchUrl(keyword);
+      return categoryLabelSearchUrl(keyword, origin.label);
+    },
+    [],
+  );
+
   const persistRoutes = (rs: SavedRoute[]) => {
     setSavedRoutes(rs);
     noteSaveResult(saveRoutes(rs));
@@ -1500,16 +1525,16 @@ export default function App() {
               otherIncomplete={poiOtherIncomplete}
               revalidating={poiRevalidating}
               onRetry={runPoiSearchNow}
-              onGoogleFallback={() => {
-                const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';
-                const near = searchOrigin ? `${searchOrigin.lat},${searchOrigin.lng}` : '';
-                openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
-              }}
-              onGoogleDetailSearch={() => {
-                if (!searchOrigin) return;
-                const keyword = poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット';
-                openExternal(categoryDetailSearchUrl(keyword, searchOrigin));
-              }}
+              googleFallbackUrl={googleMapsSearchUrlFor(
+                searchOrigin,
+                poiCategory,
+                poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット',
+              )}
+              googleDetailSearchUrl={googleMapsSearchUrlFor(
+                searchOrigin,
+                poiCategory,
+                poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット',
+              )}
               onClose={closePoiSearch}
               results={sortedPoiResults}
               sort={poiSort}

@@ -239,9 +239,16 @@ test.describe('周辺スポット検索', () => {
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-failed')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('poi-google-fallback')).toBeVisible();
+    // Fable Root Cause Audit BUG2修正の回帰: フォールバックCTAもネイティブアンカーで開く
+    await expect(page.getByTestId('poi-google-fallback')).toHaveAttribute('target', '_blank');
+    await expect(page.getByTestId('poi-google-fallback')).toHaveAttribute('rel', /noopener/);
+    // Fable Root Cause Audit BUG1修正の回帰: 座標連結クエリを使わない
+    const fallbackHref = await page.getByTestId('poi-google-fallback').getAttribute('href');
+    expect(fallbackHref ?? '').not.toMatch(/%20\d{1,3}\.\d{6}%2C\d{1,3}\.\d{6}/);
   });
 
   test('公開前UX整理: 食べるの細分類チップは無く、大分類ごとに「Googleマップでもっと探す」CTAが出る', async ({ page }) => {
+    const station = OPEN_STATIONS.find((s) => s.id === STATION_ID)!;
     await mockOverpassResponse(page);
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.getByTestId('station-sheet')).toBeVisible();
@@ -253,10 +260,23 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-google-detail-search')).toBeVisible();
     await expect(page.getByTestId('poi-google-detail-search')).toContainText('周辺スポット'); // カテゴリ未選択時は汎用文言
 
+    // Fable Root Cause Audit BUG2修正の回帰: 既存の正常系（単一駅リンク等）と同じ
+    // <a target="_blank" rel="noopener noreferrer">のネイティブアンカーで開くこと
+    // （window.open()ではない）
+    await expect(page.getByTestId('poi-google-detail-search')).toHaveAttribute('target', '_blank');
+    await expect(page.getByTestId('poi-google-detail-search')).toHaveAttribute('rel', /noopener/);
+
     await page.getByTestId('poi-category-food').click();
     // 食べるの細分類チップ(ラーメン/食堂/洋食/寿司/焼肉等)は一般ユーザーUIから撤去済み
     await expect(page.getByTestId('poi-subcategory-chips')).toHaveCount(0);
     await expect(page.getByTestId('poi-google-detail-search')).toContainText('飲食店');
+    // Fable Root Cause Audit BUG1修正の回帰: 駅originのカテゴリ検索は名称ベースの
+    // クエリであり、「キーワード + 生の緯度,経度」を連結した文字列にはならない
+    // （以前はこの形式をGoogleが自由テキストとして解釈し、指定した道の駅ではなく
+    // 端末の現在地が検索地点になる不具合があった）
+    const detailHref = await page.getByTestId('poi-google-detail-search').getAttribute('href');
+    expect(decodeURIComponent(detailHref ?? '')).toContain(`道の駅${station.name}`);
+    expect(detailHref ?? '').not.toMatch(/%20\d{1,3}\.\d{6}%2C\d{1,3}\.\d{6}/);
 
     await page.getByTestId('poi-category-tourism').click();
     // 観光は細分類チップを引き続き残す（今回の撤去対象は食べるのみ）
