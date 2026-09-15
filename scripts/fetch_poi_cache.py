@@ -175,6 +175,15 @@ RAMEN_NAME_RE = re.compile(
 RAMEN_CHAIN_RE = re.compile("一蘭|町田商店")
 SUSHI_NAME_RE = re.compile("寿司|すし|鮨")
 YAKINIKU_NAME_RE = re.compile("焼肉|焼き肉")
+# 実データ監査（全国1235駅cache・food_other 26,476件の店名分布、2026-09-15）:
+# cuisine=westernはほぼ使われておらず（福島市街地10km圏の実測133件中0件）、
+# 一方で店名に以下の語を含む店がfood_otherに埋もれていた
+# （洋食系276件・居酒屋601件・食堂1189件・ピザ/パスタ系118件）。
+# 「レストラン」単体は洋食以外にも広く使われるため意図的に含めない。
+YOSHOKU_NAME_RE = re.compile("洋食|ステーキ|ハンバーグ|グリル|ビストロ|フレンチ")
+ITALIAN_NAME_RE = re.compile("ピザ|パスタ|イタリアン|pizza", re.IGNORECASE)
+IZAKAYA_NAME_RE = re.compile("居酒屋")
+SHOKUDO_NAME_RE = re.compile("食堂")
 
 
 def classify_food_genre(cuisine, name):
@@ -206,6 +215,16 @@ def classify_food_genre(cuisine, name):
         return "sushi"
     if YAKINIKU_NAME_RE.search(name):
         return "yakiniku"
+    # 居酒屋・食堂は店名にジャンルがそのまま入っていることが非常に多い。
+    # yakiniku/sushi/ramen判定を先に行うため「焼肉食堂」等は焼肉が優先される。
+    if IZAKAYA_NAME_RE.search(name):
+        return "izakaya"
+    if SHOKUDO_NAME_RE.search(name):
+        return "shokudo"
+    if YOSHOKU_NAME_RE.search(name):
+        return "yoshoku"
+    if ITALIAN_NAME_RE.search(name):
+        return "italian"
     return None
 
 

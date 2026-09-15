@@ -166,6 +166,88 @@ describe('カテゴリ分類（OSMタグから）', () => {
     });
   });
 
+  describe('Owner実機QA回帰: 道の駅ふくしま10km「洋食」0件バグ（全国cache実データ監査、POI_SCHEMA_VERSION v4）', () => {
+    // 全国1235駅cache実データ監査（2026-09-15）: cuisine=westernはほぼ使われて
+    // おらず（福島市街地10km圏の実測133件中0件）、cuisine由来のyoshoku判定
+    // だけでは実在する洋食店が軒並み「その他の飲食店」に埋もれていた。
+    it('cuisine=westernは引き続き洋食に分類される（既存挙動を壊さない）', () => {
+      expect(classify({ amenity: 'restaurant', cuisine: 'western' })).toEqual({
+        category: 'food',
+        subcategory: 'yoshoku',
+        subcategories: ['yoshoku'],
+      });
+    });
+    it('cuisineタグが無くても、店名から洋食店と高精度に判定できる語を含むrestaurantは洋食に分類される', () => {
+      const yoshokuNames = ['ビストロ波平', '洋食屋シカレ', '洋食 TANTO', 'ステーキのどん', 'グリルけやき亭', '山形フレンチ シェ・ボン'];
+      for (const name of yoshokuNames) {
+        expect(classify({ amenity: 'restaurant', name })).toEqual({
+          category: 'food',
+          subcategory: 'yoshoku',
+          subcategories: ['yoshoku'],
+        });
+      }
+    });
+    it('「レストラン」単体では洋食に分類しない（中華・和食系ファミレス等も広く名乗るため誤分類リスクが高い）', () => {
+      expect(classify({ amenity: 'restaurant', name: 'ファミリーレストラン花月' })?.subcategory).not.toBe('yoshoku');
+    });
+    it('cuisineタグが無くても、店名に「居酒屋」を含むbar/restaurantは居酒屋に分類される（全国cache監査でfood_otherに601件埋没を確認）', () => {
+      expect(classify({ amenity: 'restaurant', name: '居酒屋 あひる' })).toEqual({
+        category: 'food',
+        subcategory: 'izakaya',
+        subcategories: ['izakaya'],
+      });
+      expect(classify({ amenity: 'bar', name: 'ダイニング居酒屋 優' })).toEqual({
+        category: 'food',
+        subcategory: 'izakaya',
+        subcategories: ['izakaya'],
+      });
+    });
+    it('cuisineタグが無くても、店名に「食堂」を含むrestaurantは食堂に分類される（全国cache監査でfood_otherに1189件埋没を確認）', () => {
+      expect(classify({ amenity: 'restaurant', name: 'かもめ食堂' })).toEqual({
+        category: 'food',
+        subcategory: 'shokudo',
+        subcategories: ['shokudo'],
+      });
+    });
+    it('cuisineタグが無くても、店名にピザ/パスタ/イタリアンを含むrestaurantはイタリアンに分類される', () => {
+      expect(classify({ amenity: 'restaurant', name: 'ニセコピザ' })).toEqual({
+        category: 'food',
+        subcategory: 'italian',
+        subcategories: ['italian'],
+      });
+      expect(classify({ amenity: 'restaurant', name: 'パスタ工房' })?.subcategory).toBe('italian');
+    });
+    it('「焼肉食堂」のように複数ジャンル語を含む店名は、より先に判定される焼肉が優先される（食堂に誤って落ちない）', () => {
+      expect(classify({ amenity: 'restaurant', name: '焼肉食堂まるは' })).toEqual({
+        category: 'food',
+        subcategory: 'yakiniku',
+        subcategories: ['yakiniku'],
+      });
+    });
+    it('cuisineタグがある場合は新しい店名判定より優先される', () => {
+      expect(classify({ amenity: 'restaurant', cuisine: 'sushi', name: '洋食寿司 波平' })).toEqual({
+        category: 'food',
+        subcategory: 'sushi',
+        subcategories: ['sushi'],
+      });
+    });
+    it('複数cuisine値（;区切り）は前方の既知ジャンルが一致すれば分類できる', () => {
+      expect(classify({ amenity: 'restaurant', cuisine: 'japanese;chinese' })?.subcategory).toBe('shokudo');
+    });
+    it('cuisine/店名のどちらにも手がかりが無いrestaurantは、引き続きその他の飲食店のまま（誤って洋食等に落とさない）', () => {
+      expect(classify({ amenity: 'restaurant', name: 'あづまキッチン' })).toEqual({
+        category: 'food',
+        subcategory: 'food_other',
+        subcategories: ['food_other'],
+      });
+      expect(classify({ amenity: 'restaurant' })).toEqual({
+        category: 'food',
+        subcategory: 'food_other',
+        subcategories: ['food_other'],
+      });
+    });
+  });
+
   describe('実地テストで報告された不具合の回帰: 温泉・日帰り温泉の多重所属', () => {
     // 実データ監査で「日帰り温泉」に119件あるのに「温泉」細分類には1件しか
     // 無いことを確認（natural=hot_springは温泉施設にはほぼ付かない）。

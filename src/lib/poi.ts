@@ -20,8 +20,13 @@ export type PoiCategory = 'food' | 'tourism' | 'onsen' | 'lodging';
  *  v2: subcategories[] の追加、cuisine/店名による飲食ジャンル判定、温泉の多重所属
  *  v3: ラーメン店名判定の実データ監査による拡充（つけ麺/油そば/中華蕎麦/
  *      拉麺/支那そば/麺屋・麺処・麺房・麺工房(先頭一致)/一蘭・町田商店）
+ *  v4: 洋食0件バグ根本監査（Owner実機QA・道の駅ふくしま10km）。全国cache
+ *      実データ監査でcuisine=westernタグがほぼ使われていないことを確認し、
+ *      居酒屋/食堂/洋食/イタリアンの店名判定を追加（food_otherへの
+ *      埋没を解消。実データ: 居酒屋601件・食堂1189件・洋食系276件・
+ *      ピザ/パスタ系118件がfood_otherに分類されていた）
  */
-export const POI_SCHEMA_VERSION = 3;
+export const POI_SCHEMA_VERSION = 4;
 
 export type FoodSub =
   | 'ramen'
@@ -300,6 +305,22 @@ export const RAMEN_NAME_PATTERN_SOURCE =
 /** 店名・cuisineタグのどちらにもラーメンを示す語が現れない全国チェーン（実データ監査で確認済み） */
 export const RAMEN_CHAIN_PATTERN_SOURCE = '一蘭|町田商店';
 
+/**
+ * 洋食判定の店名パターン。全国1235駅cacheの実データ監査
+ * （food_other 26,476件中の店名分布）で、cuisine=westernタグが
+ * 実際にはほぼ使われておらず（福島市街地10km圏の実測133件中0件）、
+ * 一方で店名に以下の語を含む店が276件food_otherに埋もれていたことを
+ * 確認して追加。「レストラン」単体は洋食以外（中華・和食系ファミレス等）
+ * にも広く使われるため意図的に含めない。
+ */
+const YOSHOKU_NAME_RE = /洋食|ステーキ|ハンバーグ|グリル|ビストロ|フレンチ/;
+/**
+ * イタリアン判定の店名パターン。cuisine=italianが無い場合の補完。
+ * 実データでピザ/パスタ専門店がcuisineタグ無しでfood_otherに
+ * 埋もれているケース（118件）を確認して追加。
+ */
+const ITALIAN_NAME_RE = /ピザ|パスタ|イタリアン|pizza/i;
+
 const RAMEN_NAME_RE = new RegExp(RAMEN_NAME_PATTERN_SOURCE, 'i');
 const RAMEN_CHAIN_RE = new RegExp(RAMEN_CHAIN_PATTERN_SOURCE);
 
@@ -319,6 +340,13 @@ function classifyFoodGenre(cuisine: string, name: string): FoodSub | null {
   if (RAMEN_CHAIN_RE.test(name)) return 'ramen';
   if (/寿司|すし|鮨/.test(name)) return 'sushi';
   if (/焼肉|焼き肉/.test(name)) return 'yakiniku';
+  // 居酒屋・食堂は店名にジャンルがそのまま入っていることが非常に多い
+  // （実データ監査: food_otherに埋もれた「居酒屋」601件・「食堂」1189件）。
+  // yakiniku/sushi/ramen判定を先に行うため「焼肉食堂」等は焼肉が優先される。
+  if (/居酒屋/.test(name)) return 'izakaya';
+  if (/食堂/.test(name)) return 'shokudo';
+  if (YOSHOKU_NAME_RE.test(name)) return 'yoshoku';
+  if (ITALIAN_NAME_RE.test(name)) return 'italian';
   return null;
 }
 
