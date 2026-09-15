@@ -12,6 +12,24 @@ export function stationSearchUrl(st: Station): string {
 }
 
 /**
+ * 「Googleマップでもっと探す」CTA用の検索URL。
+ * アプリ内のOSM/Overpass由来POIは、道の駅ナビの主目的（道の駅発見・車旅・
+ * 周辺スポット発見・旅行ルート作成）に沿った「周辺に何がありそうか」の
+ * 発見用途であり、Google Mapsと同等の店舗網羅性は構造上保証できない
+ * （OSMの登録・タグ品質・網羅率に依存するため）。そのため大分類ボタンを
+ * 押した瞬間にGoogleマップへ飛ばすのではなく、アプリ内候補表示とは別に、
+ * 「さらに探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
+ *
+ * Google Maps URLs公式仕様（`/maps/search/?api=1&query=`）の範囲のみを使用。
+ * 検索半径を直接渡す公式パラメータは存在しないため、中心座標をqueryに含める
+ * （Google側が実際の検索範囲を決める）。Google Places API・有料APIは使わない。
+ */
+export function categoryDetailSearchUrl(keyword: string, origin: LatLng): string {
+  const q = `${keyword} ${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+/**
  * 道路の希望 → Google Maps URLs の avoid パラメータ。
  * - highway_ok（おまかせ・早いルート）: 指定なし（Googleマップに任せる）
  * - no_tolls（有料道路を使わない）: avoid=tolls

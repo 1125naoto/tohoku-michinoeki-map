@@ -101,6 +101,18 @@ export const CATEGORY_LABEL: Record<PoiCategory, string> = {
   lodging: '宿泊',
 };
 
+/**
+ * 「Googleマップでもっと探す」CTAの検索語（内部カテゴリ名(CATEGORY_LABEL)より
+ * Google検索クエリとして自然な日本語を使う。道の駅ナビ＝発見・車旅・旅程作成、
+ * Googleマップ＝網羅的な詳細探索、という役割分担のためのCTA）。
+ */
+export const GOOGLE_DETAIL_KEYWORD: Record<PoiCategory, string> = {
+  food: '飲食店',
+  tourism: '観光スポット',
+  onsen: '温泉',
+  lodging: '宿泊施設',
+};
+
 export const SUBCATEGORY_LABEL: Record<PoiSubcategory, string> = {
   ramen: 'ラーメン',
   shokudo: '食堂',

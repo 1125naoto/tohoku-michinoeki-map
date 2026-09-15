@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   avoidParam,
+  categoryDetailSearchUrl,
   directionsSegments,
   directionsUrls,
   MAX_WAYPOINTS,
@@ -19,6 +20,23 @@ describe('Googleマップ連携', () => {
     const dec = decodeURIComponent(url);
     expect(dec).toContain(st.name);
     expect(dec).toContain(st.address);
+  });
+
+  describe('categoryDetailSearchUrl（公開前UX整理: 「Googleマップでもっと探す」CTA）', () => {
+    it('公式仕様(/maps/search/?api=1&query=)のURLを生成し、検索語と検索地点の座標を含む', () => {
+      const url = categoryDetailSearchUrl('飲食店', { lat: 37.4004, lng: 140.3597 });
+      expect(url).toContain('https://www.google.com/maps/search/?api=1&query=');
+      const dec = decodeURIComponent(url);
+      expect(dec).toContain('飲食店');
+      expect(dec).toContain('37.400400');
+      expect(dec).toContain('140.359700');
+    });
+
+    it('Google Places API等の有料APIキーを含まない（クエリのみのURL）', () => {
+      const url = categoryDetailSearchUrl('観光スポット', { lat: 37.4, lng: 140.36 });
+      expect(url).not.toContain('key=');
+      expect(url).not.toContain('places');
+    });
   });
 
   it('経路URLの経由順が正しい', () => {

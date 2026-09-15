@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, GOOGLE_DETAIL_KEYWORD, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
 import { isDiagnosticsHost } from '../lib/geolocation';
@@ -90,6 +90,8 @@ interface Props {
   otherIncomplete: boolean;
   onRetry: () => void;
   onGoogleFallback: () => void;
+  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる） */
+  onGoogleDetailSearch: () => void;
   onClose: () => void;
   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
   results: Poi[];
@@ -141,6 +143,7 @@ export default function PoiSearchPanel({
   otherIncomplete,
   onRetry,
   onGoogleFallback,
+  onGoogleDetailSearch,
   onClose,
   results,
   sort,
@@ -295,7 +298,34 @@ export default function PoiSearchPanel({
         </button>
       </div>
 
-      {category && (
+      {/*
+        道の駅ナビ＝発見・車旅・旅程作成、Googleマップ＝網羅的な詳細探索・口コミ・
+        写真・営業時間・ナビ、という役割分担のCTA。大分類を押した瞬間にGoogleマップへ
+        飛ばすのではなく、アプリ内候補（下の一覧）とは別に「さらに探したい場合は
+        こちら」という二段構造にする。検索を実行していなくても、検索地点さえ決まって
+        いれば押せる（Overpass通信には依存しない）。
+      */}
+      {origin && (
+        <button
+          style={{ width: '100%', marginTop: 6 }}
+          onClick={onGoogleDetailSearch}
+          data-testid="poi-google-detail-search"
+        >
+          🔍 Googleマップでもっと{category ? GOOGLE_DETAIL_KEYWORD[category] : '周辺スポット'}を探す
+        </button>
+      )}
+
+      {/*
+        食べる(food)の細分類（ラーメン/食堂/洋食/寿司/焼肉等）は、一般ユーザーUIから
+        原則撤去する（公開前UX整理）。「このボタンを押せば周辺の該当店舗が網羅的に
+        表示される」という誤解を生むため。OSMデータの登録・タグ品質・網羅率には
+        構造上Google Maps相当の網羅性を期待できず、そこを埋めようとはしない方針
+        （道の駅ナビの目的は発見・車旅・ルート作成であり、全国グルメDBではない）。
+        内部classificationロジック・POIデータ自体は変更しない（一覧の各行には
+        引き続きジャンルをテキストで表示する）。他カテゴリ(観光/温泉/宿泊)の
+        細分類は従来どおり残す。
+      */}
+      {category && category !== 'food' && (
         <div className="poi-subcats" data-testid="poi-subcategory-chips">
           <button className={subcategory === 'all' ? 'active' : ''} onClick={() => onChangeSubcategory('all')}>
             すべて
@@ -454,7 +484,7 @@ export default function PoiSearchPanel({
             )}
             {fromCache
               ? '前回取得した周辺スポットを表示しています。'
-              : `周辺スポットを${resultCount}件見つけました。`}
+              : `周辺の主なスポットを${resultCount}件見つけました。`}
             地図のマークまたは下の一覧をタップすると詳しく見られます。
             {revalidating && (
               <>

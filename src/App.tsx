@@ -16,7 +16,7 @@ import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
-import { navToPointUrl, navToStationUrl } from './lib/gmaps';
+import { categoryDetailSearchUrl, navToPointUrl, navToStationUrl } from './lib/gmaps';
 import {
   filterSummary,
   filterStations,
@@ -42,7 +42,7 @@ import {
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
+import { CATEGORY_LABEL, DEFAULT_STAY_MIN, GOOGLE_DETAIL_KEYWORD, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
 import {
   peekCachedPois,
   DEFAULT_RADIUS_M,
@@ -1504,6 +1504,11 @@ export default function App() {
                 const label = poiCategory ? CATEGORY_LABEL[poiCategory] : '周辺スポット';
                 const near = searchOrigin ? `${searchOrigin.lat},${searchOrigin.lng}` : '';
                 openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
+              }}
+              onGoogleDetailSearch={() => {
+                if (!searchOrigin) return;
+                const keyword = poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット';
+                openExternal(categoryDetailSearchUrl(keyword, searchOrigin));
               }}
               onClose={closePoiSearch}
               results={sortedPoiResults}
