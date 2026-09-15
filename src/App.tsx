@@ -17,6 +17,7 @@ import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
 import { latLngUrl, navToPointUrl, navToStationUrl, stationSearchUrl } from './lib/gmaps';
+import { googleWebSearchUrl, stationNearbySearchQuery } from './lib/websearch';
 import {
   filterSummary,
   filterStations,
@@ -835,17 +836,30 @@ export default function App() {
   }, []);
 
   /**
-   * 周辺スポットの「Googleマップで開く」系CTA用URL（Fable Root Cause Audit再監査結果）。
-   * Google Maps URLs公式仕様だけでは「指定した地点を検索中心に固定したままカテゴリ検索する」
-   * ことを保証できず（検索地点が端末の現在地扱いになる不具合の根本原因だった）、
-   * カテゴリ検索をGoogle側へ代行させる設計はやめる。ここでは「指定した道の駅/地点を
-   * 確実に開く」ことだけを依頼し、そこから先のカテゴリ検索はGoogleマップの
-   * 「周辺を検索」へ委ねる。駅origin: 既存stationSearchUrl（名称+住所）。
-   * それ以外のorigin（現在地・ルート上の地点等）: 既存latLngUrl（座標そのもの）。
+   * 周辺スポットの外部探索導線を3つの役割に分離する（Fable 5.1 Root Cause Audit
+   * 再監査結果の最終形）。
+   * (1) アプリ内POI＝道の駅周辺の候補をすぐ見る（この関数群とは無関係、既存のまま）
+   * (2) Google Web検索＝カテゴリごとに、より詳しく・網羅的に探す（webSearchUrlFor）
+   * (3) Google Maps＝道の駅そのものの場所・口コミ・写真・営業時間・ナビを見る
+   *     （googleMapsUrlFor）。Google Mapsには「駅周辺のカテゴリ検索」をさせない
+   *     （Maps URLs公式仕様だけでは地点固定+カテゴリ検索を保証できないため）。
+   * 駅origin: stationSearchUrl（名称+住所）。それ以外のorigin（現在地・ルート上の
+   * 地点等）: latLngUrl（座標そのもの）。
    */
   const googleMapsUrlFor = useCallback((origin: PoiOrigin): string => {
     const station = origin.stationId ? getStation(origin.stationId) : undefined;
     return station ? stationSearchUrl(station) : latLngUrl(origin);
+  }, []);
+
+  /**
+   * 駅originの場合のみGoogle Web検索CTAを生成する。非駅origin（現在地・地図上の
+   * 自由地点等）は確実な地名（駅名）を持たないため、カテゴリWeb検索を無理に
+   * 生成せずnullを返し、CTA自体を非表示にする（Google Maps導線のみ使う）。
+   */
+  const webSearchUrlFor = useCallback((origin: PoiOrigin | null, category: PoiCategory | null): string | null => {
+    const station = origin?.stationId ? getStation(origin.stationId) : undefined;
+    if (!station) return null;
+    return googleWebSearchUrl(stationNearbySearchQuery(station, category));
   }, []);
 
   const persistRoutes = (rs: SavedRoute[]) => {
@@ -1514,8 +1528,8 @@ export default function App() {
               otherIncomplete={poiOtherIncomplete}
               revalidating={poiRevalidating}
               onRetry={runPoiSearchNow}
-              googleFallbackUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
-              googleDetailSearchUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
+              mapsUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
+              webSearchUrl={webSearchUrlFor(searchOrigin, poiCategory)}
               onClose={closePoiSearch}
               results={sortedPoiResults}
               sort={poiSort}

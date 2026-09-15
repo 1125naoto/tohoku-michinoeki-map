@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+import { WEB_SEARCH_CATEGORY_LABEL } from '../lib/websearch';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
 import { isDiagnosticsHost } from '../lib/geolocation';
@@ -90,14 +91,18 @@ interface Props {
   otherIncomplete: boolean;
   onRetry: () => void;
   /**
-   * Googleマップの検索URL（0件/失敗時のフォールバックCTA用）。
+   * Googleマップの検索URL（道の駅そのものの場所・口コミ・写真・営業時間・ナビ専用。
+   * 駅originはstationSearchUrl、非駅originはlatLngUrl。カテゴリ検索はさせない）。
    * iOSでのwindow.open()経由の空タブ残留/白画面不具合対策（Fable Root Cause
    * Audit BUG2修正）のため、既存の正常系（単一駅リンク等）と同じ
    * <a target="_blank"> のネイティブアンカーで開く（window.open()は使わない）。
    */
-  googleFallbackUrl: string;
-  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる）のURL。理由はgoogleFallbackUrl参照 */
-  googleDetailSearchUrl: string;
+  mapsUrl: string;
+  /**
+   * Google Web検索URL（カテゴリごとに、より詳しく・網羅的に探す用）。
+   * 駅originのみ生成可能（確実な地名が無い非駅originではnullで、CTA自体を隠す）。
+   */
+  webSearchUrl: string | null;
   onClose: () => void;
   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
   results: Poi[];
@@ -148,8 +153,8 @@ export default function PoiSearchPanel({
   foodIncomplete,
   otherIncomplete,
   onRetry,
-  googleFallbackUrl,
-  googleDetailSearchUrl,
+  mapsUrl,
+  webSearchUrl,
   onClose,
   results,
   sort,
@@ -305,32 +310,40 @@ export default function PoiSearchPanel({
       </div>
 
       {/*
-        道の駅ナビ＝発見・車旅・旅程作成、Googleマップ＝網羅的な詳細探索・口コミ・
-        写真・営業時間・ナビ、という役割分担のCTA。大分類を押した瞬間にGoogleマップへ
-        飛ばすのではなく、アプリ内候補（下の一覧）とは別に「さらに探したい場合は
-        こちら」という二段構造にする。検索を実行していなくても、検索地点さえ決まって
-        いれば押せる（Overpass通信には依存しない）。
-        Fable Root Cause Audit再監査結果: Google Maps URLs公式仕様だけでは
+        外部探索を3つの役割に分離する（Fable 5.1 Root Cause Audit再監査の最終形）。
+        (1) アプリ内POI＝道の駅周辺の候補をすぐ見る（下の一覧・アプリ内候補）。
+        (2) Google Web検索＝より詳しく・網羅的に探す（本ブロックのPRIMARY CTA）。
+        (3) Google Maps＝道の駅そのものの場所・口コミ・写真・営業時間・ナビを見る
+            （本ブロックのSECONDARY CTA）。Google Maps URLs公式仕様だけでは
         「指定した地点を検索中心に固定したままカテゴリ検索する」ことを保証できない
-        （検索地点が端末の現在地扱いになる不具合の根本原因）。そのためGoogle側へ
-        カテゴリ検索を代行させるのはやめ、「指定した道の駅/地点を確実に開く」ことだけを
-        依頼し、そこから先のカテゴリ検索はGoogleマップの「周辺を検索」へ委ねる。
+        （検索地点が端末の現在地扱いになる不具合の根本原因だった）ため、Google Maps
+        には駅周辺のカテゴリ検索をさせない。検索を実行していなくても、検索地点さえ
+        決まっていれば押せる（Overpass通信には依存しない）。
       */}
       {origin && (
         <>
+          {origin.stationId && webSearchUrl && (
+            <a
+              className="btn-link"
+              style={{ width: '100%', marginTop: 6 }}
+              href={webSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="poi-web-search"
+            >
+              🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}をもっと探す
+            </a>
+          )}
           <a
             className="btn-link"
             style={{ width: '100%', marginTop: 6 }}
-            href={googleDetailSearchUrl}
+            href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             data-testid="poi-google-detail-search"
           >
-            🗺 Googleマップで{origin.stationId ? 'この道の駅' : 'この地点'}を開く
+            🗺 Googleマップで{origin.stationId ? '道の駅の詳細・ナビを見る' : 'この地点を見る'}
           </a>
-          <p className="msg info" style={{ marginTop: 4, marginBottom: 0, fontSize: 12 }} data-testid="poi-google-detail-guidance">
-            Googleマップで「周辺を検索」すると、飲食店・観光・温泉・宿泊などをさらに詳しく探せます。
-          </p>
         </>
       )}
 
@@ -450,24 +463,45 @@ export default function PoiSearchPanel({
             >
               📏 範囲を広げて探す
             </button>
+            {origin?.stationId && webSearchUrl ? (
+              <a
+                className="btn-link"
+                href={webSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="poi-empty-google-fallback"
+              >
+                🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}を探す
+              </a>
+            ) : (
+              <a
+                className="btn-link"
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="poi-empty-google-fallback"
+              >
+                🗺 Googleマップでこの地点を見る
+              </a>
+            )}
+          </div>
+          {origin?.stationId && webSearchUrl && (
             <a
               className="btn-link"
-              href={googleFallbackUrl}
+              style={{ width: '100%', marginTop: 4 }}
+              href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              data-testid="poi-empty-google-fallback"
+              data-testid="poi-empty-google-maps"
             >
-              🗺 Googleマップで{origin?.stationId ? 'この道の駅' : 'この地点'}を開く
+              🗺 Googleマップで道の駅の詳細・ナビを見る
             </a>
-          </div>
-          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--text-sub)' }} data-testid="poi-empty-google-fallback-guidance">
-            開いたら「周辺を検索」から飲食店・観光・温泉・宿泊などを詳しく探せます。
-          </p>
+          )}
         </div>
       )}
       {!loading && failed && (
         <div className="msg warn" style={{ marginTop: 8 }} data-testid="poi-failed">
-          周辺情報を取得できませんでした。もう一度試すか、Googleマップで検索してください。
+          周辺情報を取得できませんでした。もう一度試すか、Googleで検索してください。
           <div className="btn-grid" style={{ marginTop: 6 }}>
             <button onClick={onRetry} data-testid="poi-retry">
               🔄 もう一度試す
@@ -475,19 +509,40 @@ export default function PoiSearchPanel({
             <button onClick={expandRadius} disabled={radius === RADIUS_CHOICES[RADIUS_CHOICES.length - 1].value} data-testid="poi-expand-radius">
               📏 条件を変更
             </button>
+            {origin?.stationId && webSearchUrl ? (
+              <a
+                className="btn-link"
+                href={webSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="poi-google-fallback"
+              >
+                🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}を探す
+              </a>
+            ) : (
+              <a
+                className="btn-link"
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="poi-google-fallback"
+              >
+                🗺 Googleマップでこの地点を見る
+              </a>
+            )}
+          </div>
+          {origin?.stationId && webSearchUrl && (
             <a
               className="btn-link"
-              href={googleFallbackUrl}
+              style={{ width: '100%', marginTop: 4 }}
+              href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              data-testid="poi-google-fallback"
+              data-testid="poi-failed-google-maps"
             >
-              🗺 Googleマップで{origin?.stationId ? 'この道の駅' : 'この地点'}を開く
+              🗺 Googleマップで道の駅の詳細・ナビを見る
             </a>
-          </div>
-          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 12, color: 'var(--text-sub)' }} data-testid="poi-google-fallback-guidance">
-            開いたら「周辺を検索」から飲食店・観光・温泉・宿泊などを詳しく探せます。
-          </p>
+          )}
         </div>
       )}
       {!loading && searched && (failed || resultCount === 0) && isDiagnosticsHost() && (

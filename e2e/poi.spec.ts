@@ -228,7 +228,8 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
   });
 
-  test('Overpass障害時はGoogleマップ検索へフォールバックできる', async ({ page }) => {
+  test('Overpass障害時はGoogle Web検索へフォールバックできる（駅originはWeb検索、Google Mapsはsecondary）', async ({ page }) => {
+    const station = OPEN_STATIONS.find((s) => s.id === STATION_ID)!;
     await page.route('**/api/interpreter', (route) => route.abort());
     // このテストは「事前生成キャッシュも無い・Overpassも全滅」という最悪ケースを検証したいため、
     // 静的キャッシュ側も明示的に404にする（本駅は実際には事前生成済みのため、放置すると
@@ -238,16 +239,28 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await page.getByTestId('btn-search-nearby').click();
     await expect(page.getByTestId('poi-failed')).toBeVisible({ timeout: 15000 });
+    // 駅originの場合、fallbackはGoogle Web検索へ統一（Fable最終設計）
     await expect(page.getByTestId('poi-google-fallback')).toBeVisible();
+    await expect(page.getByTestId('poi-google-fallback')).toContainText('Googleで');
+    await expect(page.getByTestId('poi-google-fallback')).toContainText('探す');
     // Fable Root Cause Audit BUG2修正の回帰: フォールバックCTAもネイティブアンカーで開く
     await expect(page.getByTestId('poi-google-fallback')).toHaveAttribute('target', '_blank');
     await expect(page.getByTestId('poi-google-fallback')).toHaveAttribute('rel', /noopener/);
-    // Fable Root Cause Audit BUG1修正の回帰: 座標連結クエリを使わない
     const fallbackHref = await page.getByTestId('poi-google-fallback').getAttribute('href');
-    expect(fallbackHref ?? '').not.toMatch(/%20\d{1,3}\.\d{6}%2C\d{1,3}\.\d{6}/);
+    expect(fallbackHref ?? '').toContain('https://www.google.com/search?q=');
+    const decFallback = decodeURIComponent(fallbackHref ?? '');
+    expect(decFallback).toContain(`道の駅${station.name}`);
+    expect(decFallback).not.toMatch(/\d{1,3}\.\d{6},\d{1,3}\.\d{6}/);
+    // Google Maps secondary CTA（道の駅の詳細・ナビ専用）も引き続き表示される
+    await expect(page.getByTestId('poi-failed-google-maps')).toBeVisible();
+    await expect(page.getByTestId('poi-failed-google-maps')).toHaveAttribute('target', '_blank');
+    const mapsFallbackHref = await page.getByTestId('poi-failed-google-maps').getAttribute('href');
+    expect(decodeURIComponent(mapsFallbackHref ?? '')).toContain(`道の駅${station.name}`);
+    // 「周辺を検索」案内文は画面上に残っていない
+    await expect(page.getByText('「周辺を検索」')).toHaveCount(0);
   });
 
-  test('公開前UX整理: 食べるの細分類チップは無く、大分類ごとに「Googleマップで開く」CTAが出る（Fable再監査: カテゴリと連動させない設計）', async ({ page }) => {
+  test('公開前UX整理: 食べるの細分類チップは無く、外部探索がGoogle Web検索(カテゴリ連動)とGoogle Maps(道の駅を開くだけ)に分離される（Fable最終設計）', async ({ page }) => {
     const station = OPEN_STATIONS.find((s) => s.id === STATION_ID)!;
     await mockOverpassResponse(page);
     await page.goto(`/#station=${STATION_ID}`);
@@ -257,46 +270,71 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-search-panel')).toBeVisible();
 
     // 検索地点は決まっているため、検索を実行する前からCTAが押せる（Overpass通信に依存しない）
+    await expect(page.getByTestId('poi-web-search')).toBeVisible();
     await expect(page.getByTestId('poi-google-detail-search')).toBeVisible();
-    // Fable再監査結果: Google Mapsに「カテゴリ検索」を代行させる設計をやめ、
-    // 「指定した道の駅を確実に開く」だけを依頼する。CTA文言・生成URLとも
-    // カテゴリに依存しない（駅originなら常にこの道の駅を開く）
-    await expect(page.getByTestId('poi-google-detail-search')).toContainText('この道の駅を開く');
-    await expect(page.getByTestId('poi-google-detail-guidance')).toContainText('周辺を検索');
+    // Google Mapsは「道の駅そのものを開く」専用。カテゴリ検索をさせる文言・
+    // 「周辺を検索」に依存する案内は一切出さない
+    await expect(page.getByTestId('poi-google-detail-search')).toContainText('道の駅の詳細・ナビを見る');
+    await expect(page.getByText('「周辺を検索」')).toHaveCount(0);
 
     // Fable Root Cause Audit BUG2修正の回帰: 既存の正常系（単一駅リンク等）と同じ
     // <a target="_blank" rel="noopener noreferrer">のネイティブアンカーで開くこと
     // （window.open()ではない）
-    await expect(page.getByTestId('poi-google-detail-search')).toHaveAttribute('target', '_blank');
-    await expect(page.getByTestId('poi-google-detail-search')).toHaveAttribute('rel', /noopener/);
+    for (const testid of ['poi-web-search', 'poi-google-detail-search']) {
+      await expect(page.getByTestId(testid)).toHaveAttribute('target', '_blank');
+      await expect(page.getByTestId(testid)).toHaveAttribute('rel', /noopener/);
+      await expect(page.getByTestId(testid)).toHaveAttribute('rel', /noreferrer/);
+    }
 
-    // Fable Root Cause Audit BUG1修正の回帰: 駅originのGoogle URLはstationSearchUrl
-    // 相当（名称+住所）であり、「キーワード + 生の緯度,経度」を連結した文字列にも
-    // カテゴリ語にもならない（以前は座標連結をGoogleが自由テキストとして解釈し、
-    // 指定した道の駅ではなく端末の現在地が検索地点になる不具合があった）
-    const detailHrefBefore = await page.getByTestId('poi-google-detail-search').getAttribute('href');
-    expect(decodeURIComponent(detailHrefBefore ?? '')).toContain(`道の駅${station.name}`);
-    expect(detailHrefBefore ?? '').not.toMatch(/%20\d{1,3}\.\d{6}%2C\d{1,3}\.\d{6}/);
+    // Google Maps CTAのURLは従来どおりstationSearchUrl相当（名称+住所）であり、
+    // カテゴリ語・座標連結のいずれも含まない。カテゴリを切り替えても不変
+    const mapsHrefBefore = await page.getByTestId('poi-google-detail-search').getAttribute('href');
+    expect(decodeURIComponent(mapsHrefBefore ?? '')).toContain(`道の駅${station.name}`);
+    expect(mapsHrefBefore ?? '').not.toMatch(/%20\d{1,3}\.\d{6}%2C\d{1,3}\.\d{6}/);
+    expect(decodeURIComponent(mapsHrefBefore ?? '')).not.toContain('飲食店');
+
+    // Google Web検索: カテゴリ未選択(すべて)時は汎用文言・複合クエリ
+    await expect(page.getByTestId('poi-web-search')).toContainText('周辺スポットをもっと探す');
+    const webHrefAll = await page.getByTestId('poi-web-search').getAttribute('href');
+    expect(webHrefAll).toContain('https://www.google.com/search?q=');
+    const decWebAll = decodeURIComponent(webHrefAll ?? '');
+    expect(decWebAll).toContain(`道の駅${station.name}`);
+    expect(decWebAll).toContain('周辺');
 
     await page.getByTestId('poi-category-food').click();
     // 食べるの細分類チップ(ラーメン/食堂/洋食/寿司/焼肉等)は一般ユーザーUIから撤去済み
     await expect(page.getByTestId('poi-subcategory-chips')).toHaveCount(0);
-    // カテゴリを切り替えてもGoogle CTAの文言・URLは変わらない（駅を開くだけの設計のため）
-    await expect(page.getByTestId('poi-google-detail-search')).toContainText('この道の駅を開く');
-    const detailHrefFood = await page.getByTestId('poi-google-detail-search').getAttribute('href');
-    expect(detailHrefFood).toBe(detailHrefBefore);
-    expect(decodeURIComponent(detailHrefFood ?? '')).not.toContain('飲食店');
+    // Google Maps CTAはカテゴリを切り替えても不変（駅を開くだけの設計のため）
+    const mapsHrefFood = await page.getByTestId('poi-google-detail-search').getAttribute('href');
+    expect(mapsHrefFood).toBe(mapsHrefBefore);
+    // Google Web検索はカテゴリ切替で検索語が変わる
+    await expect(page.getByTestId('poi-web-search')).toContainText('周辺の飲食店をもっと探す');
+    const webHrefFood = await page.getByTestId('poi-web-search').getAttribute('href');
+    const decWebFood = decodeURIComponent(webHrefFood ?? '');
+    expect(decWebFood).toContain(`道の駅${station.name}`);
+    expect(decWebFood).toContain('周辺 飲食店');
+    expect(decWebFood).not.toMatch(/\d{1,3}\.\d{6},\d{1,3}\.\d{6}/);
 
     await page.getByTestId('poi-category-tourism').click();
     // 観光は細分類チップを引き続き残す（今回の撤去対象は食べるのみ）
     await expect(page.getByTestId('poi-subcategory-chips')).toBeVisible();
-    await expect(page.getByTestId('poi-google-detail-search')).toContainText('この道の駅を開く');
+    await expect(page.getByTestId('poi-web-search')).toContainText('周辺の観光スポットをもっと探す');
+    const decWebTourism = decodeURIComponent((await page.getByTestId('poi-web-search').getAttribute('href')) ?? '');
+    expect(decWebTourism).toContain('周辺 観光スポット');
 
     await page.getByTestId('poi-category-onsen').click();
-    await expect(page.getByTestId('poi-google-detail-search')).toContainText('この道の駅を開く');
+    await expect(page.getByTestId('poi-web-search')).toContainText('周辺の温泉をもっと探す');
+    const decWebOnsen = decodeURIComponent((await page.getByTestId('poi-web-search').getAttribute('href')) ?? '');
+    expect(decWebOnsen).toContain('周辺 温泉');
 
     await page.getByTestId('poi-category-lodging').click();
-    await expect(page.getByTestId('poi-google-detail-search')).toContainText('この道の駅を開く');
+    await expect(page.getByTestId('poi-web-search')).toContainText('周辺のホテル・旅館をもっと探す');
+    const decWebLodging = decodeURIComponent((await page.getByTestId('poi-web-search').getAttribute('href')) ?? '');
+    expect(decWebLodging).toContain('周辺 ホテル 旅館');
+
+    // Google Maps CTAは最後まで不変
+    const mapsHrefLodging = await page.getByTestId('poi-google-detail-search').getAttribute('href');
+    expect(mapsHrefLodging).toBe(mapsHrefBefore);
   });
 
   test('検索半径を切り替えると再検索される', async ({ page }) => {
@@ -528,7 +566,7 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
   });
 
-  test('すべての接続先が失敗した場合はGoogleマップ検索へフォールバックできる（もう一度試す・検索範囲を変更も表示）', async ({ page }) => {
+  test('すべての接続先が失敗した場合はGoogle Web検索へフォールバックできる（もう一度試す・検索範囲を変更も表示）', async ({ page }) => {
     await page.route('**/api/interpreter', (route) => route.abort());
     // 事前生成キャッシュも無い状況を明示的に模す（本駅は実際には事前生成済みのため）
     await page.route(`**/data/poi/${STATION_ID}.json`, (route) => route.fulfill({ status: 404 }));
@@ -541,9 +579,11 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-retry')).toBeVisible();
     await expect(page.getByTestId('poi-expand-radius')).toBeVisible();
     await expect(page.getByTestId('poi-google-fallback')).toBeVisible();
+    const href = await page.getByTestId('poi-google-fallback').getAttribute('href');
+    expect(href ?? '').toContain('https://www.google.com/search?q=');
   });
 
-  test('0件の場合は通信失敗と別の表示になり、範囲を広げる・Googleマップの案内が出る', async ({ page }) => {
+  test('0件の場合は通信失敗と別の表示になり、範囲を広げる・Google Web検索の案内が出る', async ({ page }) => {
     await page.route('**/api/interpreter', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ elements: [] }) }),
     );
@@ -555,8 +595,12 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('poi-empty')).toContainText('この範囲では周辺スポットが見つかりませんでした');
     await expect(page.getByTestId('poi-failed')).toHaveCount(0);
     await expect(page.getByTestId('poi-expand-radius')).toBeVisible();
-    // 「押したのに何も起きない」を防ぐため、Googleマップへのフォールバック導線も出る
+    // 「押したのに何も起きない」を防ぐため、Google Web検索へのフォールバック導線も出る
     await expect(page.getByTestId('poi-empty-google-fallback')).toBeVisible();
+    const href = await page.getByTestId('poi-empty-google-fallback').getAttribute('href');
+    expect(href ?? '').toContain('https://www.google.com/search?q=');
+    // 「周辺を検索」案内文は画面上に残っていない
+    await expect(page.getByText('「周辺を検索」')).toHaveCount(0);
   });
 
   test('実機で報告された不具合の回帰: 旧ビルドが端末に保存した旧分類の前回結果があっても、新ビルドでは静的キャッシュの正しい分類でラーメンが表示される', async ({
