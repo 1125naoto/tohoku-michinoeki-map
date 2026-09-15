@@ -4,9 +4,13 @@
  *
  * v2: 周辺スポット（POI）の検索結果選択・地点別滞在時間の上書きを追加。
  * 旧v1データ（selectedPois/stayOverridesが無い）も引き続き読み込める。
+ * v3: 自由地点（アプリ未登録のホテル・飲食店等）・別の最終目的地の指定を追加。
+ * 旧v2データ（selectedCustomStops/finalDestinationが無い）も引き続き読み込める。
+ * 自由地点はGSI住所検索APIで解決した住所・座標のみを保持し、
+ * バックエンドへは送らない（既存privacy方針と同一。lib/geocode.ts参照）。
  */
 import type { ManualOrderMode } from './manualRoute';
-import type { RoadPref } from '../types';
+import type { CustomStopInfo, RoadPref } from '../types';
 import type { Poi, PoiCategory } from './poi';
 import { nsKey } from './storageNamespace';
 
@@ -22,8 +26,12 @@ export interface RouteDraft {
   roadPref: RoadPref;
   /** 選択済みの周辺スポット（キー: Poi.id）。selectedIds内のPOI由来IDを解決するための実データ */
   selectedPois: Record<string, Poi>;
-  /** 地点ごとの滞在時間の上書き（キー: 駅ID or Poi.id） */
+  /** 選択済みの自由地点（キー: 合成ID `custom:…`）。selectedIds内の自由地点由来IDを解決するための実データ */
+  selectedCustomStops: Record<string, CustomStopInfo>;
+  /** 地点ごとの滞在時間の上書き（キー: 駅ID or Poi.id or 自由地点ID） */
   stayOverrides: Record<string, number>;
+  /** 「③別の最終目的地を指定」（未指定はnull）。指定時はreturnToStartより優先される */
+  finalDestination: CustomStopInfo | null;
   /** 選択・設定を始めていて未完成かどうか（起動時の「続けますか？」表示の判定に使う） */
   inProgress: boolean;
   updatedAt: string;
@@ -38,7 +46,9 @@ export const DEFAULT_ROUTE_DRAFT: RouteDraft = {
   stayMin: 30,
   roadPref: 'highway_ok',
   selectedPois: {},
+  selectedCustomStops: {},
   stayOverrides: {},
+  finalDestination: null,
   inProgress: false,
   updatedAt: '',
 };
@@ -94,6 +104,38 @@ function sanitizeStayOverrides(v: unknown): Record<string, number> {
   return out;
 }
 
+/** 自由地点として最低限必要な形（name任意・address/lat/lngは必須）を満たすか */
+function isCustomStopInfo(v: unknown): v is import('../types').CustomStopInfo {
+  if (typeof v !== 'object' || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    (o.name === null || typeof o.name === 'string') &&
+    typeof o.address === 'string' &&
+    typeof o.lat === 'number' &&
+    Number.isFinite(o.lat) &&
+    typeof o.lng === 'number' &&
+    Number.isFinite(o.lng)
+  );
+}
+
+/**
+ * selectedCustomStopsは壊れていても下書き全体を拒否せず、不正な項目だけを
+ * 取り除く（selectedPois/stayOverridesと同じ方針。壊れた自由地点1件が
+ * 復元全体・画面crashを引き起こさないようにする）。
+ */
+function sanitizeCustomStops(v: unknown): Record<string, import('../types').CustomStopInfo> {
+  if (typeof v !== 'object' || v === null) return {};
+  const out: Record<string, import('../types').CustomStopInfo> = {};
+  for (const [key, val] of Object.entries(v as Record<string, unknown>)) {
+    if (isCustomStopInfo(val)) out[key] = val;
+  }
+  return out;
+}
+
+function sanitizeFinalDestination(v: unknown): import('../types').CustomStopInfo | null {
+  return isCustomStopInfo(v) ? v : null;
+}
+
 export function isRouteDraft(v: unknown): v is RouteDraft {
   if (typeof v !== 'object' || v === null) return false;
   const o = v as Record<string, unknown>;
@@ -111,8 +153,9 @@ export function isRouteDraft(v: unknown): v is RouteDraft {
 }
 
 /**
- * 検証済みのRouteDraft形状に対し、selectedPois/stayOverridesだけを個別に
- * サニタイズする（壊れたPOIデータだけを取り除き、他のフィールドは保護する）。
+ * 検証済みのRouteDraft形状に対し、selectedPois/selectedCustomStops/
+ * stayOverrides/finalDestinationだけを個別にサニタイズする
+ * （壊れたデータだけを取り除き、他のフィールドは保護する）。
  * バックアップ復元時にも同じ関数を使い、挙動をそろえる。
  */
 export function sanitizeRouteDraft(parsed: RouteDraft): RouteDraft {
@@ -120,7 +163,9 @@ export function sanitizeRouteDraft(parsed: RouteDraft): RouteDraft {
   return {
     ...parsed,
     selectedPois: sanitizePois(o.selectedPois),
+    selectedCustomStops: sanitizeCustomStops(o.selectedCustomStops),
     stayOverrides: sanitizeStayOverrides(o.stayOverrides),
+    finalDestination: sanitizeFinalDestination(o.finalDestination),
   };
 }
 

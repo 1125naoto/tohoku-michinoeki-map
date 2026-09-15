@@ -10,11 +10,15 @@ import {
   MIN_MANUAL_STATIONS,
   buildManualMatrix,
   buildManualRoute,
+  computeStayBreakdown,
   evaluateManual,
   fitToBudget,
+  isCustomStopId,
+  makeCustomStopId,
   orderManual,
   type ManualPlanParams,
 } from './manualRoute';
+import type { CustomStopInfo } from '../types';
 import { estimateLegMin, haversineKm } from './geo';
 import { normalizeOsmElement, type Poi } from './poi';
 
@@ -435,5 +439,161 @@ describe('到達不能区間の扱い（Astra P1: 手動routeでは問題区間�
     expect(route!.roadData).toBe('approx');
     expect(route!.hasUnreachableLeg).toBeFalsy();
     expect(route!.legs.every((l) => !l.unreachable)).toBe(true);
+  });
+});
+
+// 実旅行対応 Route Planner V2: 自由地点（アプリ未登録のホテル・飲食店等）
+const HOTEL: CustomStopInfo = { name: '○○ホテル', address: '山形県山形市testtown1-2-3', lat: 38.24, lng: 140.34 };
+const FRIEND_HOUSE: CustomStopInfo = { name: null, address: '福島県福島市testtown4-5-6', lat: 37.76, lng: 140.47 };
+
+describe('自由地点（アプリ未登録の場所）', () => {
+  it('合成IDはcustom:接頭辞を持ち、isCustomStopIdで判定できる', () => {
+    const id = makeCustomStopId();
+    expect(id.startsWith('custom:')).toBe(true);
+    expect(isCustomStopId(id)).toBe(true);
+    expect(isCustomStopId('mne-12345')).toBe(false);
+    expect(isCustomStopId('osm:node/1')).toBe(false);
+  });
+
+  it('道の駅・自由地点を混在させても、両方がルートに含まれ座標・種別が解決される', async () => {
+    const customId = makeCustomStopId();
+    const customStops: Record<string, CustomStopInfo> = { [customId]: FRIEND_HOUSE };
+    const selected = [nearIds[0], customId, nearIds[1]];
+    const { matrix, candidates } = await buildManualMatrix(
+      STATIONS,
+      {},
+      selected,
+      baseParams(),
+      { provider: failProvider },
+      customStops,
+    );
+    expect(candidates.length).toBe(3);
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'selected' }), 'approx', 't', 'r');
+    expect(route!.stops.map((s) => s.stationId)).toEqual(selected);
+    expect(route!.stops[1].stopType).toBe('custom');
+    expect(route!.stops[1].custom).toEqual(FRIEND_HOUSE);
+    // 名称未入力(null)のときは住所を表示名に使う（呼び出し側の責務。ここではデータが保持されていることのみ確認）
+    expect(route!.stops[1].custom?.name).toBeNull();
+  });
+
+  it('自由地点の既定滞在時間は30分で、stayOverridesで個別に上書きできる', async () => {
+    const customId = makeCustomStopId();
+    const customStops: Record<string, CustomStopInfo> = { [customId]: HOTEL };
+    const selected = [nearIds[0], customId];
+    const { matrix, candidates } = await buildManualMatrix(
+      STATIONS,
+      {},
+      selected,
+      baseParams(),
+      { provider: failProvider },
+      customStops,
+    );
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'selected' }), 'approx', 't', 'r');
+    expect(route!.stops[1].stayMin).toBe(30);
+
+    const params2 = baseParams({ orderMode: 'selected', stayOverrides: { [customId]: 480 } });
+    const { matrix: m2, candidates: c2 } = await buildManualMatrix(STATIONS, {}, selected, params2, { provider: failProvider }, customStops);
+    const order2 = orderManual(c2, m2, params2);
+    const route2 = buildManualRoute(order2, m2, params2, 'approx', 't', 'r');
+    expect(route2!.stops[1].stayMin).toBe(480); // 宿泊用に長時間へ上書き
+  });
+
+  it('computeStayBreakdownはcustom滞在時間をNaNにせず正しく集計する', async () => {
+    const customId = makeCustomStopId();
+    const customStops: Record<string, CustomStopInfo> = { [customId]: HOTEL };
+    const selected = [nearIds[0], customId];
+    const { matrix, candidates } = await buildManualMatrix(
+      STATIONS,
+      {},
+      selected,
+      baseParams(),
+      { provider: failProvider },
+      customStops,
+    );
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'selected' }), 'approx', 't', 'r');
+    const b = computeStayBreakdown(route!.stops);
+    expect(Number.isNaN(b.custom)).toBe(false);
+    expect(b.custom).toBe(30);
+  });
+
+  it('道の駅・POI・自由地点が3種混在しても順番どおりにルートへ含まれる', async () => {
+    const customId = makeCustomStopId();
+    const customStops: Record<string, CustomStopInfo> = { [customId]: HOTEL };
+    const pois: Record<string, Poi> = { [RAMEN_POI.id]: RAMEN_POI };
+    const selected = [nearIds[0], RAMEN_POI.id, nearIds[1], customId];
+    const { matrix, candidates } = await buildManualMatrix(
+      STATIONS,
+      pois,
+      selected,
+      baseParams(),
+      { provider: failProvider },
+      customStops,
+    );
+    expect(candidates.length).toBe(4);
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'selected' }), 'approx', 't', 'r');
+    expect(route!.stops.map((s) => s.stopType)).toEqual(['station', 'restaurant', 'station', 'custom']);
+    expect(route!.newCount).toBe(2); // 道の駅のみ達成率に影響
+  });
+});
+
+describe('③別の最終目的地を指定（旅行最後に立ち寄るホテル等）', () => {
+  it('finalDestinationは常に配列の末尾に固定され、2-optの並べ替え対象にならない', async () => {
+    // 意図的に最終目的地から見て遠回りな選択順にする（2-optが並べ替えを試みても動かないことを確認）
+    const selected = [...nearIds].reverse().slice(0, 3);
+    const { matrix, candidates, finalCandidate } = await buildManualMatrix(
+      STATIONS,
+      {},
+      selected,
+      baseParams({ finalDestination: HOTEL }),
+      { provider: failProvider },
+    );
+    expect(finalCandidate).not.toBeNull();
+    expect(finalCandidate!.st.stopType).toBe('custom');
+    const optimized = orderManual(candidates, matrix, baseParams({ orderMode: 'optimized' }));
+    const order = [...optimized, finalCandidate!];
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'optimized', finalDestination: HOTEL }), 'approx', 't', 'r');
+    expect(route!.stops[route!.stops.length - 1].stopType).toBe('custom');
+    expect(route!.stops[route!.stops.length - 1].custom).toEqual(HOTEL);
+  });
+
+  it('finalDestinationを指定すると、returnToStart=trueが指定されていても出発地点へは戻らない（最終目的地がゴール）', async () => {
+    const selected = nearIds.slice(0, 2);
+    const { matrix, candidates, finalCandidate } = await buildManualMatrix(
+      STATIONS,
+      {},
+      selected,
+      baseParams({ finalDestination: HOTEL, returnToStart: true }),
+      { provider: failProvider },
+    );
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const fullOrder = [...order, finalCandidate!];
+    const route = buildManualRoute(
+      fullOrder,
+      matrix,
+      baseParams({ orderMode: 'selected', finalDestination: HOTEL, returnToStart: true }),
+      'approx',
+      't',
+      'r',
+    );
+    expect(route!.params.returnToStart).toBe(false);
+    // legs数 = stops数（帰着の余分な1区間が追加されていない）
+    expect(route!.legs.length).toBe(route!.stops.length);
+    expect(route!.legs[route!.legs.length - 1].toId).toBe(route!.stops[route!.stops.length - 1].stationId);
+  });
+
+  it('finalDestination未指定時は従来どおりの挙動（後方互換）', async () => {
+    const selected = nearIds.slice(0, 2);
+    const { matrix, candidates, finalCandidate } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider: failProvider,
+    });
+    expect(finalCandidate).toBeNull();
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'selected' }));
+    const route = buildManualRoute(order, matrix, baseParams({ orderMode: 'selected', returnToStart: true }), 'approx', 't', 'r');
+    expect(route!.params.returnToStart).toBe(true);
+    expect(route!.legs.length).toBe(route!.stops.length + 1);
   });
 });

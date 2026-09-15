@@ -8,12 +8,24 @@
  * 道の駅と周辺スポット（POI）は所要時間計算上は同じ「地点」として扱うが、
  * 滞在時間は地点ごとに個別に持てる（routeOrder.tsの滞在時間アクセサを利用）。
  */
-import type { PlannedRoute, PlanParams, RoadPref, RouteLeg, RouteStop, Station, StopType } from '../types';
+import type { CustomStopInfo, PlannedRoute, PlanParams, RoadPref, RouteLeg, RouteStop, Station, StopType } from '../types';
 import { estimateMatrix } from './planner';
 import { osrmProvider, type RouteMatrix, type RoutingProvider } from './routing';
 import { evaluateOrder, twoOptOrder, type OrderItem } from './routeOrder';
 import { statusAtArrival } from './hours';
-import { DEFAULT_STAY_MIN, stopTypeOf, type Poi } from './poi';
+import { CUSTOM_STOP_DEFAULT_STAY_MIN, DEFAULT_STAY_MIN, stopTypeOf, type Poi } from './poi';
+
+/**
+ * 自由地点（アプリ未登録の場所）のRouteStop.stationId用の合成ID。
+ * 道の駅ID(mne-…)・Poi.id(osm:…)と衝突しない接頭辞にする。
+ */
+export function makeCustomStopId(): string {
+  return `custom:${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function isCustomStopId(id: string): boolean {
+  return id.startsWith('custom:');
+}
 
 /**
  * 一度に選べる地点（道の駅+周辺スポット合計）の上限。出発地点+選択数の合計を、
@@ -32,6 +44,10 @@ export interface ManualPlanParams {
   departAt: string;
   /** 道の駅の既定滞在時間（分）。周辺スポットはカテゴリ既定値またはstayOverridesを使う */
   stayMin: number;
+  /**
+   * 出発地点へ戻るか。finalDestinationが指定されているときは無視される
+   * （最終目的地がゴールになるため、そこからさらに出発地点へ戻る動線は現状扱わない）。
+   */
   returnToStart: boolean;
   roadPref: RoadPref;
   /** null = 時間制限なし */
@@ -39,6 +55,12 @@ export interface ManualPlanParams {
   orderMode: ManualOrderMode;
   /** 地点ごとの滞在時間の上書き（キー: 駅ID または Poi.id） */
   stayOverrides?: Record<string, number>;
+  /**
+   * 「③別の最終目的地を指定」（アプリ未登録のホテル・旅館等）。指定時は選択済みの
+   * 道の駅・POI・自由地点をすべて回ったあと、最後にここへ向かう区間を必ず追加する
+   * （順序最適化(2-opt)の対象からは除外し、常に最終地点として固定する）。
+   */
+  finalDestination?: CustomStopInfo | null;
 }
 
 /** 道の駅・周辺スポットを問わない、順序計算のための共通地点表現 */
@@ -50,6 +72,8 @@ export interface ManualPoint {
   stayMin: number;
   stopType: StopType;
   poi?: Poi;
+  /** stopType==='custom'のときの自由地点詳細 */
+  custom?: CustomStopInfo;
 }
 
 export interface ManualCandidateLike extends OrderItem {
@@ -68,6 +92,12 @@ export interface ManualMatrixResult {
    * matrix自体は書き換えない（osrmProviderの内部キャッシュと同一オブジェクトのため）。
    */
   fallback: RouteMatrix;
+  /**
+   * 「③別の最終目的地を指定」の候補（未指定ならnull）。candidatesには含まれない
+   * （順序最適化の対象外）。呼び出し側は order 確定後にこれを配列の末尾へ追加してから
+   * evaluateManual/buildManualRouteへ渡す。
+   */
+  finalCandidate: ManualCandidate | null;
 }
 
 export interface ManualPlanOptions {
@@ -75,10 +105,23 @@ export interface ManualPlanOptions {
   signal?: AbortSignal;
 }
 
+function customPoint(id: string, c: CustomStopInfo, stayMin?: number): ManualPoint {
+  return {
+    id,
+    name: c.name,
+    lat: c.lat,
+    lng: c.lng,
+    stayMin: stayMin ?? CUSTOM_STOP_DEFAULT_STAY_MIN,
+    stopType: 'custom',
+    custom: c,
+  };
+}
+
 function resolvePoint(
   id: string,
   stationsById: Map<string, Station>,
   pois: Record<string, Poi>,
+  customStops: Record<string, CustomStopInfo>,
   p: Pick<ManualPlanParams, 'stayMin' | 'stayOverrides'>,
 ): ManualPoint | null {
   const st = stationsById.get(id);
@@ -104,21 +147,33 @@ function resolvePoint(
       poi,
     };
   }
+  const custom = customStops[id];
+  if (custom) return customPoint(id, custom, p.stayOverrides?.[id]);
   return null;
 }
 
-/** 選択地点の所要時間行列を取得する（OSRM成功→実道路 / 失敗→概算フォールバック） */
+/**
+ * 選択地点の所要時間行列を取得する（OSRM成功→実道路 / 失敗→概算フォールバック）。
+ * finalDestinationを指定した場合、routePoints/matrixの末尾に追加されるが、
+ * candidatesには含めない（順序最適化(2-opt)の対象から外し、常に最終地点として
+ * 別途扱うため）。呼び出し側は返り値の finalCandidate を使う。
+ */
 export async function buildManualMatrix(
   stations: Station[],
   pois: Record<string, Poi>,
   selectedIds: string[],
-  p: Pick<ManualPlanParams, 'origin' | 'departAt' | 'roadPref' | 'stayMin' | 'stayOverrides'>,
+  p: Pick<ManualPlanParams, 'origin' | 'departAt' | 'roadPref' | 'stayMin' | 'stayOverrides' | 'finalDestination'>,
   opts: ManualPlanOptions = {},
+  customStops: Record<string, CustomStopInfo> = {},
 ): Promise<ManualMatrixResult> {
   const byId = new Map(stations.map((s) => [s.id, s]));
-  const points = selectedIds.map((id) => resolvePoint(id, byId, pois, p)).filter((x): x is ManualPoint => x !== null);
-  const routePoints = [p.origin, ...points];
+  const points = selectedIds
+    .map((id) => resolvePoint(id, byId, pois, customStops, p))
+    .filter((x): x is ManualPoint => x !== null);
+  const finalPoint = p.finalDestination ? customPoint(makeCustomStopId(), p.finalDestination) : null;
+  const routePoints = [p.origin, ...points, ...(finalPoint ? [finalPoint] : [])];
   const candidates: ManualCandidate[] = points.map((pt, i) => ({ st: pt, mi: i + 1 }));
+  const finalCandidate: ManualCandidate | null = finalPoint ? { st: finalPoint, mi: points.length + 1 } : null;
 
   const provider = opts.provider ?? osrmProvider;
   const fallback = estimateMatrix(routePoints, p);
@@ -135,7 +190,7 @@ export async function buildManualMatrix(
     matrix = fallback;
     roadData = 'approx';
   }
-  return { matrix, roadData, candidates, fallback };
+  return { matrix, roadData, candidates, fallback, finalCandidate };
 }
 
 const stayAccessor = (c: ManualCandidate) => c.st.stayMin;
@@ -216,6 +271,7 @@ export interface StayBreakdown {
   lodging: number;
   park: number;
   other: number;
+  custom: number;
 }
 
 export function computeStayBreakdown(stops: RouteStop[]): StayBreakdown {
@@ -228,6 +284,7 @@ export function computeStayBreakdown(stops: RouteStop[]): StayBreakdown {
     lodging: 0,
     park: 0,
     other: 0,
+    custom: 0,
   };
   for (const s of stops) {
     const t = s.stopType ?? 'station';
@@ -259,7 +316,10 @@ export function buildManualRoute(
   fallback?: RouteMatrix,
 ): PlannedRoute | null {
   if (order.length === 0) return null;
-  const ev = evaluateOrder(order, matrix, stayAccessor, p.returnToStart, fallback);
+  // 最終目的地（自由地点）を指定した場合、それ自体がゴールのため出発地点へは戻らない
+  // （最終目的地はorder配列の末尾に既に含まれている前提。§ManualMatrixResult.finalCandidate参照）。
+  const effectiveReturnToStart = p.returnToStart && !p.finalDestination;
+  const ev = evaluateOrder(order, matrix, stayAccessor, effectiveReturnToStart, fallback);
   if (!ev) return null;
   const departAt = new Date(p.departAt);
   const stops: RouteStop[] = [];
@@ -291,11 +351,12 @@ export function buildManualRoute(
       stayMin: c.st.stayMin,
       stopType: c.st.stopType,
       poi: c.st.poi,
+      custom: c.st.custom,
     });
     cur = c.mi;
     curId = c.st.id;
   }
-  if (p.returnToStart) {
+  if (effectiveReturnToStart) {
     const rawMin = matrix.durationsMin[cur][0];
     const unreachable = !Number.isFinite(rawMin);
     const driveMin = Math.ceil(unreachable ? fallback!.durationsMin[cur][0] : rawMin);
@@ -322,7 +383,7 @@ export function buildManualRoute(
     departAt: p.departAt,
     budgetMin: p.budgetMin ?? ev.totalMin,
     stayMin: p.stayMin,
-    returnToStart: p.returnToStart,
+    returnToStart: effectiveReturnToStart,
     roadPref: p.roadPref,
     maxStops: order.length,
     prefs: [],

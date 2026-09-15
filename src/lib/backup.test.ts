@@ -122,6 +122,67 @@ describe('バックアップの検証', () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.data.settings.map).toEqual({ markerMode: 'all', labelMode: 'auto' });
   });
+
+  describe('自由地点（自由地点stopType=customを含むstop）の検証', () => {
+    const validCustomRoute: SavedRoute = {
+      id: 'r-custom-ok',
+      name: '自由地点を含むコース',
+      createdAt: '2026-08-10T00:00:00.000Z',
+      route: {
+        stops: [
+          {
+            stationId: 'custom:1-abc',
+            arriveAt: '2026-08-10T10:00:00.000Z',
+            departAt: '2026-08-10T10:30:00.000Z',
+            stayMin: 30,
+            stopType: 'custom',
+            custom: { name: '○○ホテル', address: '山形県山形市testtown1-2-3', lat: 38.24, lng: 140.34 },
+          },
+        ],
+        legs: [],
+      },
+      done: false,
+    } as unknown as SavedRoute;
+
+    it('正しい形の自由地点(custom)を含む保存ルートは復元される', () => {
+      const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: {}, routes: [validCustomRoute], trip: null }));
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.data.routes.map((x) => x.id)).toEqual(['r-custom-ok']);
+    });
+
+    it('壊れた自由地点(lat/lngが数値でない等)を含む保存ルートは、そのルートだけ除外され復元全体は拒否しない（クラッシュしない）', () => {
+      const brokenCustomRoute = {
+        id: 'r-custom-broken',
+        name: '壊れた自由地点を含むコース',
+        createdAt: '2026-08-10T00:00:00.000Z',
+        route: {
+          stops: [
+            {
+              stationId: 'custom:2-def',
+              arriveAt: '2026-08-10T10:00:00.000Z',
+              departAt: '2026-08-10T10:30:00.000Z',
+              stayMin: 30,
+              stopType: 'custom',
+              custom: { name: '壊れた地点', address: 123, lat: 'not-a-number', lng: 140.34 },
+            },
+          ],
+          legs: [],
+        },
+        done: false,
+      };
+      const r = parseBackup(
+        JSON.stringify({ schemaVersion: 1, visits: {}, routes: [validCustomRoute, brokenCustomRoute], trip: null }),
+      );
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.data.routes.map((x) => x.id)).toEqual(['r-custom-ok']); // 壊れた自由地点を含むルートだけ除外
+    });
+
+    it('custom未指定（他のstopType）の既存保存ルートは引き続き正常に扱われる（後方互換）', () => {
+      const r = parseBackup(JSON.stringify({ schemaVersion: 1, visits: {}, routes: [sampleRoute], trip: null }));
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.data.routes.map((x) => x.id)).toEqual(['r-1']);
+    });
+  });
 });
 
 describe('復元の適用', () => {

@@ -266,22 +266,43 @@ export interface RouteLeg {
   unreachable?: boolean;
 }
 
-/** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
-export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other';
+/** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類）。lib/poi.tsに同一定義あり（循環import回避のため独立定義。値は必ず同期させること） */
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other' | 'custom';
+
+/**
+ * アプリに登録されていない自由地点（ホテル・旅館・飲食店・自宅・友人宅等）。
+ * 住所文字列だけではルート計算（実道路時間の取得）にlat/lngが必要になるため、
+ * 既存の出発地点検索（lib/geocode.ts・国土地理院 住所検索API・無料/APIキー不要）と
+ * 同じ仕組みで解決したlat/lngを保持する。バックエンドへは送らずlocalStorageのみに保存し、
+ * Googleマップを開く操作のときだけ外部へ渡す（既存privacy方針と同一）。
+ */
+export interface CustomStopInfo {
+  /** 表示名（任意入力）。未入力ならaddressを表示に使う */
+  name: string | null;
+  /** 検索に使った住所・地名の文字列 */
+  address: string;
+  lat: number;
+  lng: number;
+}
 
 export interface RouteStop {
-  /** 道の駅の場合は実際の駅ID。周辺スポットの場合はPoi.idをそのまま使う（一意性のため） */
+  /**
+   * 道の駅の場合は実際の駅ID。周辺スポットの場合はPoi.idをそのまま使う（一意性のため）。
+   * 自由地点(stopType==='custom')の場合は合成ID（`custom:<timestamp>-<random>`）。
+   */
   stationId: string;
   arriveAt: string;
   departAt: string;
   stayMin: number;
   /**
    * 立ち寄り先の種別。省略時（既存の保存データ）は道の駅として扱う後方互換のため。
-   * 'station'以外は周辺スポット（Poi）で、達成率・スタンプ数には一切影響しない。
+   * 'station'以外は周辺スポット（Poi）または自由地点（custom）で、達成率・スタンプ数には一切影響しない。
    */
   stopType?: StopType;
   /** stopTypeが道の駅以外のときの周辺スポット詳細 */
   poi?: Poi;
+  /** stopType==='custom'のときの自由地点詳細 */
+  custom?: CustomStopInfo;
 }
 
 export interface PlannedRoute {

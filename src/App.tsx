@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AreaName,
+  CustomStopInfo,
   PlanParams,
   PlannedRoute,
   Prefecture,
@@ -39,7 +40,7 @@ import {
   saveTrip,
   saveVisits,
 } from './lib/storage';
-import { MAX_MANUAL_STATIONS } from './lib/manualRoute';
+import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
 import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
 import {
@@ -213,6 +214,8 @@ export default function App() {
   const [routeSelectedIds, setRouteSelectedIds] = useState<string[]>([]);
   // 選択済みの周辺スポット（キー: Poi.id）。routeSelectedIds内のPOI由来IDを解決するための実データ
   const [selectedPois, setSelectedPois] = useState<Record<string, Poi>>({});
+  // 選択済みの自由地点（キー: 合成ID `custom:…`）。アプリ未登録のホテル・飲食店等
+  const [selectedCustomStops, setSelectedCustomStops] = useState<Record<string, CustomStopInfo>>({});
 
   // ---- 周辺スポット検索（Gate1〜4） ----
   // 検索パネルの開閉と、検索条件・通信状態は完全に別のstateとして管理する
@@ -529,24 +532,48 @@ export default function App() {
     (id: string) => {
       const ids = removeSelection(routeSelectedIds, id);
       setRouteSelectedIds(ids);
-      setSelectedPois((prev) => {
-        if (!(id in prev)) {
-          persistDraft({ selectedIds: ids });
-          return prev;
-        }
-        const next = { ...prev };
-        delete next[id];
-        persistDraft({ selectedIds: ids, selectedPois: next });
+      // id は駅ID／Poi.id／自由地点IDのいずれか1つの名前空間にしか存在しない
+      if (id in selectedPois) {
+        const nextPois = { ...selectedPois };
+        delete nextPois[id];
+        setSelectedPois(nextPois);
+        persistDraft({ selectedIds: ids, selectedPois: nextPois });
+      } else if (id in selectedCustomStops) {
+        const nextCustom = { ...selectedCustomStops };
+        delete nextCustom[id];
+        setSelectedCustomStops(nextCustom);
+        persistDraft({ selectedIds: ids, selectedCustomStops: nextCustom });
+      } else {
+        persistDraft({ selectedIds: ids });
+      }
+    },
+    [routeSelectedIds, selectedPois, selectedCustomStops, persistDraft],
+  );
+  const clearAllSelection = useCallback(() => {
+    setRouteSelectedIds([]);
+    setSelectedPois({});
+    setSelectedCustomStops({});
+    persistDraft({ selectedIds: [], selectedPois: {}, selectedCustomStops: {} });
+  }, [persistDraft]);
+  /** 自由地点（アプリ未登録のホテル・飲食店等）を経由地として追加する */
+  const addCustomStop = useCallback(
+    (info: CustomStopInfo) => {
+      const id = makeCustomStopId();
+      const { ids, result } = toggleSelection(routeSelectedIds, id, MAX_MANUAL_STATIONS);
+      if (result === 'max-reached') {
+        setSelectMsg(`一度に選べるのは最大${MAX_MANUAL_STATIONS}件です`);
+        setTimeout(() => setSelectMsg(null), 3000);
+        return;
+      }
+      setRouteSelectedIds(ids);
+      setSelectedCustomStops((prev) => {
+        const next = { ...prev, [id]: info };
+        persistDraft({ selectedIds: ids, selectedCustomStops: next });
         return next;
       });
     },
     [routeSelectedIds, persistDraft],
   );
-  const clearAllSelection = useCallback(() => {
-    setRouteSelectedIds([]);
-    setSelectedPois({});
-    persistDraft({ selectedIds: [], selectedPois: {} });
-  }, [persistDraft]);
   const moveSelectionItem = useCallback(
     (index: number, dir: -1 | 1) => {
       const ids = moveSelection(routeSelectedIds, index, dir);
@@ -604,10 +631,52 @@ export default function App() {
     setManualDraftSnapshot(DEFAULT_ROUTE_DRAFT);
   }, []);
 
+  /**
+   * 自動コース作成の結果（道の駅のみ）を「地図から選ぶ」の選択状態へ引き継ぎ、
+   * 手動ルート作成の画面（ManualRouteBuilder）へ移る。自動ルート探索の
+   * アルゴリズム自体は複雑化させず、生成後にPOI・自由地点・最終目的地を
+   * 追加できるようにするための橋渡し（選んだ順番=自動コースの並びをそのまま
+   * 引き継ぎ、道の駅の並び自体は変えない）。
+   */
+  const extendAutoRouteWithStops = useCallback(
+    (route: PlannedRoute) => {
+      const ids = route.stops.map((s) => s.stationId);
+      setRouteSelectedIds(ids);
+      setSelectedPois({});
+      setSelectedCustomStops({});
+      setOrigin(route.params.origin);
+      setCourseMode('manual');
+      setLastCourseMode('manual');
+      try {
+        localStorage.setItem(COURSE_MODE_KEY, 'manual');
+      } catch {
+        /* noop */
+      }
+      const draft: RouteDraft = {
+        ...DEFAULT_ROUTE_DRAFT,
+        selectedIds: ids,
+        origin: route.params.origin,
+        returnToStart: route.params.returnToStart,
+        orderMode: 'selected',
+        budgetMin: null,
+        stayMin: route.params.stayMin,
+        roadPref: route.params.roadPref,
+        inProgress: true,
+      };
+      setManualDraftSnapshot(draft);
+      saveRouteDraft(draft);
+      setResults(null);
+      setRouteStage('form');
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   const resumeDraft = useCallback(() => {
     if (!pendingDraft) return;
     setRouteSelectedIds(pendingDraft.selectedIds);
     setSelectedPois(pendingDraft.selectedPois);
+    setSelectedCustomStops(pendingDraft.selectedCustomStops);
     if (pendingDraft.origin) setOrigin(pendingDraft.origin);
     setManualDraftSnapshot(pendingDraft);
     setLastCourseMode('manual');
@@ -1344,6 +1413,7 @@ export default function App() {
               selectedIds={routeSelectedIds}
               getStation={getStation}
               selectedPois={selectedPois}
+              selectedCustomStops={selectedCustomStops}
               now={now}
               onRemove={removeFromSelection}
               onMove={moveSelectionItem}
@@ -1354,6 +1424,7 @@ export default function App() {
                 setShowSelectionSheet(false);
                 setPoiDetail(poi);
               }}
+              onAddCustomStop={addCustomStop}
             />
           )}
           {tab === 'map' && selectMsg && (
@@ -1558,6 +1629,7 @@ export default function App() {
                 onRequestDiscard={() => setPendingCourseAction('discard')}
                 onRequestRestart={() => setPendingCourseAction('restart')}
                 viewingSavedName={viewingSavedId ? (savedRoutes.find((r) => r.id === viewingSavedId)?.name ?? null) : null}
+                onExtendWithStops={extendAutoRouteWithStops}
               />
             ) : courseMode === 'choose' ? (
               <CourseModePicker lastUsed={lastCourseMode} onChoose={chooseCourseMode} />
@@ -1576,6 +1648,7 @@ export default function App() {
                   getStation={getStation}
                   selectedIds={routeSelectedIds}
                   selectedPois={selectedPois}
+                  selectedCustomStops={selectedCustomStops}
                   stayOverrides={manualDraftSnapshot.stayOverrides}
                   origin={origin}
                   onOriginChange={handleManualOriginChange}
@@ -1593,6 +1666,7 @@ export default function App() {
                     budgetMin: manualDraftSnapshot.budgetMin,
                     stayMin: manualDraftSnapshot.stayMin,
                     roadPref: manualDraftSnapshot.roadPref,
+                    finalDestination: manualDraftSnapshot.finalDestination,
                   }}
                   onSettingsChange={persistDraft}
                 />

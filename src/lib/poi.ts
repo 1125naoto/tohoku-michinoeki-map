@@ -58,8 +58,8 @@ export type LodgingSub = 'hotel' | 'guesthouse' | 'hostel' | 'lodging_other';
 
 export type PoiSubcategory = FoodSub | TourismSub | OnsenSub | LodgingSub;
 
-/** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類） */
-export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other';
+/** 混合ルートの立ち寄り先の内部種別（道の駅と同列で扱うための共通分類）。types.tsに同一定義あり（循環import回避のため独立定義。値は必ず同期させること） */
+export type StopType = 'station' | 'restaurant' | 'cafe' | 'onsen' | 'tourism' | 'lodging' | 'park' | 'other' | 'custom';
 
 export interface Poi {
   /** `osm:<node|way|relation>/<id>` 形式の一意ID */
@@ -249,6 +249,7 @@ export const STOP_TYPE_GLYPH: Record<StopType, string> = {
   lodging: '🏨',
   park: '🌳',
   other: '📍',
+  custom: '📌',
 };
 
 /** マーカー背景色（道の駅の訪問状態色とは別系統の配色にして混同を防ぐ） */
@@ -261,7 +262,11 @@ export const STOP_TYPE_COLOR: Record<StopType, string> = {
   lodging: '#7a55c2',
   park: '#4a9e3e',
   other: '#6a6f78',
+  custom: '#c25a2c',
 };
+
+/** 自由地点（アプリ未登録の場所）の既定滞在時間（分）。周辺スポットのDEFAULT_STAY_MINと同じ考え方 */
+export const CUSTOM_STOP_DEFAULT_STAY_MIN = 30;
 
 const OSM_ELEMENT_TYPE: Record<string, string> = { node: 'node', way: 'way', relation: 'relation' };
 

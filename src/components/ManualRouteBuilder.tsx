@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { PlannedRoute, RoadPref, Station } from '../types';
+import type { CustomStopInfo, PlannedRoute, RoadPref, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { statusAtArrival } from '../lib/hours';
 import { poiDisplayName, type Poi } from '../lib/poi';
 import OriginPicker, { type ExtraOriginMode } from './OriginPicker';
 import RoadPrefPicker from './RoadPrefPicker';
+import CustomStopForm from './CustomStopForm';
 import type { OriginValue } from './PlannerForm';
 import {
   MAX_MANUAL_STATIONS,
@@ -35,7 +36,9 @@ interface Props {
   selectedIds: string[];
   /** 選択済みの周辺スポット（キー: Poi.id）。地図選択モードで追加されたもの */
   selectedPois: Record<string, Poi>;
-  /** 地点ごとの滞在時間の上書き（キー: 駅ID or Poi.id） */
+  /** 選択済みの自由地点（キー: 合成ID `custom:…`） */
+  selectedCustomStops: Record<string, CustomStopInfo>;
+  /** 地点ごとの滞在時間の上書き（キー: 駅ID or Poi.id or 自由地点ID） */
   stayOverrides: Record<string, number>;
   origin: OriginValue | null;
   onOriginChange: (o: OriginValue | null) => void;
@@ -53,6 +56,7 @@ interface Props {
     budgetMin: number | null;
     stayMin: number;
     roadPref: RoadPref;
+    finalDestination: CustomStopInfo | null;
   };
   /** 設定変更のたびに呼ばれる（App側で下書きへ保存するため） */
   onSettingsChange?: (s: {
@@ -61,6 +65,7 @@ interface Props {
     budgetMin: number | null;
     stayMin: number;
     roadPref: RoadPref;
+    finalDestination: CustomStopInfo | null;
   }) => void;
 }
 
@@ -71,6 +76,7 @@ export default function ManualRouteBuilder({
   getStation,
   selectedIds,
   selectedPois,
+  selectedCustomStops,
   stayOverrides,
   origin,
   onOriginChange,
@@ -90,20 +96,36 @@ export default function ManualRouteBuilder({
   const [returnToStart, setReturnToStart] = useState(initialSettings?.returnToStart ?? true);
   const [orderMode, setOrderMode] = useState<ManualOrderMode>(initialSettings?.orderMode ?? 'optimized');
   const [roadPref, setRoadPref] = useState<RoadPref>(initialSettings?.roadPref ?? 'highway_ok');
+  /** ③別の最終目的地を指定（アプリ未登録のホテル等）。指定時はreturnToStartより優先される */
+  const [finalDestination, setFinalDestination] = useState<CustomStopInfo | null>(
+    initialSettings?.finalDestination ?? null,
+  );
+  const [addingFinalDest, setAddingFinalDest] = useState(false);
+  /** 終了方法: ①最後の地点で終了 ②出発地点へ戻る ③別の最終目的地を指定 */
+  const endMode: 'last' | 'return' | 'custom' = finalDestination ? 'custom' : returnToStart ? 'return' : 'last';
 
-  /** 駅・周辺スポットの両方に対応した表示名解決（道の駅→周辺スポット→不明時はIDのまま） */
+  /** 駅・周辺スポット・自由地点のいずれにも対応した表示名解決（不明時はIDのまま） */
   const resolveName = (id: string): string => {
     const st = getStation(id);
     if (st) return st.name;
     const poi = selectedPois[id];
     if (poi) return poiDisplayName(poi);
+    const custom = selectedCustomStops[id];
+    if (custom) return custom.name ?? custom.address;
     return id;
   };
 
   useEffect(() => {
-    onSettingsChange?.({ returnToStart, orderMode, budgetMin: budgetLimited ? resolvedBudget() : null, stayMin: resolvedStay(), roadPref });
+    onSettingsChange?.({
+      returnToStart,
+      orderMode,
+      budgetMin: budgetLimited ? resolvedBudget() : null,
+      stayMin: resolvedStay(),
+      roadPref,
+      finalDestination,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [returnToStart, orderMode, budgetLimited, budgetMin, customBudget, stayMin, customStay, roadPref]);
+  }, [returnToStart, orderMode, budgetLimited, budgetMin, customBudget, stayMin, customStay, roadPref, finalDestination]);
 
   const [phase, setPhase] = useState<Phase>('settings');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -111,6 +133,8 @@ export default function ManualRouteBuilder({
     matrix: RouteMatrix;
     roadData: 'road' | 'approx';
     candidates: ManualCandidateLike[];
+    /** ③最終目的地の候補（未指定時はnull）。2-optの対象外で、常に配列末尾へ追加する */
+    finalCandidate: ManualCandidateLike | null;
     params: ManualPlanParams;
     /** 到達不能区間の補完専用（§manualRoute.ts ManualMatrixResult.fallback参照） */
     fallback: RouteMatrix;
@@ -165,7 +189,12 @@ export default function ManualRouteBuilder({
     budgetMin: budgetLimited ? resolvedBudget() : null,
     orderMode: mode,
     stayOverrides,
+    finalDestination,
   });
+
+  /** ③最終目的地があれば、配列の末尾へ固定で追加する（2-opt・fitToBudgetの対象外） */
+  const withFinal = (order: ManualCandidateLike[]): ManualCandidateLike[] =>
+    cache?.finalCandidate ? [...order, cache.finalCandidate] : order;
 
   const start = async () => {
     if (!origin || selectedIds.length < MIN_MANUAL_STATIONS) return;
@@ -173,14 +202,22 @@ export default function ManualRouteBuilder({
     setErrorMsg(null);
     try {
       const p = buildParams(orderMode);
-      const { matrix, roadData, candidates, fallback } = await buildManualMatrix(stations, selectedPois, selectedIds, p);
-      setCache({ matrix, roadData, candidates, params: p, fallback });
+      const { matrix, roadData, candidates, fallback, finalCandidate } = await buildManualMatrix(
+        stations,
+        selectedPois,
+        selectedIds,
+        p,
+        {},
+        selectedCustomStops,
+      );
+      setCache({ matrix, roadData, candidates, finalCandidate, params: p, fallback });
       const selOrder = orderManual(candidates, matrix, { ...p, orderMode: 'selected' }, fallback);
       const optOrder = orderManual(candidates, matrix, { ...p, orderMode: 'optimized' }, fallback);
       setSelectedOrderIds(selOrder.map((c) => c.st.id));
       setOptimizedOrderIds(optOrder.map((c) => c.st.id));
       const order = p.orderMode === 'selected' ? selOrder : optOrder;
-      proceedAfterOrder(p, matrix, roadData, order, selOrder, optOrder, fallback);
+      const withFinalNow = (o: ManualCandidateLike[]) => (finalCandidate ? [...o, finalCandidate] : o);
+      proceedAfterOrder(p, matrix, roadData, withFinalNow(order), withFinalNow(selOrder), withFinalNow(optOrder), fallback);
     } catch {
       setErrorMsg('ルートを計算できませんでした。電波状況を確認してもう一度お試しください。');
       setPhase('settings');
@@ -311,7 +348,13 @@ export default function ManualRouteBuilder({
                   cache.fallback,
                 );
                 setOrderMode('selected');
-                checkBudget({ ...cache.params, orderMode: 'selected' }, cache.matrix, cache.roadData, selOrder, cache.fallback);
+                checkBudget(
+                  { ...cache.params, orderMode: 'selected' },
+                  cache.matrix,
+                  cache.roadData,
+                  withFinal(selOrder),
+                  cache.fallback,
+                );
               }}
               data-testid="order-review-revert"
             >
@@ -344,14 +387,19 @@ export default function ManualRouteBuilder({
             </button>
             <button
               onClick={() => {
+                // ③最終目的地は除外候補にしない（常にゴールとして固定）。
+                // finalCandidateを除いた分だけをfitToBudgetの対象にし、結果へ戻す。
+                const withoutFinal = cache.finalCandidate
+                  ? activeOrder.filter((c) => c !== cache.finalCandidate)
+                  : activeOrder;
                 const { kept, excluded } = fitToBudget(
-                  activeOrder,
+                  withoutFinal,
                   cache.matrix,
                   cache.params,
                   cache.params.budgetMin ?? 0,
                   cache.fallback,
                 );
-                setFitKept(kept);
+                setFitKept(withFinal(kept));
                 setExcludedNames(excluded.map((c) => c.st.name ?? resolveName(c.st.id)));
               }}
               data-testid="over-budget-fit"
@@ -563,15 +611,67 @@ export default function ManualRouteBuilder({
       </div>
 
       <div className="card">
-        <h3>出発地点へ戻る？</h3>
-        <div className="seg">
-          <button className={returnToStart ? 'active' : ''} onClick={() => setReturnToStart(true)}>
-            戻る
+        <h3>終了方法</h3>
+        <div className="seg" style={{ flexWrap: 'wrap' }}>
+          <button
+            className={endMode === 'last' ? 'active' : ''}
+            onClick={() => {
+              setReturnToStart(false);
+              setFinalDestination(null);
+            }}
+            data-testid="end-mode-last"
+          >
+            ① 最後の地点で終了
           </button>
-          <button className={!returnToStart ? 'active' : ''} onClick={() => setReturnToStart(false)}>
-            最後の道の駅で終了
+          <button
+            className={endMode === 'return' ? 'active' : ''}
+            onClick={() => {
+              setReturnToStart(true);
+              setFinalDestination(null);
+            }}
+            data-testid="end-mode-return"
+          >
+            ② 出発地点へ戻る
+          </button>
+          <button
+            className={endMode === 'custom' ? 'active' : ''}
+            onClick={() => setAddingFinalDest(true)}
+            data-testid="end-mode-custom"
+          >
+            ③ 別の最終目的地を指定
           </button>
         </div>
+        {endMode === 'custom' && finalDestination && !addingFinalDest && (
+          <div className="note-box" style={{ marginTop: 8 }} data-testid="final-destination-summary">
+            🏁 最終目的地: <b>{finalDestination.name ?? finalDestination.address}</b>
+            <div className="btn-grid" style={{ marginTop: 6 }}>
+              <button onClick={() => setAddingFinalDest(true)} data-testid="final-destination-edit">
+                変更する
+              </button>
+              <button
+                onClick={() => {
+                  setFinalDestination(null);
+                  setReturnToStart(false);
+                }}
+                data-testid="final-destination-clear"
+              >
+                指定をやめる
+              </button>
+            </div>
+          </div>
+        )}
+        {addingFinalDest && (
+          <CustomStopForm
+            title="🏁 最終目的地を指定（旅行最後に立ち寄る場所）"
+            submitLabel="最終目的地にする"
+            onSubmit={(info) => {
+              setFinalDestination(info);
+              setReturnToStart(false);
+              setAddingFinalDest(false);
+            }}
+            onCancel={() => setAddingFinalDest(false)}
+          />
+        )}
       </div>
 
       <div className="card">

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { avoidParam, directionsUrls, MAX_WAYPOINTS, navToPointUrl, navToStationUrl, stationSearchUrl } from './gmaps';
+import {
+  avoidParam,
+  directionsSegments,
+  directionsUrls,
+  MAX_WAYPOINTS,
+  navToPointUrl,
+  navToStationUrl,
+  stationSearchUrl,
+} from './gmaps';
 import { STATIONS } from '../data';
 import { computeStats } from './stats';
 import type { VisitMap } from '../types';
@@ -76,6 +84,70 @@ describe('Googleマップ連携', () => {
   it('地点が1つ以下ならURLを生成しない', () => {
     expect(directionsUrls([])).toEqual([]);
     expect(directionsUrls([{ lat: 37, lng: 140 }])).toEqual([]);
+  });
+
+  describe('実機不具合の回帰: 経由地(waypoints)の区切り文字が二重エンコードされていた', () => {
+    // Owner実機QA: 区間1/2（経由地ありの区間）だけ住所は表示されるがその先
+    // 反応しない不具合。Google公式ドキュメントの例（waypoints=A|B|C）は区切りの
+    // 「|」を生のまま使う。以前は地点列全体を1つの文字列に結合してから
+    // encodeURIComponentしており「|」が「%7C」になっていた。
+    it('生のURLで、経由地の区切りは literal な「|」であり「%7C」にはならない', () => {
+      const pts = [
+        { lat: 37.0, lng: 140.0 },
+        { lat: 37.1, lng: 140.1 },
+        { lat: 37.2, lng: 140.2 },
+        { lat: 37.3, lng: 140.3 },
+        { lat: 37.4, lng: 140.4 },
+      ];
+      const [url] = directionsUrls(pts);
+      const waypointsRaw = /waypoints=([^&]*)/.exec(url)![1];
+      expect(waypointsRaw).not.toContain('%7C');
+      expect(waypointsRaw).not.toContain('%7c');
+      expect(waypointsRaw.split('|').length).toBe(3);
+      // 各座標自体（カンマ）は個別にencodeURIComponentされていること
+      expect(waypointsRaw).toContain('%2C');
+    });
+  });
+
+  describe('directionsSegments: 区間ごとの説明ラベル（Googleマップ分割ナビのUX改善）', () => {
+    it('地点にlabelがあれば、各区間のfromLabel/toLabelに反映される', () => {
+      const pts = [
+        { lat: 37.0, lng: 140.0, label: '出発地点' },
+        { lat: 37.1, lng: 140.1, label: '道の駅A' },
+        { lat: 37.2, lng: 140.2, label: '道の駅B' },
+      ];
+      const segments = directionsSegments(pts);
+      expect(segments.length).toBe(1);
+      expect(segments[0].fromLabel).toBe('出発地点');
+      expect(segments[0].toLabel).toBe('道の駅B');
+      expect(segments[0].index).toBe(1);
+      expect(segments[0].total).toBe(1);
+    });
+
+    it('区間分割時、各区間のfromLabel/toLabelが連結する（前区間のtoLabel=次区間のfromLabel）', () => {
+      const pts = Array.from({ length: 8 }, (_, i) => ({
+        lat: 37 + i * 0.1,
+        lng: 140 + i * 0.1,
+        label: `地点${i}`,
+      }));
+      const segments = directionsSegments(pts);
+      expect(segments.length).toBeGreaterThan(1);
+      for (let i = 0; i < segments.length - 1; i++) {
+        expect(segments[i].toLabel).toBe(segments[i + 1].fromLabel);
+      }
+    });
+
+    it('地点にqueryがあれば、生の座標ではなくqueryをGoogleマップへ渡す（駐車場等の誤ラベル対策）', () => {
+      const st = STATIONS[0];
+      const pts = [
+        { lat: 37.0, lng: 140.0 },
+        { lat: st.lat, lng: st.lng, label: `道の駅 ${st.name}`, query: `道の駅${st.name} ${st.address}` },
+      ];
+      const [url] = directionsUrls(pts);
+      const dec = decodeURIComponent(url);
+      expect(dec).toContain(`destination=道の駅${st.name} ${st.address}`);
+      expect(dec).not.toContain(`destination=${st.lat.toFixed(6)}`);
+    });
   });
 
   it('次の駅へのナビURLは現在地→施設名+住所で、ナビ直行パラメータを含む', () => {

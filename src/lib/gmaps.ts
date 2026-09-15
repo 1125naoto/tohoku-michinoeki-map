@@ -58,6 +58,29 @@ export function latLngUrl(p: LatLng): string {
 const fmt = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
 /**
+ * ルート上の1地点。lat/lngは常に必須（実道路時間の計算・Googleマップの
+ * フォールバック値として使う）。
+ */
+export interface RouteMapPoint extends LatLng {
+  /** 人が読むための表示名（区間説明UI用）。省略時は座標を表示に使う */
+  label?: string;
+  /**
+   * Googleマップへ渡す検索文字列（施設名+住所等）。指定があれば生の座標の
+   *代わりにこれを使う。
+   *
+   * 実機不具合の根本原因: 生の座標だけを渡すと、Googleマップ側がその座標に
+   * 最も近い別のPOI（駐車場の一区画等）を「その地点の名前」として表示・履歴に
+   * 記録することがある（実例:「道の駅 鳥海 ふらっと」が「身障者用駐車場」と
+   * 表示された）。既存の単一施設用リンク（stationSearchUrl/navToStationUrl）は
+   * 既にこの形式（名称+住所のテキスト検索）を使っており問題が起きていないため、
+   * 正式な住所・名称が分かっている地点（道の駅等）は同じ方式に統一する。
+   * 出発地点（現在地・地図タップ等、確実な住所を持たない）はqueryを省略し、
+   * 従来通り生の座標を使う。
+   */
+  query?: string;
+}
+
+/**
  * Google Maps URLsの `waypoints` パラメータ自体は最大9地点までを公式に許容するが、
  * Astra監査P1（実機確認）でスマートフォンのGoogleマップアプリ（URLからアプリへ
  * ハンドオフされた場合）は、それより少ない経由地数で一部が無視される・アプリ側の
@@ -67,34 +90,62 @@ const fmt = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
  */
 export const MAX_WAYPOINTS = 3;
 
+/** 1区間分のGoogleマップURLと、UX表示用の区間説明 */
+export interface DirectionsSegment {
+  url: string;
+  /** この区間の出発地点の表示名 */
+  fromLabel: string;
+  /** この区間の到着地点の表示名 */
+  toLabel: string;
+  /** 区間番号（1始まり） */
+  index: number;
+  /** 総区間数 */
+  total: number;
+}
+
+const pointValue = (p: RouteMapPoint): string => p.query ?? fmt(p);
+const pointLabel = (p: RouteMapPoint): string => p.label ?? fmt(p);
+
 /**
- * 経路URLを生成。経由地が上限を超える場合は複数区間URLに分割する。
+ * 経路の区間情報を生成。経由地が上限を超える場合は複数区間に分割する。
  * points: 出発地点 → 経由地... → 最終地点（帰着する場合は最後に出発地点を含めて渡す）
  */
-export function directionsUrls(points: LatLng[], roadPref: RoadPref = 'highway_ok'): string[] {
+export function directionsSegments(points: RouteMapPoint[], roadPref: RoadPref = 'highway_ok'): DirectionsSegment[] {
   if (points.length < 2) return [];
-  const urls: string[] = [];
-  const avoid = avoidParam(roadPref);
+  const chunks: RouteMapPoint[][] = [];
   // 1URLに入る地点数 = origin + waypoints(≤MAX_WAYPOINTS) + destination
   const chunkSize = MAX_WAYPOINTS + 2;
   let start = 0;
   while (start < points.length - 1) {
     const end = Math.min(start + chunkSize - 1, points.length - 1);
-    const segment = points.slice(start, end + 1);
+    chunks.push(points.slice(start, end + 1));
+    start = end;
+  }
+  const avoid = avoidParam(roadPref);
+  return chunks.map((segment, i) => {
     const origin = segment[0];
     const destination = segment[segment.length - 1];
     const waypoints = segment.slice(1, -1);
     let url =
       `https://www.google.com/maps/dir/?api=1` +
-      `&origin=${encodeURIComponent(fmt(origin))}` +
-      `&destination=${encodeURIComponent(fmt(destination))}` +
+      `&origin=${encodeURIComponent(pointValue(origin))}` +
+      `&destination=${encodeURIComponent(pointValue(destination))}` +
       `&travelmode=driving`;
     if (waypoints.length > 0) {
-      url += `&waypoints=${encodeURIComponent(waypoints.map(fmt).join('|'))}`;
+      // Google公式ドキュメントの例（waypoints=A|B|C）は地点の区切り「|」を
+      // エンコードしない。以前は地点全体を1つの文字列に結合してから
+      // encodeURIComponentしており「|」が「%7C」になっていた。これが原因で、
+      // 実機（iPhone Googleマップアプリ）で経由地を含む区間（区間1/2等）だけ
+      // 住所は表示されるが経路が開かない不具合が起きていた。
+      // 地点ごとに個別にエンコードしてから、区切りは生の「|」で連結する。
+      url += `&waypoints=${waypoints.map((w) => encodeURIComponent(pointValue(w))).join('|')}`;
     }
     if (avoid) url += `&avoid=${avoid}`;
-    urls.push(url);
-    start = end;
-  }
-  return urls;
+    return { url, fromLabel: pointLabel(origin), toLabel: pointLabel(destination), index: i + 1, total: chunks.length };
+  });
+}
+
+/** 経路URLだけが必要な場合の簡易版（区間説明が不要な呼び出し向け） */
+export function directionsUrls(points: RouteMapPoint[], roadPref: RoadPref = 'highway_ok'): string[] {
+  return directionsSegments(points, roadPref).map((s) => s.url);
 }

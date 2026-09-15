@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { PlannedRoute, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
-import { directionsUrls } from '../lib/gmaps';
+import { directionsSegments, type RouteMapPoint } from '../lib/gmaps';
 import { statusAtArrival, type ArrivalHours } from '../lib/hours';
 import { poiDisplayName } from '../lib/poi';
 import { computeStayBreakdown } from '../lib/manualRoute';
@@ -73,27 +73,60 @@ interface Props {
   onRequestRestart: () => void;
   /** 「保存」タブから開いた保存済みコースの名前（新規作成の結果ならnull。表示の区別用） */
   viewingSavedName?: string | null;
+  /**
+   * 自動コース作成の結果（道の駅のみ）に、周辺スポット・自由地点・最終目的地
+   * （旅行最後に立ち寄るホテル等）を追加する（「地図から選ぶ」の編集画面へ引き継ぐ）。
+   * 未指定 or key==='manual'（既に手動ルート）のときはボタンを表示しない。
+   */
+  onExtendWithStops?: (r: PlannedRoute) => void;
 }
 
-export function routePoints(r: PlannedRoute, getStation: (id: string) => Station | undefined) {
-  const pts = [{ lat: r.params.origin.lat, lng: r.params.origin.lng }];
+/**
+ * Googleマップへ渡す経路上の地点列。道の駅は名称+住所のテキスト検索(query)を使う
+ * （生の座標だけだと、Googleマップ側がその座標に最も近い無関係な別のPOI・
+ * 駐車場の一区画等を地点名として表示・履歴記録することがあるため。実機不具合の
+ * 根本原因。§lib/gmaps.ts RouteMapPoint.queryのコメント参照）。
+ * 周辺スポット・自由地点・出発地点は確実な公式住所を持たないため、生の座標のまま。
+ */
+export function routePoints(r: PlannedRoute, getStation: (id: string) => Station | undefined): RouteMapPoint[] {
+  const pts: RouteMapPoint[] = [
+    { lat: r.params.origin.lat, lng: r.params.origin.lng, label: r.params.origin.label },
+  ];
   for (const s of r.stops) {
-    if ((s.stopType ?? 'station') !== 'station') {
-      if (s.poi) pts.push({ lat: s.poi.lat, lng: s.poi.lng });
+    const stopType = s.stopType ?? 'station';
+    if (stopType === 'station') {
+      const st = getStation(s.stationId);
+      if (st) {
+        pts.push({
+          lat: st.lat,
+          lng: st.lng,
+          label: `道の駅 ${st.name}`,
+          query: `道の駅${st.name} ${st.address}`,
+        });
+      }
       continue;
     }
-    const st = getStation(s.stationId);
-    if (st) pts.push({ lat: st.lat, lng: st.lng });
+    if (stopType === 'custom' && s.custom) {
+      pts.push({ lat: s.custom.lat, lng: s.custom.lng, label: s.custom.name ?? s.custom.address });
+      continue;
+    }
+    if (s.poi) pts.push({ lat: s.poi.lat, lng: s.poi.lng, label: poiDisplayName(s.poi) });
   }
-  if (r.params.returnToStart) pts.push({ lat: r.params.origin.lat, lng: r.params.origin.lng });
+  if (r.params.returnToStart) {
+    pts.push({ lat: r.params.origin.lat, lng: r.params.origin.lng, label: r.params.origin.label });
+  }
   return pts;
 }
 
-/** 停留地点の表示名（道の駅は「道の駅◯◯」、周辺スポットはそのまま名称） */
+/** 停留地点の表示名（道の駅は「道の駅◯◯」、周辺スポット・自由地点はそのまま名称） */
 function stopDisplayName(s: PlannedRoute['stops'][number], getStation: (id: string) => Station | undefined): string {
-  if ((s.stopType ?? 'station') === 'station') {
+  const stopType = s.stopType ?? 'station';
+  if (stopType === 'station') {
     const st = getStation(s.stationId);
     return `道の駅 ${st?.name ?? s.stationId}`;
+  }
+  if (stopType === 'custom' && s.custom) {
+    return s.custom.name ?? s.custom.address;
   }
   return s.poi ? poiDisplayName(s.poi) : s.stationId;
 }
@@ -177,8 +210,8 @@ export function RouteTimeline({
                 </span>
               )}
               {!isStation && (
-                <span className="badge pre" style={{ fontSize: 11 }}>
-                  周辺スポット
+                <span className="badge pre" style={{ fontSize: 11 }} data-testid="stop-type-badge">
+                  {(s.stopType ?? 'station') === 'custom' ? '自由地点' : '周辺スポット'}
                 </span>
               )}
               <br />
@@ -220,7 +253,7 @@ export function RouteTimeline({
 
 export function GmapsButtons({ r, getStation }: { r: PlannedRoute; getStation: (id: string) => Station | undefined }) {
   const [confirming, setConfirming] = useState(false);
-  const urls = directionsUrls(routePoints(r, getStation), r.params.roadPref);
+  const segments = directionsSegments(routePoints(r, getStation), r.params.roadPref);
   if (!confirming) {
     return (
       <button style={{ width: '100%' }} onClick={() => setConfirming(true)} data-testid="gmaps-open">
@@ -234,14 +267,32 @@ export function GmapsButtons({ r, getStation }: { r: PlannedRoute; getStation: (
         アプリ内の時間は{r.roadData === 'road' ? '渋滞を含まない参考値' : '概算'}です。最新の経路・渋滞はGoogleマップ側で、
         冬季は積雪・凍結・通行止めに、営業時間は各駅の公式サイトでご確認ください。
       </div>
-      {urls.map((u, i) => (
-        <a key={u} className="btn-link" style={{ marginTop: 8 }} href={u} target="_blank" rel="noopener noreferrer">
-          {urls.length > 1 ? `区間${i + 1}／${urls.length} を開く ↗` : 'Googleマップで開く ↗'}
-        </a>
-      ))}
-      {urls.length > 1 && (
-        <p className="msg info">経由地が多いため、Googleマップの上限に合わせて区間を分割しています。</p>
+      {segments.length > 1 && (
+        <p className="msg info" data-testid="gmaps-segment-note">
+          経由地が多いため、Googleマップの上限に合わせて{segments.length}つのルートに分けています。
+          <br />
+          ひとつ目のルートの目的地に着いたら、この画面に戻って次のルートを開いてください。
+        </p>
       )}
+      {segments.map((seg) => {
+        const segTitle = seg.index === 1 ? '最初のルート' : seg.index === segments.length ? '最後のルート' : `${seg.index}つ目のルート`;
+        return (
+          <div key={seg.url} className="note-box" style={{ marginTop: 8 }} data-testid="gmaps-segment">
+            {segments.length > 1 && (
+              <div style={{ fontWeight: 700, marginBottom: 4 }} data-testid="gmaps-segment-label">
+                {seg.index}／{seg.total}　{segTitle}
+                <br />
+                <span style={{ fontWeight: 400, fontSize: 13 }}>
+                  {seg.fromLabel} → {seg.toLabel}
+                </span>
+              </div>
+            )}
+            <a className="btn-link" href={seg.url} target="_blank" rel="noopener noreferrer" data-testid="gmaps-segment-link">
+              {segments.length > 1 ? `Googleマップで${segTitle}を開く ↗` : 'Googleマップで開く ↗'}
+            </a>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -256,6 +307,7 @@ export default function RouteResults({
   onRequestDiscard,
   onRequestRestart,
   viewingSavedName,
+  onExtendWithStops,
 }: Props) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -379,6 +431,11 @@ export default function RouteResults({
         <button onClick={() => onPreviewOnMap(open)} data-testid="route-preview">
           🗺️ 地図で順番を見る
         </button>
+        {onExtendWithStops && open.key !== 'manual' && (
+          <button onClick={() => onExtendWithStops(open)} data-testid="route-extend-with-stops">
+            🍴🏨 食事・観光・ホテル等を追加する
+          </button>
+        )}
         {saved === open.key ? (
           <button disabled data-testid="route-saved">
             ✓ 保存しました

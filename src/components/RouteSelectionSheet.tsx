@@ -1,13 +1,17 @@
-import type { Station } from '../types';
+import { useState } from 'react';
+import type { CustomStopInfo, Station } from '../types';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { MIN_MANUAL_STATIONS } from '../lib/manualRoute';
 import { CATEGORY_LABEL, SUBCATEGORY_LABEL, poiDisplayName, type Poi } from '../lib/poi';
+import CustomStopForm from './CustomStopForm';
 
 interface Props {
   selectedIds: string[];
   getStation: (id: string) => Station | undefined;
   /** 選択済みの周辺スポット（キー: Poi.id） */
   selectedPois: Record<string, Poi>;
+  /** 選択済みの自由地点（キー: 合成ID `custom:…`） */
+  selectedCustomStops: Record<string, CustomStopInfo>;
   now: Date;
   onRemove: (id: string) => void;
   onMove: (index: number, direction: -1 | 1) => void;
@@ -16,6 +20,8 @@ interface Props {
   onProceed: () => void;
   /** POI行タップで詳細シートを開く（滞在時間の変更などはそちらで行う） */
   onOpenPoiDetail: (poi: Poi) => void;
+  /** 自由地点（アプリ未登録のホテル・飲食店等）を経由地として追加する */
+  onAddCustomStop: (info: CustomStopInfo) => void;
 }
 
 const HOURS_BADGE: Record<HoursKind, { cls: string; text: string }> = {
@@ -31,6 +37,7 @@ export default function RouteSelectionSheet({
   selectedIds,
   getStation,
   selectedPois,
+  selectedCustomStops,
   now,
   onRemove,
   onMove,
@@ -38,23 +45,26 @@ export default function RouteSelectionSheet({
   onClose,
   onProceed,
   onOpenPoiDetail,
+  onAddCustomStop,
 }: Props) {
   const canProceed = selectedIds.length >= MIN_MANUAL_STATIONS;
+  const [addingCustom, setAddingCustom] = useState(false);
   return (
-    <section className="sheet route-select-sheet" data-testid="route-select-sheet" aria-label="選択した道の駅・周辺スポット">
+    <section className="sheet route-select-sheet" data-testid="route-select-sheet" aria-label="選択した道の駅・周辺スポット・自由地点">
       <div className="sheet-grip" />
       <button className="sheet-x" onClick={onClose} aria-label="閉じる" data-testid="route-select-sheet-close">
         ✕
       </button>
       <h2>選んだ地点（{selectedIds.length}件）</h2>
       {selectedIds.length === 0 && (
-        <div className="empty">まだ選んでいません。地図で道の駅や周辺スポットをタップしてください。</div>
+        <div className="empty">まだ選んでいません。地図で道の駅や周辺スポットをタップ、または下から自由地点を追加してください。</div>
       )}
       <ol className="route-select-list">
         {selectedIds.map((id, i) => {
           const st = getStation(id);
-          const poi = st ? undefined : selectedPois[id];
-          const name = st?.name ?? (poi ? poiDisplayName(poi) : id);
+          const custom = st ? undefined : selectedCustomStops[id];
+          const poi = st || custom ? undefined : selectedPois[id];
+          const name = st?.name ?? (custom ? (custom.name ?? custom.address) : poi ? poiDisplayName(poi) : id);
           return (
             <li key={id} data-testid="route-select-row">
               <span className="route-select-num">{i + 1}</span>
@@ -83,6 +93,7 @@ export default function RouteSelectionSheet({
                       {CATEGORY_LABEL[poi.category]}・{SUBCATEGORY_LABEL[poi.subcategory]}
                     </span>
                   )}
+                  {custom && <span className="badge pre">📌 自由地点・{custom.address}</span>}
                 </span>
               </span>
               <span className="route-select-actions">
@@ -115,6 +126,21 @@ export default function RouteSelectionSheet({
           );
         })}
       </ol>
+      {addingCustom ? (
+        <CustomStopForm
+          title="📌 自由地点を経由地として追加"
+          submitLabel="この地点を追加する"
+          onSubmit={(info) => {
+            onAddCustomStop(info);
+            setAddingCustom(false);
+          }}
+          onCancel={() => setAddingCustom(false)}
+        />
+      ) : (
+        <button style={{ width: '100%', marginTop: 8 }} onClick={() => setAddingCustom(true)} data-testid="route-select-add-custom">
+          📌 自由地点を追加（アプリに無いホテル・飲食店・観光地等）
+        </button>
+      )}
       <div className="btn-grid" style={{ marginTop: 10 }}>
         <button onClick={onClearAll} data-testid="route-select-sheet-clear">
           全解除

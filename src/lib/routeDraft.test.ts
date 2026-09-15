@@ -134,3 +134,64 @@ describe('周辺スポット(POI)の選択・滞在時間上書き', () => {
     expect(loaded?.selectedPois[hotel.id]?.name).toBe('テストホテル');
   });
 });
+
+describe('自由地点（アプリ未登録の場所）・最終目的地の選択', () => {
+  const HOTEL = { name: '○○ホテル', address: '山形県山形市testtown1-2-3', lat: 38.24, lng: 140.34 };
+
+  it('selectedCustomStops・finalDestinationが保存・復元される', () => {
+    const draft = {
+      ...DEFAULT_ROUTE_DRAFT,
+      selectedIds: ['mne-1', 'custom:1-abc'],
+      selectedCustomStops: { 'custom:1-abc': HOTEL },
+      finalDestination: HOTEL,
+    };
+    saveRouteDraft(draft);
+    const loaded = loadRouteDraft();
+    expect(loaded?.selectedCustomStops['custom:1-abc']).toEqual(HOTEL);
+    expect(loaded?.finalDestination).toEqual(HOTEL);
+  });
+
+  it('旧v2データ（selectedCustomStops/finalDestinationが無い）も読み込め、既定値で補完される（後方互換）', () => {
+    localStorage.setItem(
+      ROUTE_DRAFT_KEY,
+      JSON.stringify({
+        selectedIds: ['mne-1', SAMPLE_POI.id],
+        origin: null,
+        returnToStart: true,
+        orderMode: 'optimized',
+        budgetMin: 240,
+        stayMin: 30,
+        roadPref: 'highway_ok',
+        selectedPois: { [SAMPLE_POI.id]: SAMPLE_POI },
+        stayOverrides: {},
+        inProgress: true,
+      }),
+    );
+    const loaded = loadRouteDraft();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.selectedIds).toEqual(['mne-1', SAMPLE_POI.id]);
+    expect(loaded?.selectedCustomStops).toEqual({});
+    expect(loaded?.finalDestination).toBeNull();
+  });
+
+  it('壊れた自由地点だけを取り除き、他の下書き内容・selectedIdsは保護する（クラッシュしない）', () => {
+    localStorage.setItem(
+      ROUTE_DRAFT_KEY,
+      JSON.stringify({
+        ...DEFAULT_ROUTE_DRAFT,
+        selectedIds: ['mne-1', 'custom:ok', 'custom:bad'],
+        selectedCustomStops: {
+          ok: HOTEL,
+          bad: { name: 'こわれ', address: 123, lat: 'not-a-number' }, // address/latが型不正
+        },
+        finalDestination: { name: null, address: 'x', lat: 'oops', lng: 1 }, // 壊れている
+      }),
+    );
+    const loaded = loadRouteDraft();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.selectedIds).toEqual(['mne-1', 'custom:ok', 'custom:bad']); // 選択IDは保護される
+    expect(loaded?.selectedCustomStops.ok).toEqual(HOTEL);
+    expect(loaded?.selectedCustomStops.bad).toBeUndefined(); // 壊れた項目のみ除去
+    expect(loaded?.finalDestination).toBeNull(); // 壊れているのでnull扱い（下書き全体は拒否しない）
+  });
+});

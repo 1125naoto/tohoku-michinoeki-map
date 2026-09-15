@@ -92,13 +92,31 @@ function isRouteStopPoi(v: unknown): boolean {
   );
 }
 
-/** PlannedRoute.stops の1件。stationId/日時/滞在時間は必須、poiは付いていれば座標を検証する */
+/** RouteStop.custom（自由地点）。name任意・address/lat/lngは必須 */
+function isRouteStopCustom(v: unknown): boolean {
+  if (!isRecord(v)) return false;
+  return (
+    (v.name === null || typeof v.name === 'string') &&
+    typeof v.address === 'string' &&
+    typeof v.lat === 'number' &&
+    Number.isFinite(v.lat) &&
+    typeof v.lng === 'number' &&
+    Number.isFinite(v.lng)
+  );
+}
+
+/**
+ * PlannedRoute.stops の1件。stationId/日時/滞在時間は必須、poi/customは
+ * 付いていればそれぞれ座標等を検証する（壊れた自由地点1件で画面crashしないよう、
+ * 復元時にこの検証を通らないstopはisSavedRoute側で丸ごと除外する）。
+ */
 function isRouteStop(v: unknown): boolean {
   if (!isRecord(v)) return false;
   if (typeof v.stationId !== 'string' || !v.stationId) return false;
   if (typeof v.arriveAt !== 'string' || typeof v.departAt !== 'string') return false;
   if (typeof v.stayMin !== 'number' || !Number.isFinite(v.stayMin)) return false;
   if (v.poi !== undefined && !isRouteStopPoi(v.poi)) return false;
+  if (v.custom !== undefined && v.custom !== null && !isRouteStopCustom(v.custom)) return false;
   return true;
 }
 
