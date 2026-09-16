@@ -12,6 +12,7 @@ import type {
   TripState,
   VisitRecord,
 } from './types';
+import { AREAS } from './types';
 import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
@@ -28,6 +29,7 @@ import {
   type SelectedPrefectures,
 } from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
+import { loadAreaSelection, saveAreaSelection } from './lib/areaSelection';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
 import type { Station } from './types';
@@ -56,6 +58,8 @@ import { describeGeolocationError, getBestCurrentPosition } from './lib/geolocat
 import PoiSearchPanel, { sortPois, type PoiSortMode } from './components/PoiSearchPanel';
 import PoiDetailSheet from './components/PoiDetailSheet';
 import DiagnosticsPanel from './components/DiagnosticsPanel';
+import RegionLanding from './components/RegionLanding';
+import PrefectureChipGroups from './components/PrefectureChipGroups';
 import {
   DEFAULT_ROUTE_DRAFT,
   clearRouteDraft,
@@ -115,7 +119,31 @@ export default function App() {
     if (!ok) setStorageWriteFailed(true);
   }, []);
   const [tab, setTab] = useState<Tab>('map');
-  const [selectedPrefectures, setSelectedPrefectures] = useState<SelectedPrefectures>([]);
+  /**
+   * 表示中の都道府県。前回「どこを旅しますか？」で選んだ地域があればそこから再開する
+   * （未選択＝空配列＝全国。既存の絞り込みロジックはそのまま）。
+   */
+  const [selectedPrefectures, setSelectedPrefectures] = useState<SelectedPrefectures>(
+    () => loadAreaSelection()?.prefectures ?? [],
+  );
+  /**
+   * 「どこを旅しますか？」（地域選択画面）を表示するか。
+   * 全国1,237施設をいきなり地図に出すと初見では情報量が多すぎるため、まだ一度も
+   * 地域を選んでいない場合だけ入口にする。ただし次の場合はユーザーが意図した画面を
+   * ふさいでしまうため出さない:
+   * - 駅への共有リンク(#station=...)で開いたとき（その駅を見に来ている）
+   * - 旅行中(TripState)のまま再訪したとき（進行中の旅を邪魔しない）
+   * 地図からはいつでも「地域を変更」で開き直せる。
+   */
+  const [showRegionLanding, setShowRegionLanding] = useState(
+    () => loadAreaSelection() == null && hashStationId() == null && loadTrip() == null,
+  );
+  /**
+   * ユーザーが地域を選択済みか（＝以後の絞り込み変更を次回起動用に保存してよいか）。
+   * 地域選択画面をスキップしただけの状態では保存せず、次に通常起動したときに
+   * きちんと地域選択画面を出す。
+   */
+  const [areaSelectionMade, setAreaSelectionMade] = useState(() => loadAreaSelection() != null);
   /** 都道府県チップのトグル（既に選択中なら解除、未選択なら追加）。'all'で全国（絞り込み解除）。 */
   const toggleClearPref = useCallback((p: Prefecture | 'all') => {
     if (p === 'all') {
@@ -136,6 +164,27 @@ export default function App() {
       return isExactlyThisArea ? [] : areaPrefs;
     });
   }, []);
+
+  /**
+   * 地域選択画面での確定操作。選んだ内容を次回起動用に保存して地図へ進む。
+   * 保存先は専用キー（areaSelection）で、訪問済み・行きたい・スタンプ・保存ルート・
+   * 設定の既存キーには一切触れない。
+   */
+  const commitAreaSelection = useCallback((prefs: SelectedPrefectures) => {
+    setSelectedPrefectures(prefs);
+    saveAreaSelection(prefs);
+    setAreaSelectionMade(true);
+    setShowRegionLanding(false);
+  }, []);
+  const chooseLandingArea = useCallback(
+    (area: AreaName) => commitAreaSelection(prefecturesInArea(area)),
+    [commitAreaSelection],
+  );
+  const chooseLandingNationwide = useCallback(() => commitAreaSelection([]), [commitAreaSelection]);
+  const confirmLandingPrefectures = useCallback(
+    () => commitAreaSelection(selectedPrefectures),
+    [commitAreaSelection, selectedPrefectures],
+  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>({ rvPark: false, onsen: false });
   const [stationQuery, setStationQuery] = useState('');
@@ -745,7 +794,29 @@ export default function App() {
   // 一覧の自動展開は駅名・市町村検索が入力されているときだけ（県/状態を押しただけで
   // 一覧が全面展開され地図を隠してしまう問題の修正）。
   const stationListActive = stationQuery.trim() !== '';
+  /**
+   * 一度地域を選んだあとは、絞り込みパネルでの都道府県変更も次回起動用に保存する
+   * （地域選択画面の選択と絞り込み状態を一致させ、次回は前回の地図状態から再開する）。
+   */
+  useEffect(() => {
+    if (!areaSelectionMade) return;
+    saveAreaSelection(selectedPrefectures);
+  }, [areaSelectionMade, selectedPrefectures]);
   const activeSaved = trip ? (savedRoutes.find((r) => r.id === trip.savedRouteId) ?? null) : null;
+  /**
+   * 「地域を変更」ボタンに出す現在の表示範囲の短い要約。
+   * 選択がちょうど1つの地方と一致すれば地方名（例:「東北」）、それ以外は県名を短くまとめる。
+   */
+  const regionSummary = useMemo(() => {
+    if (selectedPrefectures.length === 0) return '全国';
+    const exactArea = AREAS.find((a) => {
+      const ps = prefecturesInArea(a);
+      return ps.length === selectedPrefectures.length && ps.every((p) => selectedPrefectures.includes(p));
+    });
+    if (exactArea) return exactArea;
+    if (selectedPrefectures.length <= 2) return selectedPrefectures.join('・');
+    return `${selectedPrefectures[0]}ほか${selectedPrefectures.length - 1}件`;
+  }, [selectedPrefectures]);
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -1127,7 +1198,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`app${mapFullscreen ? ' map-fs' : ''}`}>
+    <div className={`app${mapFullscreen ? ' map-fs' : ''}${showRegionLanding ? ' region-landing-open' : ''}`}>
       {!online && !mapFullscreen && (
         <div className="offline-banner" data-testid="offline-banner">
           オフラインです。訪問記録・保存ルートは閲覧/更新できます。地図タイル・外部リンクは利用できません。
@@ -1190,20 +1261,48 @@ export default function App() {
           {routeActionMsg}
         </div>
       )}
+      {showRegionLanding && (
+        <RegionLanding
+          areas={stats.byArea}
+          statByPref={prefStatByName}
+          totalStations={stats.total}
+          selectedPrefectures={selectedPrefectures}
+          onSelectArea={chooseLandingArea}
+          onTogglePrefecture={toggleClearPref}
+          onConfirmPrefectures={confirmLandingPrefectures}
+          onSelectNationwide={chooseLandingNationwide}
+          onCancel={areaSelectionMade ? () => setShowRegionLanding(false) : null}
+        />
+      )}
       {!mapFullscreen && (
         <StatsHeader stats={stats} selectedPrefectures={selectedPrefectures} onToggleClearPref={toggleClearPref} />
       )}
+      {/*
+        「地域を変更」と「絞り込み」は同じ1行に並べる。地図の上に行を増やすと地図の
+        高さが減り、実機・E2Eの双方で地図マーカーが周辺スポットパネルの下に隠れて
+        タップできなくなるため（既存レイアウトの高さを変えない）。
+      */}
       {!mapFullscreen && (
-        <button
-          className="filters-toggle"
-          onClick={() => setFiltersOpen(!filtersOpen)}
-          aria-expanded={filtersOpen}
-          data-testid="filters-toggle"
-        >
-          {filtersOpen
-            ? '▲ 絞り込みをたたむ'
-            : `▼ ${filterSummary(selectedPrefectures, statusFilter, stationQuery, facilityFilter)}`}
-        </button>
+        <div className="top-actions">
+          <button
+            className="change-region-btn"
+            onClick={() => setShowRegionLanding(true)}
+            aria-label="旅する地域を変更する"
+            data-testid="btn-change-region"
+          >
+            🗾 {regionSummary}
+          </button>
+          <button
+            className="filters-toggle"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            aria-expanded={filtersOpen}
+            data-testid="filters-toggle"
+          >
+            {filtersOpen
+              ? '▲ 絞り込みをたたむ'
+              : `▼ ${filterSummary(selectedPrefectures, statusFilter, stationQuery, facilityFilter)}`}
+          </button>
+        </div>
       )}
       <div
         className="filter-groups"
@@ -1251,29 +1350,14 @@ export default function App() {
           地方ごとに見出し+折り返しグリッドで表示し、47県すべてを個別にタップできるようにする。
           data-testid（chip-<県名>）は変更しない（複数選択のロジック・既存テストへの影響を避ける）。
         */}
-        <div className="pref-select-groups" data-testid="pref-select-groups">
-          {stats.byArea.map((a) => (
-            <div className="pref-select-group" key={a.area}>
-              <div className="pref-select-group-title">{a.area}</div>
-              <div className="pref-select-group-chips">
-                {prefecturesInArea(a.area).map((pref) => {
-                  const p = prefStatByName.get(pref);
-                  if (!p) return null;
-                  return (
-                    <button
-                      key={p.pref}
-                      className={`chip${selectedPrefectures.includes(p.pref) ? ' active' : ''}`}
-                      onClick={() => toggleClearPref(p.pref)}
-                      data-testid={`chip-${p.pref}`}
-                    >
-                      {p.pref.replace('県', '')} {p.visited}/{p.total}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <PrefectureChipGroups
+          areas={stats.byArea}
+          statByPref={prefStatByName}
+          selectedPrefectures={selectedPrefectures}
+          onToggle={toggleClearPref}
+          testIdPrefix="chip-"
+          containerTestId="pref-select-groups"
+        />
         <div className="filter-row" role="toolbar" aria-label="表示状態で絞り込み">
           <span className="fg-label">表示</span>
           {STATUS_FILTERS.map((f) => (

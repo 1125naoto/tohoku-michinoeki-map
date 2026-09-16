@@ -1,4 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
+import { useNationwideSelection } from './helpers';
+
+/**
+ * 公開前UX整理で初回起動に地域選択画面（「どこを旅しますか？」）を追加したため、
+ * 全国地図を前提にした既存シナリオでは「全国を見る」選択済みの状態から開始する。
+ */
+test.beforeEach(async ({ page }) => {
+  await useNationwideSelection(page);
+});
 
 /**
  * 「地図から選ぶ」ルート作成のE2Eシナリオ（仕様§B〜§X）。

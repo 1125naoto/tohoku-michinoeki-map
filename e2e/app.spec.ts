@@ -2,6 +2,15 @@ import { expect, test, type Page } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { useNationwideSelection } from './helpers';
+
+/**
+ * 公開前UX整理で初回起動に地域選択画面（「どこを旅しますか？」）を追加したため、
+ * 全国地図を前提にした既存シナリオでは「全国を見る」選択済みの状態から開始する。
+ */
+test.beforeEach(async ({ page }) => {
+  await useNationwideSelection(page);
+});
 
 /** しちのへ（青森県七戸町）: 実在の駅IDで詳細カードをディープリンク表示 */
 const STATION_ID = 'mne-18900';

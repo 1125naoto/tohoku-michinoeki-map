@@ -310,44 +310,6 @@ export default function PoiSearchPanel({
       </div>
 
       {/*
-        外部探索を3つの役割に分離する（Fable 5.1 Root Cause Audit再監査の最終形）。
-        (1) アプリ内POI＝道の駅周辺の候補をすぐ見る（下の一覧・アプリ内候補）。
-        (2) Google Web検索＝より詳しく・網羅的に探す（本ブロックのPRIMARY CTA）。
-        (3) Google Maps＝道の駅そのものの場所・口コミ・写真・営業時間・ナビを見る
-            （本ブロックのSECONDARY CTA）。Google Maps URLs公式仕様だけでは
-        「指定した地点を検索中心に固定したままカテゴリ検索する」ことを保証できない
-        （検索地点が端末の現在地扱いになる不具合の根本原因だった）ため、Google Maps
-        には駅周辺のカテゴリ検索をさせない。検索を実行していなくても、検索地点さえ
-        決まっていれば押せる（Overpass通信には依存しない）。
-      */}
-      {origin && (
-        <>
-          {origin.stationId && webSearchUrl && (
-            <a
-              className="btn-link"
-              style={{ width: '100%', marginTop: 6 }}
-              href={webSearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="poi-web-search"
-            >
-              🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}をもっと探す
-            </a>
-          )}
-          <a
-            className="btn-link"
-            style={{ width: '100%', marginTop: 6 }}
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="poi-google-detail-search"
-          >
-            🗺 Googleマップで{origin.stationId ? '道の駅の詳細・ナビを見る' : 'この地点を見る'}
-          </a>
-        </>
-      )}
-
-      {/*
         食べる(food)の細分類（ラーメン/食堂/洋食/寿司/焼肉等）は、一般ユーザーUIから
         原則撤去する（公開前UX整理）。「このボタンを押せば周辺の該当店舗が網羅的に
         表示される」という誤解を生むため。OSMデータの登録・タグ品質・網羅率には
@@ -414,6 +376,37 @@ export default function PoiSearchPanel({
         <p className="msg info" style={{ marginTop: 6 }}>
           検索地点を選んでください。
         </p>
+      )}
+
+      {/*
+        外部探索の役割分離（Fable 5.1 Root Cause Audit再監査の最終形＋公開前UX整理）。
+        (1) アプリ内POI＝道の駅周辺の候補をすぐ見る（上の「この周辺を検索」＝PRIMARY）
+        (2) Google Web検索＝アプリ内の候補を見たあとの補助導線（結果一覧の下、
+            および0件・取得失敗時のfallback）。アプリ内検索と同列の「もう一つの検索」
+            には見せない
+        (3) Google Maps＝検索ではなく、道の駅そのものの場所・口コミ・写真・営業時間・
+            ナビを見るための導線（このブロック）。Google Maps URLs公式仕様だけでは
+            「指定した地点を検索中心に固定したままカテゴリ検索する」ことを保証できない
+            （検索地点が端末の現在地扱いになる不具合の根本原因だった）ため、Google Maps
+            には駅周辺のカテゴリ検索をさせない。
+        Google Web検索と混同しないよう、見出しを付けて検索ブロックと物理的に分ける。
+      */}
+      {origin && (
+        <div className="poi-station-links" data-testid="poi-station-links">
+          <span className="poi-station-links-label">
+            {origin.stationId ? 'この道の駅について' : 'この地点について'}
+          </span>
+          <a
+            className="btn-link"
+            style={{ width: '100%' }}
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="poi-google-detail-search"
+          >
+            🗺 Googleマップで{origin.stationId ? '道の駅の詳細・ナビを見る' : 'この地点を見る'}
+          </a>
+        </div>
       )}
 
       {loading && (
@@ -640,6 +633,28 @@ export default function PoiSearchPanel({
               );
             })}
           </ul>
+          {/*
+            アプリ内の候補を見たあとの補助導線。ここより上（アプリ内POI）が主役で、
+            これは「足りなければGoogleでさらに詳しく」という位置づけ。検索クエリは
+            websearch.ts（stationNearbySearchQuery）のまま変更しない。
+          */}
+          {webSearchUrl && (
+            <div className="poi-more" data-testid="poi-more-google">
+              <p className="poi-more-note">
+                アプリ内の候補で足りないときは、Googleでさらに詳しく探せます。
+              </p>
+              <a
+                className="btn-link"
+                style={{ width: '100%' }}
+                href={webSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="poi-web-search"
+              >
+                🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}をもっと詳しく探す
+              </a>
+            </div>
+          )}
         </>
       )}
     </div>

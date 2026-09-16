@@ -8,7 +8,7 @@ interface Props {
   visits: VisitMap;
   onSetState: (id: string, state: StationState) => void;
   onClose: () => void;
-  /** この駅の周辺で飲食店・観光地・温泉を探す */
+  /** この駅の周辺で観光・グルメ・温泉・宿を探す（駅詳細のPRIMARY導線） */
   onSearchNearby: () => void;
 }
 
@@ -129,7 +129,21 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
           </div>
         </div>
 
+        {/*
+          公開前UX整理: 「周辺を探す」を駅詳細のPRIMARY導線にする。
+          ユーザーに「アプリ内検索とGoogle検索のどちらを使うか」を最初に選ばせない。
+          このボタンを押して初めて、既存の周辺スポットパネル（食べる/観光/温泉・休憩/
+          宿泊/すべてのカテゴリUI）を表示する。
+        */}
         <div className="btn-grid">
+          <button
+            className="btn-primary wide"
+            style={{ minHeight: 48, fontSize: 15 }}
+            onClick={onSearchNearby}
+            data-testid="btn-search-nearby"
+          >
+            🔍 周辺の観光・グルメ・温泉・宿を探す
+          </button>
           {st.status === 'open' && state !== 'visited' && (
             <button className="btn-primary" onClick={() => onSetState(st.id, 'visited')} data-testid="btn-visited">
               ✓ 訪問済みにする
@@ -168,9 +182,6 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
           >
             Googleマップで開く ↗
           </a>
-          <button onClick={onSearchNearby} data-testid="btn-search-nearby">
-            🍴 周辺のお店・観光地・温泉を探す
-          </button>
         </div>
         <p className="msg info" style={{ marginTop: 12 }}>
           営業時間・休館日は変わりやすいため、出発前に公式ページで最新情報を確認してください。

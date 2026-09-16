@@ -1747,3 +1747,152 @@ a {
 .poi-detail-sheet .field {
   margin-top: 10px;
 }
+
+/* ===== 地域選択画面（「どこを旅しますか？」） ===== */
+/* 地域選択中は背後の地図（全国1,237件のマーカー）を描画し続けない。
+   Leafletの内部サイズ計算を壊さないよう display:none ではなく visibility で隠す。 */
+.app.region-landing-open .app-main {
+  visibility: hidden;
+}
+.region-landing {
+  position: fixed;
+  inset: 0;
+  z-index: 1950; /* 地図・シート・パネルより前、確認ダイアログ(2000)より後ろ */
+  background: var(--bg);
+  overflow-y: auto;
+  padding: calc(var(--safe-top) + 20px) 16px calc(var(--safe-bottom) + 24px);
+}
+.region-landing-inner {
+  max-width: 560px;
+  margin: 0 auto;
+}
+.region-landing-title {
+  font-size: 22px;
+  margin: 4px 0 6px;
+  color: var(--text);
+}
+.region-landing-lead {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-sub);
+  margin: 0 0 16px;
+}
+.region-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.region-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+.region-card-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.region-card-count {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.region-landing-pref-toggle {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  background: var(--surface2);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+.region-landing-pref {
+  margin-top: 10px;
+}
+.region-landing-confirm {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  font-size: 15px;
+}
+.region-landing-nationwide {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+.region-landing-cancel {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+/* 地図からいつでも地域選択へ戻る導線。既存の絞り込みトグルと同じ1行に収め、
+   地図の表示高さを一切減らさない（行を増やすとマーカーがパネル下に隠れる）。 */
+.top-actions {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+}
+.top-actions .filters-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.change-region-btn {
+  flex: 0 0 auto;
+  max-width: 45%;
+  min-height: 34px;
+  padding: 4px 10px;
+  background: var(--surface);
+  border-radius: 0;
+  border-right: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 周辺スポット: 外部導線の位置づけ分離 ===== */
+/* この道の駅について（Google Maps＝場所・口コミ・写真・営業時間・ナビ。検索ではない） */
+.poi-station-links {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.poi-station-links-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+/* アプリ内の候補を見たあとの補助導線（Google Web検索） */
+.poi-more {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.poi-more-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-sub);
+  margin: 0 0 6px;
+}
