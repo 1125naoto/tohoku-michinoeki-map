@@ -1894,34 +1894,51 @@ a {
 }
 
 /* 地図からいつでも地域選択へ戻る導線。既存の絞り込みトグルと同じ1行に収め、
-   地図の表示高さを一切減らさない（行を増やすとマーカーがパネル下に隠れる）。 */
+   行そのものを増やさない（行を増やすとマーカーが周辺スポットパネルの下に隠れる）。
+   ただしOwner実機(iPhone)で「押しても反応しない」と報告されたため、指でも確実に
+   押せるよう iOS の最小タップ領域 44px を満たす高さにする（従来は34pxで、すぐ上の
+   全幅ボタン(.stats-main)に指が逸れて何も起きないように見えていた）。 */
 .top-actions {
   display: flex;
   align-items: stretch;
   background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 .top-actions .filters-toggle {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 44px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .change-region-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex: 0 0 auto;
-  max-width: 45%;
-  min-height: 34px;
-  padding: 4px 10px;
-  background: var(--surface);
+  max-width: 48%;
+  min-height: 44px;
+  padding: 4px 12px;
+  background: var(--surface2);
   border-radius: 0;
   border-right: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-sub);
+  color: var(--text);
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.change-region-btn .crb-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.change-region-btn .crb-chev {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text-sub);
 }
 
 /* ===== 周辺スポット: 外部導線の位置づけ分離 ===== */

@@ -1268,7 +1268,10 @@ export default function App() {
       {/*
         「地域を変更」と「絞り込み」は同じ1行に並べる。地図の上に行を増やすと地図の
         高さが減り、実機・E2Eの双方で地図マーカーが周辺スポットパネルの下に隠れて
-        タップできなくなるため（既存レイアウトの高さを変えない）。
+        タップできなくなるため（行は増やさない）。
+        高さはiOSの最小タップ領域(44px)に合わせる。Owner実機で「🗾 福島県 を押しても
+        反応しない」と報告された原因が、34pxしかない細い帯で、指が上の全幅ボタン
+        (.stats-main)側に逸れていたことにあるため（E2Eは要素中心を正確に叩くので再現しない）。
       */}
       {!mapFullscreen && (
         <div className="top-actions">
@@ -1278,7 +1281,10 @@ export default function App() {
             aria-label="旅する地域を変更する"
             data-testid="btn-change-region"
           >
-            🗾 {regionSummary}
+            <span className="crb-label">🗾 {regionSummary}</span>
+            <span className="crb-chev" aria-hidden="true">
+              ▾
+            </span>
           </button>
           <button
             className="filters-toggle"

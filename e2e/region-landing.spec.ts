@@ -226,6 +226,110 @@ test.describe('地域選択（どこを旅しますか？）', () => {
     await expect(marker(page, HOKKAIDO.id)).toHaveCount(1, { timeout: 15000 });
   });
 
+  /**
+   * Owner実機(iPhone)で「保存済みの福島県から起動 →『🗾 福島県』を押しても無反応」と
+   * 報告された不具合の回帰確認。原因は帯の高さが34pxしかなく、指が上の全幅ボタン側へ
+   * 逸れていたこと（click()は要素中心を正確に叩くため従来のE2Eでは再現しなかった）。
+   * ここでは実際のタップ(tap)と最小タップ領域(44px)の両方を検証する。
+   */
+  test.describe('保存済みの県から起動したときの「地域を変更」', () => {
+    /** 前回「福島県」を選んで終了した状態を再現する */
+    async function withSavedFukushima(page: Page) {
+      await page.addInitScript(
+        ([key, value]) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {
+            /* noop */
+          }
+        },
+        [AREA_SELECTION_KEY, JSON.stringify({ prefectures: ['福島県'] })] as const,
+      );
+    }
+
+    test('CASE A: 福島県保存済みで起動すると福島県の地図から再開する', async ({ page }) => {
+      await withSavedFukushima(page);
+      await page.goto('/');
+      await expect(page.getByTestId('region-landing')).toHaveCount(0);
+      await expect(marker(page, FUKUSHIMA.id)).toHaveCount(1, { timeout: 15000 });
+      await expect(marker(page, MIYAGI.id)).toHaveCount(0);
+      await expect(page.getByTestId('btn-change-region')).toContainText('福島県');
+    });
+
+    test('CASE B: 「🗾 福島県」を指でタップすると「どこを旅しますか？」が開く', async ({ page }) => {
+      await withSavedFukushima(page);
+      await page.goto('/');
+      await closeBanners(page);
+      const btn = page.getByTestId('btn-change-region');
+      // iPhoneの指でも確実に押せる大きさがある（iOSの最小タップ領域44px）
+      const box = await btn.boundingBox();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      // タップ位置がボタン自身に届く（上の全幅ボタン等に奪われない）
+      const ownsCenter = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="btn-change-region"]')!;
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return hit === el || el.contains(hit);
+      });
+      expect(ownsCenter).toBe(true);
+      // click()ではなく実際のタッチで開くこと
+      await btn.tap();
+      await expect(page.getByTestId('region-landing')).toBeVisible();
+      await expect(page.getByTestId('region-landing')).toContainText('どこを旅しますか？');
+    });
+
+    test('CASE C/D: 東北→「何県を回りますか？」→福島のみで福島だけが出る', async ({ page }) => {
+      await withSavedFukushima(page);
+      await page.goto('/');
+      await closeBanners(page);
+      await page.getByTestId('btn-change-region').tap();
+      await page.getByTestId('region-card-東北').tap();
+      // 地図へ直接行かず県選択になる
+      await expect(page.getByTestId('region-landing-area-title')).toContainText('何県を回りますか？');
+      // 保存済みの福島県は選択状態で引き継がれる（押すと解除になるのでそのまま確定する）
+      await expect(page.getByTestId('area-pref-福島県')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByTestId('area-pref-宮城県')).toHaveAttribute('aria-pressed', 'false');
+      await page.getByTestId('area-prefecture-confirm').tap();
+      await expect(page.getByTestId('region-landing')).toHaveCount(0);
+      await expect(marker(page, FUKUSHIMA.id)).toHaveCount(1, { timeout: 15000 });
+      await expect(marker(page, MIYAGI.id)).toHaveCount(0);
+    });
+
+    test('CASE E: 福島＋宮城を選ぶと2県だけが出る', async ({ page }) => {
+      await withSavedFukushima(page);
+      await page.goto('/');
+      await closeBanners(page);
+      await page.getByTestId('btn-change-region').tap();
+      await page.getByTestId('region-card-東北').tap();
+      // 保存済みの福島は引き継がれている
+      await expect(page.getByTestId('area-pref-福島県')).toHaveAttribute('aria-pressed', 'true');
+      await page.getByTestId('area-pref-宮城県').tap();
+      await page.getByTestId('area-prefecture-confirm').tap();
+      await expect(marker(page, FUKUSHIMA.id)).toHaveCount(1, { timeout: 15000 });
+      await expect(marker(page, MIYAGI.id)).toHaveCount(1);
+      await expect(marker(page, AOMORI.id)).toHaveCount(0);
+    });
+
+    test('CASE F: 地域変更画面を開いただけでは保存済みの福島県フィルターを壊さない', async ({ page }) => {
+      await withSavedFukushima(page);
+      await page.goto('/');
+      await closeBanners(page);
+      await page.getByTestId('btn-change-region').tap();
+      await page.getByTestId('region-card-東北').tap();
+      await page.getByTestId('area-pref-宮城県').tap(); // 確定しない
+      await page.getByTestId('region-landing-back').tap();
+      await page.getByTestId('region-landing-cancel').tap();
+
+      await expect(page.getByTestId('region-landing')).toHaveCount(0);
+      await expect(page.getByTestId('btn-change-region')).toContainText('福島県');
+      await expect(marker(page, FUKUSHIMA.id)).toHaveCount(1, { timeout: 15000 });
+      await expect(marker(page, MIYAGI.id)).toHaveCount(0);
+      const saved = await page.evaluate((k) => localStorage.getItem(k), AREA_SELECTION_KEY);
+      expect(JSON.parse(saved ?? '{}')).toEqual({ prefectures: ['福島県'] });
+    });
+  });
+
   test('駅への共有リンク(#station=...)で開いたときは地域選択画面で邪魔しない', async ({ page }) => {
     await page.goto(`/#station=${AOMORI.id}`);
     await expect(page.getByTestId('region-landing')).toHaveCount(0);
