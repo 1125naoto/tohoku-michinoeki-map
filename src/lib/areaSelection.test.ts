@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AREA_SELECTION_KEY, loadAreaSelection, saveAreaSelection } from './areaSelection';
+import {
+  AREA_SELECTION_KEY,
+  AREA_SESSION_KEY,
+  isAreaChosenThisSession,
+  loadAreaSelection,
+  markAreaChosenThisSession,
+  saveAreaSelection,
+} from './areaSelection';
 import { KEYS } from './storage';
 import { MAP_SETTINGS_KEY } from './mapSettings';
 import { prefecturesInArea } from './ui';
@@ -28,6 +35,33 @@ class MemoryStorage implements Storage {
 
 beforeEach(() => {
   (globalThis as { localStorage?: Storage }).localStorage = new MemoryStorage();
+  (globalThis as { sessionStorage?: Storage }).sessionStorage = new MemoryStorage();
+});
+
+describe('COLD START / BACKGROUND RESUME の区別（セッション印）', () => {
+  it('新しいセッションでは未通過（＝地域選択画面から始まる）', () => {
+    expect(isAreaChosenThisSession()).toBe(false);
+  });
+
+  it('一度通過すると同一セッション中は通過済みのまま（復帰・再読み込みで入口へ戻さない）', () => {
+    markAreaChosenThisSession();
+    expect(isAreaChosenThisSession()).toBe(true);
+  });
+
+  it('保存済みの県があってもセッション印がなければ未通過（前回県での自動スタートはしない）', () => {
+    saveAreaSelection(['福島県']);
+    expect(loadAreaSelection()).toEqual({ prefectures: ['福島県'] });
+    expect(isAreaChosenThisSession()).toBe(false);
+  });
+
+  it('セッション印はsessionStorage側のみで、永続データのキーには書き込まない', () => {
+    markAreaChosenThisSession();
+    expect(sessionStorage.getItem(AREA_SESSION_KEY)).toBe('1');
+    expect(localStorage.getItem(AREA_SESSION_KEY)).toBeNull();
+    expect(localStorage.getItem(KEYS.visits)).toBeNull();
+    expect(localStorage.getItem(KEYS.routes)).toBeNull();
+    expect(localStorage.getItem(KEYS.trip)).toBeNull();
+  });
 });
 
 describe('地域選択（「どこを旅しますか？」）の保存', () => {

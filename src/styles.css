@@ -1903,6 +1903,10 @@ a {
   align-items: stretch;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  /* 後ろのDOMにある地図(.app-main は position:relative)に、万一はみ出しが起きても
+     覆われないよう、この操作行を明示的に前面へ置く（実機で押せない事象の保険）。 */
+  position: relative;
+  z-index: 700;
 }
 .top-actions .filters-toggle {
   flex: 1 1 auto;
@@ -1915,9 +1919,9 @@ a {
 .change-region-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 0 0 auto;
-  max-width: 48%;
+  max-width: 62%;
   min-height: 44px;
   padding: 4px 12px;
   background: var(--surface2);
@@ -1935,10 +1939,17 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.change-region-btn .crb-chev {
+.change-region-btn .crb-current {
   flex: 0 0 auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 11px;
-  color: var(--text-sub);
+  font-weight: 700;
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border-radius: 999px;
+  padding: 1px 7px;
 }
 
 /* ===== 周辺スポット: 外部導線の位置づけ分離 ===== */

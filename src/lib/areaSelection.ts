@@ -43,7 +43,37 @@ export function loadAreaSelection(): AreaSelection | null {
   }
 }
 
-/** 選択を保存する（空配列＝全国もひとつの選択として保存し、次回は地域選択画面を出さない） */
+/**
+ * 「このセッションでは地域選択を済ませた」印。
+ *
+ * sessionStorage を使うのは、COLD START（アプリを新しく開いた）と
+ * BACKGROUND RESUME（Google検索・Googleマップ・他アプリへ行って戻っただけ）を
+ * 区別するため。タブ/アプリを閉じると消えるので次回は必ず地域選択から始まり、
+ * 同じセッション内の復帰や再読み込みでは今見ている画面を維持できる。
+ * 永続データ（訪問済み・行きたい・スタンプ・保存ルート・TripState）とは無関係で、
+ * localStorage のスキーマは一切変更しない。
+ */
+export const AREA_SESSION_KEY = nsKey('tohoku-me:area-session:v1');
+
+/** このセッションで既に地域選択を通過しているか */
+export function isAreaChosenThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(AREA_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** このセッションでは以後、地域選択画面を入口にしない */
+export function markAreaChosenThisSession(): void {
+  try {
+    sessionStorage.setItem(AREA_SESSION_KEY, '1');
+  } catch {
+    /* noop（プライベートブラウジング等。次回も地域選択から始まるだけ） */
+  }
+}
+
+/** 選択を保存する（空配列＝全国もひとつの選択として保存し、次回起動時の初期表示に使う） */
 export function saveAreaSelection(prefectures: Prefecture[]): void {
   try {
     localStorage.setItem(AREA_SELECTION_KEY, JSON.stringify({ prefectures } satisfies AreaSelection));

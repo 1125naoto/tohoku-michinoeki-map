@@ -3,6 +3,9 @@ import type { Page } from '@playwright/test';
 /** 地域選択（「どこを旅しますか？」）の保存キー。src/lib/areaSelection.ts と一致させる */
 export const AREA_SELECTION_KEY = 'tohoku-me:area-selection:v1';
 
+/** 同一セッション内で地域選択を通過した印。src/lib/areaSelection.ts と一致させる */
+export const AREA_SESSION_KEY = 'tohoku-me:area-session:v1';
+
 /**
  * 初回起動の地域選択画面（「どこを旅しますか？」）を出さない状態にする。
  *
@@ -13,13 +16,15 @@ export const AREA_SELECTION_KEY = 'tohoku-me:area-selection:v1';
  */
 export async function useNationwideSelection(page: Page) {
   await page.addInitScript(
-    ([key, value]) => {
+    ([key, value, sessionKey]) => {
       try {
         localStorage.setItem(key, value);
+        // このセッションでは地域選択を通過済み扱いにする（COLD STARTの入口画面を出さない）
+        sessionStorage.setItem(sessionKey, '1');
       } catch {
         /* noop */
       }
     },
-    [AREA_SELECTION_KEY, JSON.stringify({ prefectures: [] })] as const,
+    [AREA_SELECTION_KEY, JSON.stringify({ prefectures: [] }), AREA_SESSION_KEY] as const,
   );
 }

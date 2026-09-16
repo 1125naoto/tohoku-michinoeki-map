@@ -29,7 +29,12 @@ import {
   type SelectedPrefectures,
 } from './lib/ui';
 import { loadMapSettings, saveMapSettings, type MapSettings } from './lib/mapSettings';
-import { loadAreaSelection, saveAreaSelection } from './lib/areaSelection';
+import {
+  isAreaChosenThisSession,
+  loadAreaSelection,
+  markAreaChosenThisSession,
+  saveAreaSelection,
+} from './lib/areaSelection';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
 import type { Station } from './types';
@@ -120,23 +125,33 @@ export default function App() {
   }, []);
   const [tab, setTab] = useState<Tab>('map');
   /**
-   * 表示中の都道府県。前回「どこを旅しますか？」で選んだ地域があればそこから再開する
-   * （未選択＝空配列＝全国。既存の絞り込みロジックはそのまま）。
+   * 表示中の都道府県。前回選んだ県を初期値にしておき、地域選択画面での初期チェックと
+   * 「変更せずに戻る」の戻り先に使う（未選択＝空配列＝全国。絞り込みロジックは不変）。
    */
   const [selectedPrefectures, setSelectedPrefectures] = useState<SelectedPrefectures>(
     () => loadAreaSelection()?.prefectures ?? [],
   );
   /**
    * 「どこを旅しますか？」（地域選択画面）を表示するか。
-   * 全国1,237施設をいきなり地図に出すと初見では情報量が多すぎるため、まだ一度も
-   * 地域を選んでいない場合だけ入口にする。ただし次の場合はユーザーが意図した画面を
-   * ふさいでしまうため出さない:
+   *
+   * COLD START（アプリを新しく開いた）では、前回の県が保存されていても必ずここから
+   * 始める。全国1,237施設をいきなり地図に出すと情報量が多すぎるうえ、前回の県のまま
+   * 勝手に始まると「今どの範囲を見ているのか」が分からないため。
+   *
+   * BACKGROUND RESUME（Google検索・Googleマップ・他アプリへ行って戻っただけ）は
+   * 区別し、今見ている画面をそのまま維持する。これは
+   * - 復帰ではReactが再マウントされないのでこのstateがそのまま残る
+   * - 同一セッション中の再読み込み（Service Workerの更新適用など）でも戻らないよう、
+   *   sessionStorageの印（isAreaChosenThisSession）で判定する
+   * の二段で担保する。visibilitychange / pageshow / focus では再表示しない。
+   *
+   * 次の場合はユーザーが意図した画面をふさいでしまうため出さない:
    * - 駅への共有リンク(#station=...)で開いたとき（その駅を見に来ている）
    * - 旅行中(TripState)のまま再訪したとき（進行中の旅を邪魔しない）
-   * 地図からはいつでも「地域を変更」で開き直せる。
+   * 地図からはいつでも「地域・県を変更」で開き直せる。
    */
   const [showRegionLanding, setShowRegionLanding] = useState(
-    () => loadAreaSelection() == null && hashStationId() == null && loadTrip() == null,
+    () => !isAreaChosenThisSession() && hashStationId() == null && loadTrip() == null,
   );
   /**
    * ユーザーが地域を選択済みか（＝以後の絞り込み変更を次回起動用に保存してよいか）。
@@ -173,6 +188,7 @@ export default function App() {
   const commitAreaSelection = useCallback((prefs: SelectedPrefectures) => {
     setSelectedPrefectures(prefs);
     saveAreaSelection(prefs);
+    markAreaChosenThisSession();
     setAreaSelectionMade(true);
     setShowRegionLanding(false);
   }, []);
@@ -793,6 +809,15 @@ export default function App() {
     if (!areaSelectionMade) return;
     saveAreaSelection(selectedPrefectures);
   }, [areaSelectionMade, selectedPrefectures]);
+  /**
+   * 共有リンク・旅行中の復帰で地域選択を出さなかった場合は、このセッションでは
+   * 以後も出さない（同一セッション中の再読み込みで急に入口画面へ戻さないため）。
+   * 初回マウント時の判定だけを見る（以後の開閉には反応しない）。
+   */
+  const landingSkippedRef = useRef(!showRegionLanding);
+  useEffect(() => {
+    if (landingSkippedRef.current) markAreaChosenThisSession();
+  }, []);
   const activeSaved = trip ? (savedRoutes.find((r) => r.id === trip.savedRouteId) ?? null) : null;
   /**
    * 「地域を変更」ボタンに出す現在の表示範囲の短い要約。
@@ -1276,14 +1301,15 @@ export default function App() {
       {!mapFullscreen && (
         <div className="top-actions">
           <button
+            type="button"
             className="change-region-btn"
             onClick={() => setShowRegionLanding(true)}
-            aria-label="旅する地域を変更する"
+            aria-label={`地域・県を変更する（現在: ${regionSummary}）`}
             data-testid="btn-change-region"
           >
-            <span className="crb-label">🗾 {regionSummary}</span>
-            <span className="crb-chev" aria-hidden="true">
-              ▾
+            <span className="crb-label">🗾 地域・県を変更</span>
+            <span className="crb-current" data-testid="btn-change-region-current">
+              {regionSummary}
             </span>
           </button>
           <button
