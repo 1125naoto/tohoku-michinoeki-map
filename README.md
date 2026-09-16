@@ -22,6 +22,9 @@ https://（ユーザー名）.github.io/tohoku-michinoeki-map/
 
 - `main`: 現行公開版。GitHub Pagesへ自動デプロイされる
 - `v1.0.3-nami`（タグ）: 2026-09-10 実地テスト用に凍結した安定版。変更・削除しない
+- `v1.1.0-rc1`（タグ）: 2026-09-16 Owner iPhone実機QA PASS後に凍結した機能FIX版（Final Gate前の基準点）。
+  全国1,237施設・地域→県→地図・周辺スポット・ルート・Google Web検索・Googleマップのカテゴリ検索を含む。
+  QA配信のみで本番未反映。変更・削除しない
 - `product/main`: 将来の製品版（無料/有料プラン、クラウド同期等）を開発するブランチ。
   設計・方針は [`PRODUCT_ARCHITECTURE.md`](./PRODUCT_ARCHITECTURE.md) を参照
 
