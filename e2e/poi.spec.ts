@@ -323,6 +323,10 @@ test.describe('周辺スポット検索', () => {
     await expect(web).toContainText('Googleで');
     await expect(web).toContainText('もっと詳しく探す');
     await expect(page.getByTestId('poi-more-google')).toContainText('アプリ内の候補で足りないとき');
+    // Owner実機の「Google検索から戻ると白い画面」対応: 外部リンクは新しいタブで開くため、
+    // そのタブを閉じればアプリに戻れることを画面上で案内する（開き方自体は変更しない）
+    await expect(page.getByTestId('poi-external-note')).toContainText('新しいタブで開きます');
+    await expect(page.getByTestId('poi-external-note')).toContainText('閉じる');
     // DOM順でも結果一覧より後ろ（アプリ内候補が先、Googleは補助）
     const webComesAfterList = await page.evaluate(() => {
       const list = document.querySelector('[data-testid="poi-result-list"]');

@@ -653,6 +653,17 @@ export default function PoiSearchPanel({
               >
                 🔍 Googleで{category ? WEB_SEARCH_CATEGORY_LABEL[category] : '周辺スポット'}をもっと詳しく探す
               </a>
+              {/*
+                Owner実機(iPhone)で「Google検索を見たあと戻ると白い画面になる」と
+                報告された件の案内。外部リンクは <a target="_blank"> で新しいタブに開くため、
+                そのタブで「戻る」を押すと、このアプリではなくタブを開いた時点の空ページへ
+                戻ってしまう（アプリ自体は元のタブでそのまま残っている）。
+                開き方は変えず（window.open()は使わない／ネイティブアンカーのまま）、
+                戻り方だけを明示する。
+              */}
+              <p className="poi-more-note" data-testid="poi-external-note">
+                Googleは新しいタブで開きます。見終わったらそのタブを閉じると、この画面に戻れます。
+              </p>
             </div>
           )}
         </>

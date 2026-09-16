@@ -1830,6 +1830,60 @@ a {
   border: 1px solid var(--border);
   font-size: 14px;
 }
+/* 県選択ステップ（地域 → 何県を回りますか？） */
+.region-landing-back {
+  min-height: 40px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+.area-pref-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.area-pref-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 56px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+.area-pref-card.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+}
+.area-pref-check {
+  width: 18px;
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-weight: 700;
+}
+.area-pref-name {
+  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.area-pref-count {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.region-landing-selected {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-sub);
+}
 .region-landing-cancel {
   width: 100%;
   min-height: 44px;

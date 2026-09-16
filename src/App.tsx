@@ -176,15 +176,6 @@ export default function App() {
     setAreaSelectionMade(true);
     setShowRegionLanding(false);
   }, []);
-  const chooseLandingArea = useCallback(
-    (area: AreaName) => commitAreaSelection(prefecturesInArea(area)),
-    [commitAreaSelection],
-  );
-  const chooseLandingNationwide = useCallback(() => commitAreaSelection([]), [commitAreaSelection]);
-  const confirmLandingPrefectures = useCallback(
-    () => commitAreaSelection(selectedPrefectures),
-    [commitAreaSelection, selectedPrefectures],
-  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>({ rvPark: false, onsen: false });
   const [stationQuery, setStationQuery] = useState('');
@@ -1267,10 +1258,7 @@ export default function App() {
           statByPref={prefStatByName}
           totalStations={stats.total}
           selectedPrefectures={selectedPrefectures}
-          onSelectArea={chooseLandingArea}
-          onTogglePrefecture={toggleClearPref}
-          onConfirmPrefectures={confirmLandingPrefectures}
-          onSelectNationwide={chooseLandingNationwide}
+          onCommit={commitAreaSelection}
           onCancel={areaSelectionMade ? () => setShowRegionLanding(false) : null}
         />
       )}
@@ -1451,7 +1439,18 @@ export default function App() {
 
       <main className="app-main">
         {/* 地図は常にマウントしたまま表示切替（状態保持のため） */}
-        <div style={{ position: 'absolute', inset: 0, visibility: tab === 'map' ? 'visible' : 'hidden' }}>
+        {/*
+          地図は常にマウントしたまま表示切替（状態保持のため）。地域選択中は地図を
+          隠す（全国1,237件のマーカーを裏で描画し続けない）。ここは inline style で
+          指定しているため、祖先(.app-main)のvisibilityだけでは隠れない点に注意。
+        */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            visibility: tab === 'map' && !showRegionLanding ? 'visible' : 'hidden',
+          }}
+        >
           <MapView
             stations={STATIONS}
             visits={visits}
