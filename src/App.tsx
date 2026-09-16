@@ -1645,6 +1645,7 @@ export default function App() {
               onRetry={runPoiSearchNow}
               mapsUrl={searchOrigin ? googleMapsUrlFor(searchOrigin) : ''}
               webSearchUrl={webSearchUrlFor(searchOrigin, poiCategory)}
+              originStation={searchOrigin?.stationId ? (getStation(searchOrigin.stationId) ?? null) : null}
               onClose={closePoiSearch}
               results={sortedPoiResults}
               sort={poiSort}

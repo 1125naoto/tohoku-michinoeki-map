@@ -1978,3 +1978,39 @@ a {
   color: var(--text-sub);
   margin: 0 0 6px;
 }
+
+/* ===== 周辺スポット: アイコン付きサブカテゴリ（Googleマップのカテゴリ検索） ===== */
+.poi-gmaps-cats {
+  margin-top: 10px;
+}
+.poi-gmaps-cats-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+/* 横スクロールに閉じ込めず自然に折り返す（スマホで全部のカテゴリに手が届くように） */
+.poi-gmaps-cats-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.poi-gmaps-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1.2;
+}
+.poi-gmaps-cat-icon {
+  font-size: 16px;
+}

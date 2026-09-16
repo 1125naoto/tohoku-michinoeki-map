@@ -386,6 +386,99 @@ test.describe('周辺スポット検索', () => {
     expect(await page.getByTestId('poi-google-detail-search').getAttribute('href')).toBe(mapsHrefBefore);
   });
 
+  /**
+   * アイコン付きサブカテゴリ → Googleマップのカテゴリ検索（Owner実機QA・道の駅あきた港）。
+   * 検索語は「カテゴリ語 + 市区町村」だけで、道の駅名を混ぜない（道の駅名を入れると
+   * カテゴリ検索ではなく道の駅のPlace詳細へ寄ってしまうため）。
+   */
+  test('周辺スポットのサブカテゴリはアイコン付きで、Googleマップを市区町村のカテゴリ検索で開く', async ({
+    page,
+  }) => {
+    const AKITA_PORT = OPEN_STATIONS.find((s) => s.name === 'あきた港')!;
+    expect(AKITA_PORT.city).toBe('秋田市'); // CASE H: 市区町村の取得元
+    await mockOverpassResponse(page);
+    await page.goto(`/#station=${AKITA_PORT.id}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
+
+    // 大カテゴリはアイコン付き
+    await expect(page.getByTestId('poi-category-food')).toContainText('🍴');
+    await expect(page.getByTestId('poi-category-tourism')).toContainText('🗺️');
+    await expect(page.getByTestId('poi-category-onsen')).toContainText('♨️');
+    await expect(page.getByTestId('poi-category-lodging')).toContainText('🏨');
+
+    /** サブカテゴリのhrefをデコードして返す */
+    const href = async (key: string) =>
+      decodeURIComponent((await page.getByTestId(`poi-gmaps-cat-${key}`).getAttribute('href')) ?? '');
+
+    // CASE A: 食べる → アイコン付きサブカテゴリが出る
+    await page.getByTestId('poi-category-food').click();
+    await expect(page.getByTestId('poi-gmaps-categories')).toBeVisible();
+    for (const [key, label] of [
+      ['ramen', 'ラーメン'],
+      ['sushi', '寿司'],
+      ['yakiniku', '焼肉'],
+      ['curry', 'カレー'],
+      ['cafe', 'カフェ'],
+      ['sweets', 'スイーツ'],
+      ['izakaya', '居酒屋'],
+    ] as const) {
+      await expect(page.getByTestId(`poi-gmaps-cat-${key}`)).toContainText(label);
+    }
+    // 指で押せる大きさ
+    const ramenBox = await page.getByTestId('poi-gmaps-cat-ramen').boundingBox();
+    expect(ramenBox!.height).toBeGreaterThanOrEqual(44);
+
+    // CASE B: ラーメン → 「ラーメン 秋田市」
+    expect(await href('ramen')).toBe('https://www.google.com/maps/search/?api=1&query=ラーメン 秋田市');
+    // CASE C: 寿司
+    expect(await href('sushi')).toBe('https://www.google.com/maps/search/?api=1&query=寿司 秋田市');
+    // 道の駅名は検索語に入れない
+    expect(await href('ramen')).not.toContain('道の駅');
+    expect(await href('ramen')).not.toContain(AKITA_PORT.name);
+    // 外部リンクは既存方針どおりネイティブアンカー
+    await expect(page.getByTestId('poi-gmaps-cat-ramen')).toHaveAttribute('target', '_blank');
+    await expect(page.getByTestId('poi-gmaps-cat-ramen')).toHaveAttribute('rel', /noopener/);
+    await expect(page.getByTestId('poi-gmaps-cat-ramen')).toHaveAttribute('rel', /noreferrer/);
+
+    // CASE D/E: 観光 → 神社等が出て「神社 秋田市」
+    await page.getByTestId('poi-category-tourism').click();
+    await expect(page.getByTestId('poi-gmaps-cat-jinja')).toContainText('神社');
+    await expect(page.getByTestId('poi-gmaps-cat-tera')).toContainText('寺');
+    await expect(page.getByTestId('poi-gmaps-cat-museum')).toContainText('博物館');
+    expect(await href('jinja')).toBe('https://www.google.com/maps/search/?api=1&query=神社 秋田市');
+
+    // CASE F: 温泉 → 日帰り温泉等
+    await page.getByTestId('poi-category-onsen').click();
+    await expect(page.getByTestId('poi-gmaps-cat-higaeri')).toContainText('日帰り温泉');
+    await expect(page.getByTestId('poi-gmaps-cat-sauna')).toContainText('サウナ');
+    expect(await href('higaeri')).toBe('https://www.google.com/maps/search/?api=1&query=日帰り温泉 秋田市');
+
+    // CASE G: 宿泊 → ホテル/旅館/キャンプ場/RVパーク
+    await page.getByTestId('poi-category-lodging').click();
+    for (const [key, label] of [
+      ['hotel', 'ホテル'],
+      ['ryokan', '旅館'],
+      ['camp', 'キャンプ場'],
+      ['rvpark', 'RVパーク'],
+    ] as const) {
+      await expect(page.getByTestId(`poi-gmaps-cat-${key}`)).toContainText(label);
+    }
+    expect(await href('hotel')).toBe('https://www.google.com/maps/search/?api=1&query=ホテル 秋田市');
+
+    // CASE J: アプリ内POI検索は従来どおり残っている（Googleに置き換えていない）
+    await expect(page.getByTestId('poi-do-search')).toBeVisible();
+    await page.getByTestId('poi-category-all').click();
+    await expect(page.getByTestId('poi-gmaps-categories')).toHaveCount(0); // 「すべて」では出さない
+    await page.getByTestId('poi-do-search').click();
+    await expect(page.getByTestId('poi-result-count')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('poi-result-list')).toBeVisible();
+    // 道の駅そのものを開くGoogle Maps導線も従来どおり残す
+    await expect(page.getByTestId('poi-google-detail-search')).toContainText('道の駅の詳細・ナビを見る');
+  });
+
   test('検索半径を切り替えると再検索される', async ({ page }) => {
     let lastRadius = '';
     await page.route('**/api/interpreter', async (route) => {

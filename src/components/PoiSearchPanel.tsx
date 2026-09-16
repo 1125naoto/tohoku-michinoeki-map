@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+import {
+  CATEGORY_ICON,
+  NEARBY_CATEGORIES,
+  municipalityFor,
+  nearbyCategorySearchUrl,
+  type NearbyCategory,
+} from '../lib/nearbyCategories';
 import { WEB_SEARCH_CATEGORY_LABEL } from '../lib/websearch';
 import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
 import { PREFECTURES, type Prefecture, type Station } from '../types';
@@ -103,6 +110,12 @@ interface Props {
    * 駅originのみ生成可能（確実な地名が無い非駅originではnullで、CTA自体を隠す）。
    */
   webSearchUrl: string | null;
+  /**
+   * 検索地点の道の駅。アイコン付きサブカテゴリからGoogleマップのカテゴリ検索
+   * （「ラーメン 秋田市」等）を開くために市区町村を使う。道の駅以外の検索地点
+   * （現在地・ルート上の地点）ではnullで、カテゴリチップ自体を出さない。
+   */
+  originStation: Station | null;
   onClose: () => void;
   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
   results: Poi[];
@@ -155,6 +168,7 @@ export default function PoiSearchPanel({
   onRetry,
   mapsUrl,
   webSearchUrl,
+  originStation,
   onClose,
   results,
   sort,
@@ -166,6 +180,8 @@ export default function PoiSearchPanel({
   // 「道の駅を選ぶ」内の都道府県絞り込み。検索地点そのものではなく一覧の見た目だけを絞る
   // ローカルなUI状態のため、検索地点state（origin）やPOI検索ロジックには一切影響しない。
   const [prefFilter, setPrefFilter] = useState<Prefecture>(PREFECTURES[0]);
+  /** Googleマップのカテゴリ検索に使う地域名（見出し表示用） */
+  const municipalityLabel = originStation ? municipalityFor(originStation) : '';
   const expandRadius = () => {
     const idx = RADIUS_CHOICES.findIndex((r) => r.value === radius);
     const next = RADIUS_CHOICES[idx + 1];
@@ -297,7 +313,7 @@ export default function PoiSearchPanel({
             onClick={() => onChangeCategory(c)}
             data-testid={`poi-category-${c}`}
           >
-            {CATEGORY_LABEL[c]}
+            {CATEGORY_ICON[c]} {CATEGORY_LABEL[c]}
           </button>
         ))}
         <button
@@ -308,6 +324,39 @@ export default function PoiSearchPanel({
           すべて
         </button>
       </div>
+
+      {/*
+        アイコン付きサブカテゴリ → Googleマップのカテゴリ検索。
+        アプリ内POI（この下の「この周辺を検索」）は道の駅を中心とした近場候補、
+        こちらはGoogleの店舗・施設情報からカテゴリで探す導線で、両者は共存させる。
+        検索語は「カテゴリ語 + 市区町村」だけで道の駅名を混ぜない（道の駅名を入れると
+        カテゴリ検索ではなく道の駅のPlace詳細へ寄ってしまうため）。
+        外部リンクは既存方針どおりネイティブアンカー（window.open()は使わない）。
+      */}
+      {category && originStation && (
+        <div className="poi-gmaps-cats" data-testid="poi-gmaps-categories">
+          <span className="poi-gmaps-cats-label">
+            Googleマップで{municipalityLabel}のカテゴリから探す
+          </span>
+          <div className="poi-gmaps-cats-chips">
+            {NEARBY_CATEGORIES[category].map((c: NearbyCategory) => (
+              <a
+                key={c.key}
+                className="poi-gmaps-cat"
+                href={nearbyCategorySearchUrl(originStation, c)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid={`poi-gmaps-cat-${c.key}`}
+              >
+                <span className="poi-gmaps-cat-icon" aria-hidden="true">
+                  {c.icon}
+                </span>
+                <span className="poi-gmaps-cat-label">{c.label}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/*
         食べる(food)の細分類（ラーメン/食堂/洋食/寿司/焼肉等）は、一般ユーザーUIから
