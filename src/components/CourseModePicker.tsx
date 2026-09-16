@@ -1,8 +1,12 @@
+import BackBar from './BackBar';
+
 export type CourseMode = 'auto' | 'manual';
 
 interface Props {
   lastUsed: CourseMode | null;
   onChoose: (mode: CourseMode) => void;
+  /** 地図へ戻る（コース作成に入る前の画面へ。選択中の内容は消さない） */
+  onBack: () => void;
 }
 
 /**
@@ -10,9 +14,10 @@ interface Props {
  * 2方式を選ぶ画面。前回使った方式があればハイライトするが、初めて使う人にも
  * 違いがすぐ分かるよう、選ぶまでは常にこの画面を経由させる。
  */
-export default function CourseModePicker({ lastUsed, onChoose }: Props) {
+export default function CourseModePicker({ lastUsed, onChoose, onBack }: Props) {
   return (
     <div>
+      <BackBar label="地図へ戻る" onBack={onBack} testId="course-mode-back" />
       <h3 style={{ margin: '4px 0 10px' }}>コースの作り方を選んでください</h3>
       <button
         className={`mode-card${lastUsed === 'auto' ? ' last-used' : ''}`}

@@ -1521,9 +1521,9 @@ test.describe('堅牢性', () => {
     await page.route('**/msearch.gsi.go.jp/**', (route) => route.abort());
     await page.goto('/');
     await goToAutoPlanner(page);
-    await page.getByRole('button', { name: '住所・地名' }).click();
-    await page.getByLabel('住所・地名').fill('郡山市');
-    await page.getByRole('button', { name: '検索', exact: true }).click();
+    await page.getByTestId('origin-mode-search').click();
+    await page.getByTestId('origin-search-input').fill('郡山市');
+    await page.getByTestId('origin-search-run').click();
     await expect(page.locator('.msg.warn')).toContainText('うまくいきませんでした');
     // 画面は落ちておらず、地図指定・道の駅指定への誘導がある
     await expect(page.locator('.msg.warn')).toContainText('地図で選ぶ');

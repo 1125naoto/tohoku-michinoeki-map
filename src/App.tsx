@@ -1775,7 +1775,7 @@ export default function App() {
                 onExtendWithStops={extendAutoRouteWithStops}
               />
             ) : courseMode === 'choose' ? (
-              <CourseModePicker lastUsed={lastCourseMode} onChoose={chooseCourseMode} />
+              <CourseModePicker lastUsed={lastCourseMode} onChoose={chooseCourseMode} onBack={() => setTab('map')} />
             ) : courseMode === 'manual' ? (
               routeSelectMode ? (
                 <div className="empty" data-testid="manual-select-hint">
@@ -1826,6 +1826,7 @@ export default function App() {
                 }}
                 onSubmit={submitPlan}
                 planning={planning}
+                onBack={() => setCourseMode('choose')}
               />
             )}
           </div>

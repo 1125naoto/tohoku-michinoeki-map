@@ -2014,3 +2014,49 @@ a {
 .poi-gmaps-cat-icon {
   font-size: 16px;
 }
+
+/* ===== サブ画面の「← 戻る」導線 ===== */
+.back-bar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding: 6px 12px 6px 6px;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--text-sub);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ===== 出発地点の名称・住所検索の候補一覧 ===== */
+.origin-candidates {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.origin-candidate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+}
+.origin-candidate-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.origin-candidate-sub {
+  font-size: 12px;
+  color: var(--text-sub);
+}

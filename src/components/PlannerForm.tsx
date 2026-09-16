@@ -3,6 +3,7 @@ import type { PlanParams, PlanPriority, Prefecture, RoadPref, Station } from '..
 import { PREFECTURES } from '../types';
 import type { LatLng } from '../lib/geo';
 import OriginPicker from './OriginPicker';
+import BackBar from './BackBar';
 import RoadPrefPicker from './RoadPrefPicker';
 
 export interface OriginValue extends LatLng {
@@ -16,6 +17,8 @@ interface Props {
   onOriginChange: (o: OriginValue | null) => void;
   onSubmit: (params: PlanParams) => void;
   planning: boolean;
+  /** コースの作り方の選択へ戻る（入力中の内容・出発地点は消さない） */
+  onBack: () => void;
 }
 
 function defaultDepartAt(): string {
@@ -33,7 +36,15 @@ const BUDGETS = [
 ];
 const STAYS = [15, 30, 45, 60];
 
-export default function PlannerForm({ stations, origin, onRequestMapPick, onOriginChange, onSubmit, planning }: Props) {
+export default function PlannerForm({
+  stations,
+  origin,
+  onRequestMapPick,
+  onOriginChange,
+  onSubmit,
+  planning,
+  onBack,
+}: Props) {
   const [budgetMin, setBudgetMin] = useState(240);
   const [customBudget, setCustomBudget] = useState('');
   const [stayMin, setStayMin] = useState(30);
@@ -89,6 +100,7 @@ export default function PlannerForm({ stations, origin, onRequestMapPick, onOrig
 
   return (
     <div>
+      <BackBar label="コースの作り方を選び直す" onBack={onBack} testId="planner-back" />
       <div className="card">
         <h3>1. どこから出発？</h3>
         <OriginPicker
