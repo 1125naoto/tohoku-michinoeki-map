@@ -2060,3 +2060,31 @@ a {
   font-size: 12px;
   color: var(--text-sub);
 }
+
+/* ===== 名称・住所検索の出典表示 ===== */
+.place-search-credit {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-sub);
+}
+.origin-candidate.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+/* ===== コース内の道の駅カードからの周辺検索 ===== */
+.stop-nearby {
+  margin-top: 6px;
+}
+.stop-nearby-toggle {
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.stop-nearby-body {
+  margin-top: 8px;
+}

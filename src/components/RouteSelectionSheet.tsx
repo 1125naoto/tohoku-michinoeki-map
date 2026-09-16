@@ -6,6 +6,8 @@ import { CATEGORY_LABEL, SUBCATEGORY_LABEL, poiDisplayName, type Poi } from '../
 import CustomStopForm from './CustomStopForm';
 
 interface Props {
+  /** 自由地点の検索で道の駅名も探せるようにするためのマスターデータ */
+  stations: Station[];
   selectedIds: string[];
   getStation: (id: string) => Station | undefined;
   /** 選択済みの周辺スポット（キー: Poi.id） */
@@ -34,6 +36,7 @@ const HOURS_BADGE: Record<HoursKind, { cls: string; text: string }> = {
 
 /** 選択した道の駅・周辺スポットの一覧をボトムシートで表示（確認・削除・並び替え・全解除・次へ進む） */
 export default function RouteSelectionSheet({
+  stations,
   selectedIds,
   getStation,
   selectedPois,
@@ -128,6 +131,7 @@ export default function RouteSelectionSheet({
       </ol>
       {addingCustom ? (
         <CustomStopForm
+          stations={stations}
           title="📌 自由地点を経由地として追加"
           submitLabel="この地点を追加する"
           onSubmit={(info) => {

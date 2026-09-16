@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Station } from '../types';
 import { PREFECTURES } from '../types';
-import { searchPlaces, type PlaceCandidate } from '../lib/placeSearch';
+import PlaceSearchBox from './PlaceSearchBox';
 import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
 import type { OriginValue } from './PlannerForm';
 
@@ -38,11 +38,6 @@ export default function OriginPicker({
   activeExtraMode,
 }: Props) {
   const [originMode, setOriginMode] = useState<'geo' | 'search' | 'map' | 'station' | 'extra'>('geo');
-  const [searchText, setSearchText] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  /** 検索候補。同名の地点を勝手に1件へ決め打ちせず、ユーザーに選んでもらう */
-  const [candidates, setCandidates] = useState<PlaceCandidate[] | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
   const useGeolocation = () => {
@@ -60,28 +55,6 @@ export default function OriginPicker({
     });
   };
 
-  const doSearch = async () => {
-    setSearching(true);
-    setSearchError(null);
-    setCandidates(null);
-    try {
-      const { candidates: found, geocodeFailed } = await searchPlaces(searchText, stations);
-      setCandidates(found);
-      if (found.length === 0) {
-        setSearchError(
-          geocodeFailed
-            ? '検索がうまくいきませんでした。電波状況を確認してもう一度お試しください。「地図で選ぶ」や「道の駅から」でも選べます。'
-            : '見つかりませんでした。住所（例: 福島県郡山市安積町）、地名、道の駅名で探せます。インターチェンジ・駅・ホテル等の施設名では見つからないことがあります。その場合は「地図で選ぶ」をお使いください。',
-        );
-      } else if (geocodeFailed) {
-        setSearchError('住所検索は届きませんでしたが、道の駅の候補を表示しています。');
-      }
-    } catch {
-      setSearchError('検索がうまくいきませんでした。「地図で選ぶ」や「道の駅から」もお試しください。');
-    } finally {
-      setSearching(false);
-    }
-  };
 
   return (
     <div>
@@ -129,48 +102,11 @@ export default function OriginPicker({
         </>
       )}
       {originMode === 'search' && (
-        <>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              style={{ flex: 1, minWidth: 0 }}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="例: 福島県郡山市、道の駅ふくしま"
-              aria-label="名称・住所"
-              data-testid="origin-search-input"
-            />
-            <button
-              className="btn-primary"
-              onClick={doSearch}
-              disabled={searching || !searchText.trim()}
-              data-testid="origin-search-run"
-            >
-              {searching ? '検索中…' : '検索'}
-            </button>
-          </div>
-          {searchError && (
-            <div className="msg warn" data-testid="origin-search-error">
-              {searchError}
-            </div>
-          )}
-          {candidates && candidates.length > 0 && (
-            <ul className="origin-candidates" data-testid="origin-search-results">
-              {candidates.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    className="origin-candidate"
-                    onClick={() => onOriginChange({ lat: c.lat, lng: c.lng, label: c.label })}
-                    data-testid="origin-search-result"
-                  >
-                    <span className="origin-candidate-name">{c.label}</span>
-                    {c.sub && <span className="origin-candidate-sub">{c.sub}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        <PlaceSearchBox
+          stations={stations}
+          onSelect={(c) => onOriginChange({ lat: c.lat, lng: c.lng, label: c.label })}
+          testIdPrefix="origin"
+        />
       )}
       {originMode === 'map' && (
         <button className="btn-primary" style={{ width: '100%' }} onClick={onRequestMapPick}>

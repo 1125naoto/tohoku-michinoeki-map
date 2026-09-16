@@ -110,6 +110,10 @@ async function advanceToRouteDetail(page: Page, timeoutMs = 60000) {
 
 /** 国土地理院 住所検索APIへの実通信を止め、固定の座標を返す（既存のGSI検索と同じ仕組みを使う） */
 async function mockGeocode(page: Page, lat: number, lng: number, title: string) {
+  // 施設名検索(Nominatim)は実APIへ出さず空で固定し、住所検索の結果だけで判定する
+  await page.route('**nominatim.openstreetmap.org/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+  );
   await page.route('**msearch.gsi.go.jp/address-search/**', (route) =>
     route.fulfill({
       status: 200,

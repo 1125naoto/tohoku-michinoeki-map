@@ -665,6 +665,7 @@ export default function ManualRouteBuilder({
         )}
         {addingFinalDest && (
           <CustomStopForm
+            stations={stations}
             title="🏁 最終目的地を指定（旅行最後に立ち寄る場所）"
             submitLabel="最終目的地にする"
             onSubmit={(info) => {

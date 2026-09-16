@@ -1555,6 +1555,7 @@ export default function App() {
           )}
           {tab === 'map' && routeSelectMode && showSelectionSheet && (
             <RouteSelectionSheet
+              stations={STATIONS}
               selectedIds={routeSelectedIds}
               getStation={getStation}
               selectedPois={selectedPois}

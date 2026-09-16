@@ -1,21 +1,20 @@
 /**
- * 出発地点などの「名称・住所から探す」検索。
+ * 出発地点・経由地・最終目的地で共通に使う「名称・住所から探す」検索。
  *
- * 外部サービスは既存の国土地理院 住所検索API（lib/geocode.ts・無料・APIキー不要）
- * だけを使い、新しい有料API（Google Places等）やAPIキーは追加しない。
+ * 3つの無料・APIキー不要の情報源を組み合わせる（有料APIは使わない）:
+ * 1. アプリ内の道の駅データ（通信なし・即時）
+ * 2. OpenStreetMap Nominatim（lib/nominatim.ts）… IC・駅・ホテル・観光施設などの施設名
+ * 3. 国土地理院 住所検索API（lib/geocode.ts）… 住所・地名
  *
- * 実際の応答を確認した上での、このAPIの守備範囲（推測ではなく実測）:
- * - 住所（都道府県・市区町村・大字）        … 例「福島県郡山市安積町」→ ヒット
- * - 一部の施設的な地名（○○市役所・○○公園）… 例「鶴ヶ城」→「鶴ヶ城公園」
- * - 施設名そのもの（IC・駅・ホテル等）      … 非対応。
- *   「郡山インター」「郡山IC」「郡山駅」は“インター/IC/駅”が無視され、
- *   無関係な大字「郡山」（宮城・秋田・山形）が返る。「ホテルハマツ」は0件。
+ * 実応答で確認した役割分担:
+ * - 「郡山IC」「郡山駅」「鶴ヶ城」「ホテルメトロポリタン秋田」… Nominatimが該当施設を返す。
+ *   国土地理院側は“IC/駅”が無視され無関係な大字「郡山」を返すため、施設名はNominatimに任せる
+ * - 「福島県郡山市安積町」のような住所 … 国土地理院が正確
  *
- * そのため、アプリが自前で持っているデータ（全国の道の駅）はローカルで先に照合し、
- * 足りない部分は住所検索へ委ねる。どちらも当たらない場合は、何なら探せるのかを
- * 画面側で案内する（存在しない検索能力があるかのように見せない）。
+ * 候補は勝手に1件へ決め打ちせず、一覧で返して利用者に選んでもらう。
  */
 import { geocode } from './geocode';
+import { searchPlacesByName } from './nominatim';
 import type { Station } from '../types';
 
 export interface PlaceCandidate {
@@ -27,14 +26,19 @@ export interface PlaceCandidate {
   sub: string | null;
   lat: number;
   lng: number;
-  /** 'station'=アプリ内の道の駅データ / 'gsi'=国土地理院 住所検索 */
-  source: 'station' | 'gsi';
+  /**
+   * 'station'=アプリ内の道の駅データ / 'osm'=OpenStreetMap Nominatim（施設名）/
+   * 'gsi'=国土地理院 住所検索
+   */
+  source: 'station' | 'osm' | 'gsi';
 }
 
 export interface PlaceSearchResult {
   candidates: PlaceCandidate[];
-  /** 住所検索API側が失敗したか（道の駅の結果だけは返せている場合がある） */
+  /** 外部検索（施設名・住所）がどちらも失敗したか（道の駅の結果だけは返せている場合がある） */
   geocodeFailed: boolean;
+  /** OpenStreetMap由来の候補を含むか（出典表示の要否） */
+  usedOsm: boolean;
 }
 
 const MAX_STATION_HITS = 5;
@@ -74,23 +78,49 @@ export function searchStations(query: string, stations: Station[]): PlaceCandida
  */
 export async function searchPlaces(query: string, stations: Station[]): Promise<PlaceSearchResult> {
   const q = query.trim();
-  if (!q) return { candidates: [], geocodeFailed: false };
+  if (!q) return { candidates: [], geocodeFailed: false, usedOsm: false };
 
   const stationHits = searchStations(q, stations);
-  let geocodeFailed = false;
-  let geoHits: PlaceCandidate[] = [];
-  try {
-    const results = await geocode(q);
-    geoHits = results.map((r, i) => ({
-      id: `gsi:${i}:${r.lat},${r.lng}`,
-      label: r.label,
-      sub: null,
-      lat: r.lat,
-      lng: r.lng,
-      source: 'gsi' as const,
-    }));
-  } catch {
-    geocodeFailed = true;
-  }
-  return { candidates: [...stationHits, ...geoHits], geocodeFailed };
+
+  // 施設名（IC・駅・ホテル・観光施設）はNominatim、住所・地名は国土地理院が得意なので
+  // 両方に投げて、施設 → 住所の順に並べる。片方が落ちてももう片方の候補は出す。
+  const [osmSettled, gsiSettled] = await Promise.allSettled([searchPlacesByName(q), geocode(q)]);
+
+  const osmHits: PlaceCandidate[] =
+    osmSettled.status === 'fulfilled'
+      ? osmSettled.value.map((r, i) => ({
+          id: `osm:${i}:${r.lat},${r.lng}`,
+          label: r.name,
+          sub: r.address,
+          lat: r.lat,
+          lng: r.lng,
+          source: 'osm' as const,
+        }))
+      : [];
+  const gsiHits: PlaceCandidate[] =
+    gsiSettled.status === 'fulfilled'
+      ? gsiSettled.value.map((r, i) => ({
+          id: `gsi:${i}:${r.lat},${r.lng}`,
+          label: r.label,
+          sub: null,
+          lat: r.lat,
+          lng: r.lng,
+          source: 'gsi' as const,
+        }))
+      : [];
+
+  // 同じ地点が両方から返ることがあるため、座標の近さで重複を落とす（約10m）
+  const seen: { lat: number; lng: number }[] = [];
+  const isNew = (c: PlaceCandidate) => {
+    if (seen.some((p) => Math.abs(p.lat - c.lat) < 1e-4 && Math.abs(p.lng - c.lng) < 1e-4)) return false;
+    seen.push({ lat: c.lat, lng: c.lng });
+    return true;
+  };
+
+  const candidates = [...stationHits, ...osmHits, ...gsiHits].filter(isNew);
+  return {
+    candidates,
+    geocodeFailed: osmSettled.status === 'rejected' && gsiSettled.status === 'rejected',
+    usedOsm: candidates.some((c) => c.source === 'osm'),
+  };
 }

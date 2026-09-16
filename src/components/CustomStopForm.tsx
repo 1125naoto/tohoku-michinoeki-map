@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import type { CustomStopInfo } from '../types';
-import { geocode } from '../lib/geocode';
+import type { CustomStopInfo, Station } from '../types';
+import { searchPlaces, type PlaceCandidate } from '../lib/placeSearch';
+import { OSM_ATTRIBUTION } from '../lib/nominatim';
 
 interface Props {
+  /** 道の駅名でも探せるようにするためのマスターデータ */
+  stations: Station[];
   /** フォーム見出し（用途によって文言を変える: 経由地追加/最終目的地の指定 等） */
   title: string;
   /** 確定ボタンの文言 */
@@ -13,31 +16,40 @@ interface Props {
 
 /**
  * アプリ未登録の場所（自由地点: ホテル・旅館・飲食店・自宅等）をルートへ追加するフォーム。
- * 座標は既存の出発地点検索と同じ仕組み（国土地理院 住所検索API・無料・APIキー不要・
- * lib/geocode.ts）で解決する。新規の有料API（Google Places等）は導入しない。
+ * 座標は出発地点と同じ共通検索（lib/placeSearch.ts）で解決する。施設名はOpenStreetMap
+ * Nominatim、住所は国土地理院 住所検索API、道の駅はアプリ内データ。いずれも無料・
+ * APIキー不要で、新規の有料API（Google Places等）は導入しない。
  * バックエンドへは送らず、この端末のlocalStorageにのみ保存する（既存privacy方針と同一）。
  */
-export default function CustomStopForm({ title, submitLabel, onSubmit, onCancel }: Props) {
+export default function CustomStopForm({ stations, title, submitLabel, onSubmit, onCancel }: Props) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  /** 候補が複数あるときに選び直せるようにする（先頭は自動で採用する） */
+  const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
+  const [showOsmCredit, setShowOsmCredit] = useState(false);
 
   const doSearch = async () => {
     if (!address.trim()) return;
     setSearching(true);
     setError(null);
     setResolved(null);
+    setCandidates([]);
     try {
-      const results = await geocode(address);
-      if (results.length === 0) {
-        setError('住所・地名が見つかりませんでした。表記を変えて（例: 市区町村名を含める）もう一度お試しください。');
+      const { candidates: found, usedOsm } = await searchPlaces(address, stations);
+      setCandidates(found);
+      setShowOsmCredit(usedOsm);
+      if (found.length === 0) {
+        setError(
+          '見つかりませんでした。施設名（例: 郡山IC、秋田駅）、住所、道の駅名でお試しください。',
+        );
       } else {
-        setResolved({ lat: results[0].lat, lng: results[0].lng, label: results[0].label });
+        setResolved({ lat: found[0].lat, lng: found[0].lng, label: found[0].label });
       }
     } catch {
-      setError('住所検索がうまくいきませんでした。電波状況を確認してもう一度お試しください。');
+      setError('検索がうまくいきませんでした。電波状況を確認してもう一度お試しください。');
     } finally {
       setSearching(false);
     }
@@ -66,7 +78,7 @@ export default function CustomStopForm({ title, submitLabel, onSubmit, onCancel 
         />
       </label>
       <label style={{ display: 'block', marginTop: 8 }}>
-        住所・地名
+        名称・住所
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <input
             style={{ flex: 1, minWidth: 0 }}
@@ -75,8 +87,8 @@ export default function CustomStopForm({ title, submitLabel, onSubmit, onCancel 
               setAddress(e.target.value);
               setResolved(null);
             }}
-            placeholder="例: 山形県山形市○○1-2-3"
-            aria-label="住所・地名"
+            placeholder="例: 郡山IC、○○ホテル、山形県山形市○○1-2-3"
+            aria-label="名称・住所"
             data-testid="custom-stop-address"
           />
           <button
@@ -98,6 +110,28 @@ export default function CustomStopForm({ title, submitLabel, onSubmit, onCancel 
         <div className="msg info" style={{ marginTop: 8 }} data-testid="custom-stop-resolved">
           ✅ 場所を特定しました: {resolved.label}
         </div>
+      )}
+      {candidates.length > 1 && (
+        <ul className="origin-candidates" data-testid="custom-stop-search-results">
+          {candidates.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                className={`origin-candidate${resolved?.label === c.label ? ' active' : ''}`}
+                onClick={() => setResolved({ lat: c.lat, lng: c.lng, label: c.label })}
+                data-testid="custom-stop-search-result"
+              >
+                <span className="origin-candidate-name">{c.label}</span>
+                {c.sub && <span className="origin-candidate-sub">{c.sub}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {candidates.length > 0 && showOsmCredit && (
+        <p className="place-search-credit" data-testid="custom-stop-search-credit">
+          施設名の検索結果に {OSM_ATTRIBUTION} を含みます
+        </p>
       )}
       <div className="btn-grid" style={{ marginTop: 10 }}>
         <button onClick={onCancel} data-testid="custom-stop-cancel">

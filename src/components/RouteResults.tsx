@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import StationNearbySearch from './StationNearbySearch';
 import type { PlannedRoute, Station } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { directionsSegments, type RouteMapPoint } from '../lib/gmaps';
@@ -226,6 +227,12 @@ export function RouteTimeline({
               </span>
               {state === 'done' && ' ✓'}
               {state === 'skipped' && '（スキップ）'}
+              {/* コースに入っている道の駅から、その市区町村のカテゴリ検索を開けるようにする */}
+              {isStation &&
+                (() => {
+                  const st = getStation(s.stationId);
+                  return st ? <StationNearbySearch station={st} testIdPrefix={`stop-${s.stationId}`} /> : null;
+                })()}
             </span>
           </li>
         );

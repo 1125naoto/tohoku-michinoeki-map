@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BackBar from './BackBar';
 import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
 import {
   CATEGORY_ICON,
@@ -189,6 +190,7 @@ export default function PoiSearchPanel({
   };
   return (
     <div className="poi-panel" data-testid="poi-search-panel">
+      <BackBar label="地図へ戻る" onBack={onClose} testId="poi-back" />
       <div className="poi-panel-head">
         <h3>周辺スポットを探す</h3>
         <button aria-label="検索を終了" onClick={onClose} data-testid="poi-panel-close">

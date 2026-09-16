@@ -1518,6 +1518,8 @@ test.describe('堅牢性', () => {
   });
 
   test('住所検索サービス失敗時もエラーメッセージ表示で継続できる', async ({ page }) => {
+    // 名称検索(Nominatim)・住所検索(国土地理院)の両方が落ちた状態を作る
+    await page.route('**nominatim.openstreetmap.org/**', (route) => route.abort());
     await page.route('**/msearch.gsi.go.jp/**', (route) => route.abort());
     await page.goto('/');
     await goToAutoPlanner(page);
