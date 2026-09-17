@@ -73,6 +73,52 @@ const MAX_STATION_HITS = 5;
 /** 画面に出す候補の上限 */
 const MAX_RESULTS = 5;
 
+/**
+ * 施設種別を表す一般的な語尾。名称の「核」を取り出して比較するために落とす
+ * （「郡山IC」と「郡山インター」を同じ核『郡山』として扱う）。
+ */
+const FACILITY_SUFFIX = /(ic|jct|pa|sa|インターチェンジ|インター|ジャンクション|駅|停留所)$/i;
+
+/** 比較用の名称の核（施設語尾を除いたもの） */
+function coreName(s: string): string {
+  return normalize(s).replace(FACILITY_SUFFIX, '');
+}
+
+/** 2つの文字列が共有する最長の連続部分列の長さ */
+function longestCommonSubstring(a: string, b: string): number {
+  if (!a || !b) return 0;
+  let best = 0;
+  let prev = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = new Array<number>(b.length + 1).fill(0);
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > best) best = cur[j];
+      }
+    }
+    prev = cur;
+  }
+  return best;
+}
+
+export type NameMatchLevel = 'exact' | 'contains' | 'partial' | 'none';
+
+/**
+ * 検索語と候補名称の一致度。施設種別が合っているだけで無関係な施設を上位に出さないため、
+ * 並べ替えでも絞り込みでもこの値を主軸にする。
+ * 例: 「郡山中央IC」に対して「賀陽IC」は none（核『郡山中央』と『賀陽』に共通部分がない）。
+ */
+export function nameMatchLevel(query: string, name: string): NameMatchLevel {
+  const q = coreName(query);
+  const n = coreName(name);
+  if (!q || !n) return 'none';
+  if (q === n) return 'exact';
+  const shorter = Math.min(q.length, n.length);
+  if ((q.includes(n) || n.includes(q)) && shorter >= 2) return 'contains';
+  return longestCommonSubstring(q, n) >= 2 ? 'partial' : 'none';
+}
+
 /** 入力から読み取れる施設種別のヒント（OSMのcategory/typeと突き合わせる） */
 function facilityHint(query: string): { category: string; types: string[] } | null {
   if (/(IC|インターチェンジ|インター(?!ネット))/i.test(query)) {
@@ -169,21 +215,35 @@ export async function searchPlaces(
         }))
       : [];
 
-  // 同じ地点が両方から返ることがあるため、座標の近さで重複を落とす（約10m）
-  const seen: { lat: number; lng: number }[] = [];
-  const isNew = (c: PlaceCandidate) => {
-    if (seen.some((p) => Math.abs(p.lat - c.lat) < 1e-4 && Math.abs(p.lng - c.lng) < 1e-4)) return false;
-    seen.push({ lat: c.lat, lng: c.lng });
-    return true;
-  };
-
-  const merged = [...stationHits, ...osmHits, ...gsiHits].filter(isNew);
-  const candidates = rankCandidates(merged, q, context).slice(0, MAX_RESULTS);
+  const merged = dedupeCandidates([...stationHits, ...osmHits, ...gsiHits]);
+  const candidates = rankCandidates(dropUnrelated(merged, q, context), q, context).slice(0, MAX_RESULTS);
   return {
     candidates,
     geocodeFailed: osmSettled.status === 'rejected' && gsiSettled.status === 'rejected',
     usedOsm: candidates.some((c) => c.source === 'osm'),
   };
+}
+
+/**
+ * 重複候補をまとめる。
+ * 1. ほぼ同じ座標（約10m）… 別々の情報源が同じ地点を返した場合
+ * 2. 同じ名称・同じ都道府県・同じ市区町村 … ICの出入口など、1つの施設が
+ *    複数ノードとして登録されている場合（実機で福島県郡山市の郡山ICが2件出た）
+ * 名称が違うものは別施設として残す（誤って統合しない）。
+ */
+export function dedupeCandidates(candidates: PlaceCandidate[]): PlaceCandidate[] {
+  const points: { lat: number; lng: number }[] = [];
+  const keys = new Set<string>();
+  const out: PlaceCandidate[] = [];
+  for (const c of candidates) {
+    if (points.some((p) => Math.abs(p.lat - c.lat) < 1e-4 && Math.abs(p.lng - c.lng) < 1e-4)) continue;
+    const key = `${normalize(c.label)}|${c.prefecture ?? ''}|${c.sub ?? ''}`;
+    if (keys.has(key)) continue;
+    points.push({ lat: c.lat, lng: c.lng });
+    keys.add(key);
+    out.push(c);
+  }
+  return out;
 }
 
 /**
@@ -203,16 +263,16 @@ export function rankCandidates(
   const hint = facilityHint(query);
   const prefs = context?.prefectures ?? [];
 
+  const NAME_SCORE: Record<NameMatchLevel, number> = { exact: 60, contains: 35, partial: 12, none: 0 };
+
   const score = (c: PlaceCandidate): number => {
-    let n = 0;
-    const name = normalize(c.label);
-    if (name === q) n += 50;
-    else if (name.startsWith(q) || q.startsWith(name)) n += 30;
-    else if (name.includes(q)) n += 15;
+    let n = NAME_SCORE[nameMatchLevel(query, c.label)];
+    // 完全一致していなくても、入力語そのものを含む名称は拾う（「郡山インター線」等）
+    if (normalize(c.label).includes(q) && n < 35) n += 10;
 
     if (hint) {
       if (c.osmType && hint.types.includes(c.osmType)) n += 40;
-      else if (c.osmCategory === hint.category) n += 25;
+      else if (c.osmCategory === hint.category) n += 20;
       else if (c.source === 'gsi') n -= 15; // 施設を探しているのに地名だけが返っている
     }
 
@@ -226,4 +286,25 @@ export function rankCandidates(
     .map((c, i) => ({ c, i, s: score(c) }))
     .sort((a, b) => b.s - a.s || a.i - b.i)
     .map((x) => x.c);
+}
+
+/**
+ * 明らかに無関係な候補を落とす。
+ * 「名称もあまり合っておらず、いま見ている県でもない」ものは出さない
+ * （実機で「郡山中央インター」に岡山県の賀陽IC・勝央ICが出た件）。
+ * 名称がはっきり一致していれば県外でも残す（福島県表示中の「秋田駅」など）。
+ * 表示県が決まっていない（全国）ときは判断材料が無いので落とさない。
+ */
+export function dropUnrelated(
+  candidates: PlaceCandidate[],
+  query: string,
+  context?: PlaceSearchContext,
+): PlaceCandidate[] {
+  const prefs = context?.prefectures ?? [];
+  if (prefs.length === 0) return candidates;
+  return candidates.filter((c) => {
+    const level = nameMatchLevel(query, c.label);
+    if (level === 'exact' || level === 'contains') return true;
+    return c.prefecture != null && prefs.includes(c.prefecture as Prefecture);
+  });
 }

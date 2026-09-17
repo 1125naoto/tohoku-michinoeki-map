@@ -504,6 +504,8 @@ test.describe('コース作成途中の周辺検索', () => {
   test.use({ serviceWorkers: 'block' });
 
   test('POI-1/2/3: 選択済みの道の駅から周辺を探せ、探したあとも選択中のコースが残る', async ({ page }) => {
+    // 他の地図選択シナリオと同じく時刻を固定する（営業状態バッジの再描画で不安定にならないように）
+    await page.clock.install({ time: DAY });
     await page.goto('/');
     await closeBanners(page);
     await enterManualSelect(page);

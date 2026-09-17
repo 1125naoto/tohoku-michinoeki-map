@@ -192,8 +192,102 @@ test.describe('出発地点の「名称・住所から探す」', () => {
     const err = page.getByTestId('origin-search-error');
     await expect(err).toBeVisible({ timeout: 15000 });
     await expect(err).toContainText('見つかりませんでした');
-    await expect(err).toContainText('道の駅名');
+    await expect(err).toContainText('地図で選ぶ');
     await expect(page.getByTestId('origin-search-results')).toHaveCount(0);
+
+    // SEARCH-FINAL-6/7: そのまま既存の「地図で選ぶ」へ進める
+    const mapPick = page.getByTestId('origin-search-map-pick');
+    await expect(mapPick).toBeVisible();
+    const box = await mapPick.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    await mapPick.click();
+    await expect(page.getByTestId('tab-map')).toHaveClass(/active/);
+  });
+
+  test('SEARCH-FINAL-3: 「郡山中央インター」で県外の無関係なICを出さない', async ({ page }) => {
+    await useFukushimaSelection(page);
+    await mockNominatim(page, [
+      {
+        name: '賀陽IC',
+        display_name: '賀陽IC, 岡山自動車道, 吉備中央町, 岡山県, 日本',
+        lat: 34.8108,
+        lon: 133.6797,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '岡山県', city: '吉備中央町' },
+      },
+      {
+        name: '勝央IC',
+        display_name: '勝央IC, 中国自動車道, 勝央町, 岡山県, 日本',
+        lat: 35.0217,
+        lon: 134.1319,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '岡山県', city: '勝央町' },
+      },
+    ]);
+    await mockGeocode(page, [{ title: '宮城県仙台市太白区郡山', lat: 38.22, lng: 140.89 }]);
+    await page.goto('/');
+    await goToCourseTab(page);
+    await page.getByTestId('course-mode-auto').click();
+    await page.getByTestId('origin-mode-search').click();
+    await page.getByTestId('origin-search-input').fill('郡山中央インター');
+    await page.getByTestId('origin-search-run').click();
+
+    // 無関係な候補を並べるより「見つからない」と伝える
+    await expect(page.getByTestId('origin-search-error')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('origin-search-results')).toHaveCount(0);
+    await expect(page.getByTestId('origin-search-map-pick')).toBeVisible();
+  });
+
+  test('SEARCH-FINAL-1/2: 「郡山インター」は郡山ICが1位で、同じ市の同名ICは1件だけ', async ({
+    page,
+  }) => {
+    await useFukushimaSelection(page);
+    await mockNominatim(page, [
+      {
+        name: '郡山インター線',
+        display_name: '郡山インター線, 郡山市, 福島県, 日本',
+        lat: 37.42,
+        lon: 140.35,
+        type: 'tertiary',
+        category: 'highway',
+        address: { province: '福島県', city: '郡山市' },
+      },
+      {
+        name: '郡山IC',
+        display_name: '郡山IC, 東北自動車道, 郡山市, 福島県, 日本',
+        lat: 37.4321,
+        lon: 140.3412,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '福島県', city: '郡山市', road: '東北自動車道' },
+      },
+      {
+        name: '郡山IC',
+        display_name: '郡山IC, 東北自動車道, 郡山市, 福島県, 日本',
+        lat: 37.4374,
+        lon: 140.3475,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '福島県', city: '郡山市', road: '東北自動車道' },
+      },
+    ]);
+    await mockGeocode(page, []);
+    await page.goto('/');
+    await goToCourseTab(page);
+    await page.getByTestId('course-mode-auto').click();
+    await page.getByTestId('origin-mode-search').click();
+    await page.getByTestId('origin-search-input').fill('郡山インター');
+    await page.getByTestId('origin-search-run').click();
+
+    const results = page.getByTestId('origin-search-result');
+    await expect(results.first()).toContainText('郡山IC', { timeout: 15000 });
+    await expect(results.first()).toContainText('東北自動車道');
+    // 同じ郡山市の郡山ICは1件に整理される
+    await expect(results.filter({ hasText: '郡山IC' })).toHaveCount(1);
+    // 道路名は候補に残ってよいが下位
+    await expect(results.filter({ hasText: '郡山インター線' })).toHaveCount(1);
   });
 
   test('SEARCH-1: 福島県を見ているとき「郡山IC」は福島県郡山市のICが先頭に出る', async ({ page }) => {

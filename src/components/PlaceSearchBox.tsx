@@ -10,6 +10,8 @@ interface Props {
   /** 候補が選ばれたとき。呼び出し側が出発地点/経由地/最終目的地として使う */
   onSelect: (c: PlaceCandidate) => void;
   placeholder?: string;
+  /** 見つからなかったときの逃げ道。渡されたときだけ「地図で選ぶ」ボタンを出す */
+  onRequestMapPick?: () => void;
   /** data-testidの接頭辞（出発地点=origin / 自由地点=custom-stop 等） */
   testIdPrefix: string;
 }
@@ -25,6 +27,7 @@ export default function PlaceSearchBox({
   contextPrefectures,
   onSelect,
   placeholder,
+  onRequestMapPick,
   testIdPrefix,
 }: Props) {
   const [text, setText] = useState('');
@@ -46,8 +49,8 @@ export default function PlaceSearchBox({
       if (found.length === 0) {
         setError(
           geocodeFailed
-            ? '検索がうまくいきませんでした。電波状況を確認してもう一度お試しください。「地図で選ぶ」でも指定できます。'
-            : '見つかりませんでした。施設名（例: 郡山IC、秋田駅）、住所、道の駅名でお試しください。',
+            ? '検索がうまくいきませんでした。電波状況を確認してもう一度お試しください。'
+            : '見つかりませんでした。別の名称・住所で検索するか、「地図で選ぶ」から場所を指定できます。',
         );
       }
     } catch {
@@ -84,6 +87,17 @@ export default function PlaceSearchBox({
       {error && (
         <div className="msg warn" data-testid={`${testIdPrefix}-search-error`}>
           {error}
+          {onRequestMapPick && (
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ width: '100%', marginTop: 8 }}
+              onClick={onRequestMapPick}
+              data-testid={`${testIdPrefix}-search-map-pick`}
+            >
+              🗺️ 地図で選ぶ
+            </button>
+          )}
         </div>
       )}
       {candidates && candidates.length > 0 && (

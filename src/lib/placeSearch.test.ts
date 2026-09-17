@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { searchPlaces, searchStations } from './placeSearch';
+import { dedupeCandidates, nameMatchLevel, searchPlaces, searchStations } from './placeSearch';
 import { STATIONS } from '../data';
 import * as geocodeModule from './geocode';
 import * as nominatimModule from './nominatim';
@@ -300,5 +300,153 @@ describe('道路施設の表記ゆれ正規化', () => {
     expect(normalizeFacilityQuery('郡山IC')).toBe('郡山IC');
     expect(normalizeFacilityQuery('秋田駅')).toBe('秋田駅');
     expect(normalizeFacilityQuery('インターネットカフェ')).toBe('インターネットカフェ');
+  });
+});
+
+describe('Final polish: 重複・無関係候補・IC優先', () => {
+  /** 実測したNominatim応答（福島県郡山市の郡山ICは出入口で2ノードある） */
+  const koriyamaIcA = {
+    name: '郡山IC',
+    lat: 37.4321257,
+    lng: 140.3412414,
+    kind: 'motorway_junction',
+    category: 'highway',
+    prefecture: '福島県',
+    city: '郡山市',
+    road: '東北自動車道',
+  };
+  const koriyamaIcB = { ...koriyamaIcA, lat: 37.4373683, lng: 140.3475458 };
+  const koriyamaIcNaraA = {
+    name: '郡山IC',
+    lat: 34.6125264,
+    lng: 135.7899172,
+    kind: 'motorway_junction',
+    category: 'highway',
+    prefecture: '奈良県',
+    city: '大和郡山市',
+    road: '西名阪自動車道',
+  };
+  const koriyamaIcNaraB = { ...koriyamaIcNaraA, lat: 34.6141592, lng: 135.8033388 };
+  /** 「郡山インター」で実際に返ってくる道路 */
+  const koriyamaInterRoad = {
+    name: '郡山インター線',
+    lat: 37.42,
+    lng: 140.35,
+    kind: 'tertiary',
+    category: 'highway',
+    prefecture: '福島県',
+    city: '郡山市',
+    road: null,
+  };
+  /** 「郡山中央IC」で実際に返ってきた無関係なIC */
+  const kayoIc = {
+    name: '賀陽IC',
+    lat: 34.810803,
+    lng: 133.6796592,
+    kind: 'motorway_junction',
+    category: 'highway',
+    prefecture: '岡山県',
+    city: '吉備中央町',
+  };
+  const shoouIc = {
+    name: '勝央IC',
+    lat: 35.0217389,
+    lng: 134.1319388,
+    kind: 'motorway_junction',
+    category: 'highway',
+    prefecture: '岡山県',
+    city: '勝央町',
+  };
+
+  it('SEARCH-FINAL-1: 「郡山インター」は郡山ICが1位（郡山インター線より上）', async () => {
+    mockOsm([koriyamaInterRoad, koriyamaIcA, koriyamaIcB]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([]);
+    const { candidates } = await searchPlaces('郡山インター', STATIONS, { prefectures: ['福島県'] });
+    expect(candidates[0].label).toBe('郡山IC');
+    expect(candidates[0].prefecture).toBe('福島県');
+    // 道路名も候補には残るが下位
+    expect(candidates.findIndex((c) => c.label === '郡山インター線')).toBeGreaterThan(0);
+  });
+
+  it('SEARCH-FINAL-2: 同じ市区町村の同名ICは1件にまとめる', async () => {
+    mockOsm([koriyamaIcA, koriyamaIcB, koriyamaIcNaraA, koriyamaIcNaraB]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([]);
+    const { candidates } = await searchPlaces('郡山IC', STATIONS, { prefectures: ['福島県'] });
+    expect(candidates.filter((c) => c.prefecture === '福島県').length).toBe(1);
+    expect(candidates.filter((c) => c.prefecture === '奈良県').length).toBe(1);
+    expect(candidates[0].prefecture).toBe('福島県');
+  });
+
+  it('SEARCH-FINAL-3: 「郡山中央インター」で岡山県の無関係なICを出さない', async () => {
+    mockOsm([kayoIc, shoouIc]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([
+      { label: '宮城県仙台市太白区郡山', lat: 38.22, lng: 140.89 },
+    ]);
+    const { candidates } = await searchPlaces('郡山中央インター', STATIONS, { prefectures: ['福島県'] });
+    expect(candidates.some((c) => c.label === '賀陽IC')).toBe(false);
+    expect(candidates.some((c) => c.label === '勝央IC')).toBe(false);
+    // 名称も県も合わない地名も出さない（0件として案内する方がよい）
+    expect(candidates.some((c) => c.prefecture === '宮城県')).toBe(false);
+  });
+
+  it('SEARCH-FINAL-5: 名称がはっきり一致していれば県外でも残す', async () => {
+    mockOsm([
+      {
+        name: '秋田駅',
+        lat: 39.717,
+        lng: 140.13,
+        kind: 'train_station',
+        category: 'railway',
+        prefecture: '秋田県',
+        city: '秋田市',
+      },
+    ]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([]);
+    const { candidates } = await searchPlaces('秋田駅', STATIONS, { prefectures: ['福島県'] });
+    expect(candidates[0].label).toBe('秋田駅');
+    expect(candidates[0].prefecture).toBe('秋田県');
+  });
+
+  it('SEARCH-FINAL-6: 該当が無ければ0件（無理に似た施設を出さない）', async () => {
+    mockOsm([]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([]);
+    const { candidates } = await searchPlaces('リブマックス郡山', STATIONS, { prefectures: ['福島県'] });
+    expect(candidates).toEqual([]);
+  });
+
+  it('全国表示（県の文脈なし）では候補を落とさない', async () => {
+    mockOsm([kayoIc]);
+    vi.spyOn(geocodeModule, 'geocode').mockResolvedValue([]);
+    const { candidates } = await searchPlaces('郡山中央インター', STATIONS, { prefectures: [] });
+    expect(candidates.length).toBeGreaterThan(0);
+  });
+});
+
+describe('名称の一致度と重複判定', () => {
+  it('施設語尾を無視して核どうしを比べる', () => {
+    expect(nameMatchLevel('郡山インター', '郡山IC')).toBe('exact');
+    expect(nameMatchLevel('郡山IC', '郡山IC')).toBe('exact');
+    expect(nameMatchLevel('秋田駅', '秋田駅')).toBe('exact');
+    expect(nameMatchLevel('郡山中央IC', '郡山IC')).toBe('contains');
+    expect(nameMatchLevel('郡山中央IC', '賀陽IC')).toBe('none');
+    expect(nameMatchLevel('郡山中央IC', '勝央IC')).toBe('none');
+  });
+
+  it('名称が違えば同じ市区町村でも別施設として残す', () => {
+    const base = {
+      id: 'a',
+      sub: '福島県郡山市',
+      detail: null,
+      source: 'osm' as const,
+      prefecture: '福島県',
+      osmCategory: 'highway',
+      osmType: 'motorway_junction',
+    };
+    const out = dedupeCandidates([
+      { ...base, id: 'a', label: '郡山IC', lat: 37.43, lng: 140.34 },
+      { ...base, id: 'b', label: '郡山IC', lat: 37.44, lng: 140.35 },
+      { ...base, id: 'c', label: '郡山南IC', lat: 37.36, lng: 140.33 },
+    ]);
+    expect(out.map((c) => c.label)).toEqual(['郡山IC', '郡山南IC']);
   });
 });

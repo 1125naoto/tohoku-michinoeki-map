@@ -108,6 +108,7 @@ export default function OriginPicker({
         <PlaceSearchBox
           stations={stations}
           contextPrefectures={contextPrefectures}
+          onRequestMapPick={onRequestMapPick}
           onSelect={(c) => onOriginChange({ lat: c.lat, lng: c.lng, label: c.label })}
           testIdPrefix="origin"
         />
