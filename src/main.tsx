@@ -50,10 +50,46 @@ if ('serviceWorker' in navigator) {
   // （初回インストール時のclients.claimでは再読み込みしない）
   const hadController = navigator.serviceWorker.controller != null;
   let reloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloaded) return;
+  /**
+   * 操作中の自動再読み込みを避ける。
+   * コース作成中・完成コース表示中・旅行中に新しいSWが有効化されると、以前は即座に
+   * location.reload() していたため、作りかけの内容や進行中の画面が消えていた。
+   * アプリ側が window.__michinoekiBusy を立てている間は延期し、画面が隠れた時・
+   * 操作が終わった時に適用する（更新自体はスキップしない）。
+   */
+  const isBusy = () => (window as unknown as { __michinoekiBusy?: boolean }).__michinoekiBusy === true;
+  const applyUpdate = () => {
+    if (reloaded) return;
     reloaded = true;
     location.reload();
+  };
+  const applyWhenIdle = () => {
+    if (reloaded) return;
+    if (!isBusy()) {
+      applyUpdate();
+      return;
+    }
+    // 操作が終わる or 画面を離れるまで待ってから適用する
+    const timer = setInterval(() => {
+      if (!isBusy()) {
+        clearInterval(timer);
+        applyUpdate();
+      }
+    }, 2000);
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        if (document.visibilityState === 'hidden') {
+          clearInterval(timer);
+          applyUpdate();
+        }
+      },
+      { once: true },
+    );
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    applyWhenIdle();
   });
   window.addEventListener('load', () => {
     navigator.serviceWorker

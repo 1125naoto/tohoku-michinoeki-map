@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { routeSignature } from './routeSelection';
 import { clearSelection, moveSelection, removeSelection, toggleSelection } from './routeSelection';
 
 describe('選択のトグル', () => {
@@ -44,5 +45,80 @@ describe('並び替え', () => {
   it('範囲外への移動は何もしない', () => {
     expect(moveSelection(['a', 'b', 'c'], 0, -1)).toEqual(['a', 'b', 'c']);
     expect(moveSelection(['a', 'b', 'c'], 2, 1)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('P1-03回帰: コースの同一性は立ち寄り先の並びだけで判定しない', () => {
+  const base = {
+    key: 'manual',
+    title: 'コース',
+    reason: '',
+    stops: [
+      { stationId: 'mne-1', arriveAt: '2026-01-01T01:00:00.000Z', departAt: '2026-01-01T01:30:00.000Z', stayMin: 30 },
+      { stationId: 'mne-2', arriveAt: '2026-01-01T02:00:00.000Z', departAt: '2026-01-01T02:30:00.000Z', stayMin: 30 },
+    ],
+    legs: [],
+    totalMin: 120,
+    driveMin: 60,
+    stayTotalMin: 60,
+    marginMin: 10,
+    totalKm: 50,
+    newCount: 2,
+    wantCount: 0,
+    returnAt: '2026-01-01T03:00:00.000Z',
+    roadData: 'approx' as const,
+    hoursSummary: { open: 2, closing: 0, closed: 0, unknown: 0 },
+    params: {
+      origin: { lat: 37.4, lng: 140.3, label: 'A' },
+      departAt: '2026-01-01T00:00:00.000Z',
+      budgetMin: 240,
+      stayMin: 30,
+      returnToStart: true,
+      roadPref: 'highway_ok' as const,
+      priority: 'unvisited' as const,
+      prefs: [],
+    },
+  };
+  // 型の細部に依存しないよう、署名関数へ渡す最小構造だけを使う
+  const asRoute = (over: Record<string, unknown> = {}) =>
+    ({ ...base, ...over }) as unknown as Parameters<typeof routeSignature>[0];
+
+  it('同じ駅・同じ順でも出発地点が違えば別コース', () => {
+    const a = asRoute();
+    const b = asRoute({ params: { ...base.params, origin: { lat: 38.9, lng: 139.9, label: 'B' } } });
+    expect(routeSignature(a)).not.toBe(routeSignature(b));
+  });
+
+  it('同じ駅・同じ順でも出発時刻・滞在時間・道路の希望・帰着有無が違えば別コース', () => {
+    const a = asRoute();
+    for (const over of [
+      { params: { ...base.params, departAt: '2026-01-02T00:00:00.000Z' } },
+      { params: { ...base.params, stayMin: 60 } },
+      { params: { ...base.params, roadPref: 'no_highway' as const } },
+      { params: { ...base.params, returnToStart: false } },
+    ]) {
+      expect(routeSignature(a)).not.toBe(routeSignature(asRoute(over)));
+    }
+  });
+
+  it('自由地点が末尾に増えれば別コース（最終目的地の違いを見落とさない）', () => {
+    const a = asRoute();
+    const b = asRoute({
+      stops: [
+        ...base.stops,
+        {
+          stationId: 'custom:1',
+          arriveAt: '2026-01-01T03:00:00.000Z',
+          departAt: '2026-01-01T03:30:00.000Z',
+          stayMin: 30,
+          stopType: 'custom' as const,
+        },
+      ],
+    });
+    expect(routeSignature(a)).not.toBe(routeSignature(b));
+  });
+
+  it('同一内容なら同じ署名になる（保存済みコースの再開は再利用できる）', () => {
+    expect(routeSignature(asRoute())).toBe(routeSignature(asRoute()));
   });
 });

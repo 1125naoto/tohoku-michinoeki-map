@@ -4,6 +4,7 @@
  * 配列から取り除くだけで自動的に成立する。React state からもテストからも
  * 同じロジックを使うためコンポーネントから切り離してある。
  */
+import type { PlannedRoute } from '../types';
 import { MAX_MANUAL_STATIONS } from './manualRoute';
 
 export type ToggleResult = 'added' | 'removed' | 'max-reached';
@@ -41,4 +42,26 @@ export function moveSelection(ids: string[], index: number, direction: -1 | 1): 
   const next = [...ids];
   [next[index], next[target]] = [next[target], next[index]];
   return next;
+}
+
+/**
+ * コースの同一性判定に使う署名。
+ * 立ち寄り先の並びだけでは、出発地点・最終目的地・出発時刻・滞在時間・道路の希望が
+ * 違う別のコースを「同じコース」と誤認してしまうため、行程を決める条件をすべて含める。
+ */
+export function routeSignature(r: PlannedRoute): string {
+  const p = r.params;
+  const stops = r.stops
+    .map((s) => `${s.stationId}:${s.stopType ?? 'station'}:${s.stayMin}`)
+    .join('>');
+  return [
+    r.key,
+    stops,
+    `origin=${p.origin.lat.toFixed(5)},${p.origin.lng.toFixed(5)}`,
+    `departAt=${p.departAt}`,
+    `return=${p.returnToStart}`,
+    `road=${p.roadPref}`,
+    `stay=${p.stayMin}`,
+    `budget=${p.budgetMin}`,
+  ].join('|');
 }

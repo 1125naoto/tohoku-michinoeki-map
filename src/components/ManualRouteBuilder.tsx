@@ -45,6 +45,8 @@ interface Props {
   origin: OriginValue | null;
   onOriginChange: (o: OriginValue | null) => void;
   onRequestMapPick: () => void;
+  /** 自由地点（経由地）・最終目的地を地図で指定する */
+  onRequestMapPickForStop?: (target: 'custom-stop' | 'final-destination') => void;
   /** 「選択駅を減らす」「選択を変更」: 選択は保持したまま地図選択モードへ戻る */
   onBackToMapSelect: () => void;
   /** 「選択から外す」: 対象駅を選択集合から取り除く（このコンポーネントは設定画面へ戻る） */
@@ -86,6 +88,7 @@ export default function ManualRouteBuilder({
   origin,
   onOriginChange,
   onRequestMapPick,
+  onRequestMapPickForStop,
   onBackToMapSelect,
   onRemoveFromSelection,
   onDone,
@@ -150,6 +153,7 @@ export default function ManualRouteBuilder({
   const [activeOrder, setActiveOrder] = useState<ManualCandidateLike[] | null>(null);
   const [overMin, setOverMin] = useState(0);
   const [excludedNames, setExcludedNames] = useState<string[]>([]);
+  const [fitFeasible, setFitFeasible] = useState(true);
   const [fitKept, setFitKept] = useState<ManualCandidateLike[] | null>(null);
   const [reviewRoute, setReviewRoute] = useState<PlannedRoute | null>(null);
   const [confirmedHours, setConfirmedHours] = useState<Set<string>>(new Set());
@@ -399,14 +403,16 @@ export default function ManualRouteBuilder({
                 const withoutFinal = cache.finalCandidate
                   ? activeOrder.filter((c) => c !== cache.finalCandidate)
                   : activeOrder;
-                const { kept, excluded } = fitToBudget(
+                const { kept, excluded, feasible } = fitToBudget(
                   withoutFinal,
                   cache.matrix,
                   cache.params,
                   cache.params.budgetMin ?? 0,
                   cache.fallback,
+                  cache.finalCandidate ?? null,
                 );
                 setFitKept(withFinal(kept));
+                setFitFeasible(feasible !== false);
                 setExcludedNames(excluded.map((c) => c.st.name ?? resolveName(c.st.id)));
               }}
               data-testid="over-budget-fit"
@@ -422,7 +428,13 @@ export default function ManualRouteBuilder({
           </div>
           {fitKept && (
             <div className="note-box" style={{ marginTop: 10 }} data-testid="over-budget-fit-result">
-              {fitKept.length === 0 ? (
+              {!fitFeasible ? (
+                <p data-testid="over-budget-infeasible">
+                  {cache.finalCandidate
+                    ? '最終目的地まで行くと設定時間に収まらないため、時間内のコースを作れません。時間を長くするか、最終目的地を見直してください。'
+                    : '設定時間が短すぎるため、時間内のコースを作れません。時間を長くするか選択を見直してください。'}
+                </p>
+              ) : fitKept.length === 0 ? (
                 <p>設定時間が短すぎるため、1件も回れません。時間を長くするか選択を見直してください。</p>
               ) : excludedNames.length > 0 ? (
                 <>
@@ -671,6 +683,9 @@ export default function ManualRouteBuilder({
         {addingFinalDest && (
           <CustomStopForm
             stations={stations}
+            onRequestMapPick={
+              onRequestMapPickForStop ? () => onRequestMapPickForStop('final-destination') : undefined
+            }
             title="🏁 最終目的地を指定（旅行最後に立ち寄る場所）"
             submitLabel="最終目的地にする"
             onSubmit={(info) => {

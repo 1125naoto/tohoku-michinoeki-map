@@ -1,12 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
-import { useNationwideSelection } from './helpers';
+import { useSelectedPrefectures } from './helpers';
 
 /**
  * 公開前UX整理で初回起動に地域選択画面（「どこを旅しますか？」）を追加したため、
  * 全国地図を前提にした既存シナリオでは「全国を見る」選択済みの状態から開始する。
  */
 test.beforeEach(async ({ page }) => {
-  await useNationwideSelection(page);
+  // 全国1,237件を描画したまま地図操作を繰り返すとテスト1件の描画コストが大きく、
+  // 混雑時に60秒のテスト予算を使い切っていた（製品側の不具合ではない）。
+  // 対象駅は福島県のみ（38駅）なので、検証内容を変えずに表示範囲を絞る。
+  await useSelectedPrefectures(page, ['福島県']);
 });
 
 /**

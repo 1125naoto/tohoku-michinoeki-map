@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { RoadPref, SavedRoute, Station, StopProgress, TripState, VisitMap } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { poiDisplayName, type Poi } from '../lib/poi';
+import type { CustomStopInfo } from '../types';
 import { RouteTimeline } from './RouteResults';
 import RoadPrefPicker from './RoadPrefPicker';
 import ConfirmDialog from './ConfirmDialog';
@@ -26,6 +27,8 @@ interface Props {
   onNavToStation: (st: Station) => void;
   /** Googleマップで次の周辺スポットへ */
   onNavToPoi: (poi: Poi) => void;
+  /** Googleマップで次の自由地点（アプリ未登録の場所）へ */
+  onNavToCustom: (info: CustomStopInfo) => void;
   /** 帰路ナビ（出発地点へ） */
   onNavHome: () => void;
   /** 旅行中の道路の希望（未変更ならコース作成時の設定） */
@@ -34,6 +37,7 @@ interface Props {
 }
 
 export default function TripView({
+  onNavToCustom,
   saved,
   trip,
   visits,
@@ -71,10 +75,18 @@ export default function TripView({
   );
   const currentIdx = currentStop ? r.stops.indexOf(currentStop) : -1;
   const remainMin = Math.max(0, Math.round((new Date(r.returnAt).getTime() - Date.now()) / 60000));
-  const isStationStop = !currentStop || (currentStop.stopType ?? 'station') === 'station';
+  const curStopType = currentStop ? (currentStop.stopType ?? 'station') : 'station';
+  const isStationStop = !currentStop || curStopType === 'station';
   const curStation = currentStop && isStationStop ? getStation(currentStop.stationId) : null;
-  const curPoi = currentStop && !isStationStop ? currentStop.poi ?? null : null;
-  const curName = curStation?.name ?? (curPoi ? poiDisplayName(curPoi) : null);
+  const curPoi = currentStop && curStopType !== 'station' && curStopType !== 'custom' ? (currentStop.poi ?? null) : null;
+  /** 自由地点（アプリ未登録のホテル・飲食店等）。これを解決しないと旅行が次へ進めなくなる */
+  const curCustom = currentStop && curStopType === 'custom' ? (currentStop.custom ?? null) : null;
+  const curName =
+    curStation?.name ??
+    (curPoi ? poiDisplayName(curPoi) : null) ??
+    (curCustom ? (curCustom.name ?? curCustom.address) : null);
+  /** 画面表示上の種別名（道の駅 / 周辺スポット / 立ち寄り先） */
+  const curKindLabel = isStationStop ? '道の駅' : curCustom ? '立ち寄り先' : '周辺スポット';
   const curLeg = currentIdx >= 0 ? r.legs[currentIdx] : null;
   const allDone = currentStop === null;
   // 「到着」だけ押した周辺スポット（「次へ」で確定するまでの一時状態）
@@ -211,7 +223,7 @@ export default function TripView({
       {currentStop && curLeg && curName && (
         <div className="trip-next">
           <div className="label">
-            次の{isStationStop ? '道の駅' : '周辺スポット'}（{currentIdx + 1}／{r.stops.length}）
+            次の{curKindLabel}（{currentIdx + 1}／{r.stops.length}）
           </div>
           <h3 data-testid="trip-current">
             {isStationStop ? `道の駅 ${curName}` : curName}
@@ -224,31 +236,49 @@ export default function TripView({
             <button
               className="btn-primary wide"
               style={{ minHeight: 56, fontSize: 17 }}
-              onClick={() => (curStation ? onNavToStation(curStation) : curPoi && onNavToPoi(curPoi))}
+              onClick={() =>
+                curStation
+                  ? onNavToStation(curStation)
+                  : curPoi
+                    ? onNavToPoi(curPoi)
+                    : curCustom && onNavToCustom(curCustom)
+              }
               data-testid="trip-nav"
             >
-              🧭 Googleマップで次の{isStationStop ? '駅' : 'スポット'}へ
+              🧭 Googleマップで次の{isStationStop ? '駅' : curCustom ? '立ち寄り先' : 'スポット'}へ
             </button>
             {isStationStop ? (
               <>
+                {/*
+                  「到着した」で次の駅へ進めてしまうと、直後に押した「スタンプ取得」が
+                  次の駅へ記録されてしまう（実際に到着した駅と記録先がずれる）。
+                  到着とスタンプ取得は同じ駅に対して行い、進むのは「次の駅へ」だけにする。
+                */}
                 <button
-                  className="btn-primary"
+                  className={`btn-primary${arrivedNotDone ? ' active' : ''}`}
                   onClick={() => {
                     onArrived(currentStop.stationId);
-                    onProgress(currentStop.stationId, 'done');
+                    onProgress(currentStop.stationId, 'arrived');
                   }}
                   data-testid="trip-arrived"
                 >
-                  ✓ 到着した
+                  {arrivedNotDone ? '✓ 到着済み' : '✓ 到着した'}
                 </button>
                 <button
                   onClick={() => {
                     onStamp(currentStop.stationId);
-                    onProgress(currentStop.stationId, 'done');
+                    onProgress(currentStop.stationId, 'arrived');
                   }}
                   data-testid="trip-stamp"
                 >
                   印 スタンプ取得
+                </button>
+                <button
+                  className="wide"
+                  onClick={() => onProgress(currentStop.stationId, 'done')}
+                  data-testid="trip-next"
+                >
+                  次の駅へ ▶
                 </button>
               </>
             ) : (
@@ -266,7 +296,7 @@ export default function TripView({
               </>
             )}
             <button className="wide" onClick={() => onProgress(currentStop.stationId, 'skipped')} data-testid="trip-skip">
-              この{isStationStop ? '駅' : 'スポット'}をスキップ（記録は変えない）
+              この{isStationStop ? '駅' : curCustom ? '立ち寄り先' : 'スポット'}をスキップ（記録は変えない）
             </button>
           </div>
           <p className="msg info" style={{ marginBottom: 0 }}>

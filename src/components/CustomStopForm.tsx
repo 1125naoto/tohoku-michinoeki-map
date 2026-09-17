@@ -12,6 +12,8 @@ interface Props {
   submitLabel: string;
   onSubmit: (info: CustomStopInfo) => void;
   onCancel: () => void;
+  /** 見つからないとき・通信失敗時の逃げ道。渡されたときだけ「地図で選ぶ」を出す */
+  onRequestMapPick?: () => void;
 }
 
 /**
@@ -21,7 +23,14 @@ interface Props {
  * APIキー不要で、新規の有料API（Google Places等）は導入しない。
  * バックエンドへは送らず、この端末のlocalStorageにのみ保存する（既存privacy方針と同一）。
  */
-export default function CustomStopForm({ stations, title, submitLabel, onSubmit, onCancel }: Props) {
+export default function CustomStopForm({
+  stations,
+  title,
+  submitLabel,
+  onSubmit,
+  onCancel,
+  onRequestMapPick,
+}: Props) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [searching, setSearching] = useState(false);
@@ -104,6 +113,17 @@ export default function CustomStopForm({ stations, title, submitLabel, onSubmit,
       {error && (
         <div className="msg warn" style={{ marginTop: 8 }} data-testid="custom-stop-error">
           {error}
+          {onRequestMapPick && (
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ width: '100%', marginTop: 8 }}
+              onClick={onRequestMapPick}
+              data-testid="custom-stop-map-pick"
+            >
+              🗺️ 地図で選ぶ
+            </button>
+          )}
         </div>
       )}
       {resolved && (

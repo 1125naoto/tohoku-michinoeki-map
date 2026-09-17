@@ -171,3 +171,42 @@ describe('永続化と耐障害性', () => {
     expect(localStorage.getItem(LEGACY_VISITS_KEY)).toBeNull();
   });
 });
+
+describe('P1-02回帰: 到着操作でスタンプ記録を壊さない', () => {
+  it('applyStateで"visited"にするとstampAtが消える（＝到着処理でそのまま呼んではいけない）', () => {
+    const at = '2026-01-01T00:00:00.000Z';
+    const stamped = applyState({}, 'mne-1', 'stamped', new Date(at));
+    expect(stamped['mne-1'].state).toBe('stamped');
+    expect(stamped['mne-1'].stampAt).toBe(at);
+
+    const demoted = applyState(stamped, 'mne-1', 'visited');
+    expect(demoted['mne-1'].state).toBe('visited');
+    expect(demoted['mne-1'].stampAt).toBeNull();
+  });
+
+  it('スタンプ取得済みの駅は到着時に状態を変えないことで記録が保たれる（App側のガードと同じ条件）', () => {
+    const at = '2026-01-01T00:00:00.000Z';
+    let map = applyState({}, 'mne-1', 'stamped', new Date(at));
+    // 旅行中の「到着した」: 既にstampedならapplyStateを呼ばない
+    const arrive = (id: string) => {
+      if (map[id]?.state === 'stamped') return;
+      map = applyState(map, id, 'visited');
+    };
+    arrive('mne-1');
+    expect(map['mne-1'].state).toBe('stamped');
+    expect(map['mne-1'].stampAt).toBe(at);
+
+    // 未訪問の駅では従来どおり訪問済みになる
+    arrive('mne-2');
+    expect(map['mne-2'].state).toBe('visited');
+  });
+
+  it('訪問済み→スタンプ取得では訪問日時を失わない（既存の累積を降格させない）', () => {
+    const visitedAt = '2026-01-01T00:00:00.000Z';
+    const visited = applyState({}, 'mne-1', 'visited', new Date(visitedAt));
+    const stamped = applyState(visited, 'mne-1', 'stamped');
+    expect(stamped['mne-1'].state).toBe('stamped');
+    expect(stamped['mne-1'].visitedAt).toBe(visitedAt);
+    expect(stamped['mne-1'].stampAt).not.toBeNull();
+  });
+});

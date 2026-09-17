@@ -221,6 +221,8 @@ export function evaluateManual(
 }
 
 export interface FitToBudgetResult {
+  /** 固定の最終目的地まで含めて時間内に収まったか。falseなら「時間内に作れない」 */
+  feasible?: boolean;
   kept: ManualCandidate[];
   excluded: ManualCandidate[];
 }
@@ -238,17 +240,33 @@ export function fitToBudget(
   p: Pick<ManualPlanParams, 'returnToStart'>,
   budgetMin: number,
   fallback?: RouteMatrix,
+  /**
+   * 常に末尾に固定される立ち寄り先（③別の最終目的地）。除外候補にはしないが、
+   * ここまでの移動時間と滞在時間は時間予算の判定に必ず含める。
+   * 以前はこれを外したまま予算判定していたため、最終目的地を戻すと予算を超える組み合わせを
+   * 「時間内に回れる分」として提示してしまっていた。
+   */
+  fixedTail?: ManualCandidate | null,
 ): FitToBudgetResult {
+  /** 固定の最終目的地まで含めた実際の行程で評価する */
+  const evaluateWithTail = (list: ManualCandidate[]) =>
+    evaluateOrder(fixedTail ? [...list, fixedTail] : list, matrix, stayAccessor, p.returnToStart, fallback);
+
   let cur = [...order];
   const excluded: ManualCandidate[] = [];
-  while (cur.length > 0) {
-    const ev = evaluateOrder(cur, matrix, stayAccessor, p.returnToStart, fallback);
-    if (ev && ev.totalMin + computeMarginMin(ev.totalMin) <= budgetMin) break;
+  let feasible = false;
+  for (;;) {
+    const ev = evaluateWithTail(cur);
+    if (ev && ev.totalMin + computeMarginMin(ev.totalMin) <= budgetMin) {
+      feasible = true;
+      break;
+    }
+    if (cur.length === 0) break; // これ以上減らせない（固定の最終目的地だけで予算超過）
     let bestIdx = -1;
     let bestTotal = Number.POSITIVE_INFINITY;
     for (let i = 0; i < cur.length; i++) {
       const trial = [...cur.slice(0, i), ...cur.slice(i + 1)];
-      const tev = evaluateOrder(trial, matrix, stayAccessor, p.returnToStart, fallback);
+      const tev = evaluateWithTail(trial);
       if (tev && tev.totalMin < bestTotal) {
         bestTotal = tev.totalMin;
         bestIdx = i;
@@ -258,7 +276,7 @@ export function fitToBudget(
     excluded.push(cur[bestIdx]);
     cur = [...cur.slice(0, bestIdx), ...cur.slice(bestIdx + 1)];
   }
-  return { kept: cur, excluded };
+  return { kept: cur, excluded, feasible };
 }
 
 /** 立ち寄り先種別ごとの滞在時間の内訳（分）。Gate7の予定表内訳表示に使う */

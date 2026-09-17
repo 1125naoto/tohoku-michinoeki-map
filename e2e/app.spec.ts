@@ -1660,17 +1660,21 @@ test.describe('ルート提案から旅行中まで', () => {
     await popup!.close();
     await expect(page.getByTestId('stats-visited')).toContainText('0／1237駅');
 
-    // 到着した → visited(赤) + 次の駅へ
+    // 到着した → visited(赤)。この時点ではまだ次の駅へ進まない
+    // （進んでしまうと、直後の「スタンプ取得」が次の駅へ記録されてしまうため）
     await page.getByTestId('trip-arrived').click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
-    await expect(page.getByTestId('trip-progress')).toContainText('1／');
+    await expect(page.getByTestId('trip-arrived')).toContainText('到着済み');
+    await expect(page.getByTestId('trip-progress')).toContainText('0／');
 
-    // 2駅目: スタンプ取得 → stamped(紫)
-    if (await page.getByTestId('trip-stamp').isVisible().catch(() => false)) {
-      await page.getByTestId('trip-stamp').click();
-      await expect(page.getByTestId('stats-visited')).toContainText('2／1237駅');
-      await expect(page.getByTestId('stats-stamped')).toContainText('1');
-    }
+    // 同じ駅に対してスタンプ取得できる（到着した駅と記録先が一致する）
+    await page.getByTestId('trip-stamp').click();
+    await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
+
+    // 「次の駅へ」で初めて進む
+    await page.getByTestId('trip-next').click();
+    await expect(page.getByTestId('trip-progress')).toContainText('1／');
 
     // 残りはスキップ（状態は変えない）→ 最後に帰路が表示される
     for (let i = 0; i < 8; i++) {
@@ -1683,7 +1687,10 @@ test.describe('ルート提案から旅行中まで', () => {
     }
     await expect(page.getByTestId('trip-return')).toBeVisible();
     await expect(page.getByTestId('trip-nav-home')).toBeVisible(); // 出発地点へ戻るナビ
-    await expect(page.getByTestId('stats-visited')).toContainText('2／1237駅'); // スキップで状態不変
+    // スキップで状態不変。到着とスタンプは同じ1駅に対して行ったので達成は1駅のまま
+    // （以前は「到着」で次の駅へ進んでしまい、スタンプが別の駅に付いて2駅になっていた）
+    await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
 
     // 中断→再開: 進行状況が保持される
     await page.getByTestId('trip-suspend').click();
@@ -1696,7 +1703,9 @@ test.describe('ルート提案から旅行中まで', () => {
     await expect(page.getByTestId('trip-finish')).toBeVisible();
     await page.getByTestId('trip-apply').click();
     await expect(page.getByTestId('route-pane')).toBeVisible();
-    await expect(page.getByTestId('stats-visited')).toContainText('2／1237駅');
+    // 実際に到着した1駅ぶんだけが記録される（スキップした駅は変わらない）
+    await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
   });
 
   test('シナリオB: 行きたい優先でwishlist駅が優先される', async ({ page }) => {

@@ -28,3 +28,25 @@ export async function useNationwideSelection(page: Page) {
     [AREA_SELECTION_KEY, JSON.stringify({ prefectures: [] }), AREA_SESSION_KEY] as const,
   );
 }
+
+/**
+ * 指定した都道府県を表示中の状態から始める。
+ *
+ * 地図選択のシナリオは全国1,237件のマーカーを描画したまま何度も地図を動かすため、
+ * テスト1件あたりの描画コストが大きく、実行環境が混むと60秒のテスト予算を
+ * 使い切って別々の箇所でタイムアウトしていた（製品側の不具合ではない）。
+ * 対象駅が属する県だけを表示すれば、検証内容を変えずにマーカー数を大幅に減らせる。
+ */
+export async function useSelectedPrefectures(page: Page, prefectures: string[]) {
+  await page.addInitScript(
+    ([key, value, sessionKey]) => {
+      try {
+        localStorage.setItem(key, value);
+        sessionStorage.setItem(sessionKey, '1');
+      } catch {
+        /* noop */
+      }
+    },
+    [AREA_SELECTION_KEY, JSON.stringify({ prefectures }), AREA_SESSION_KEY] as const,
+  );
+}

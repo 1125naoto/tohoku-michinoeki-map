@@ -49,7 +49,7 @@ import {
   saveVisits,
 } from './lib/storage';
 import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
-import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
+import { toggleSelection, removeSelection, moveSelection, routeSignature } from './lib/routeSelection';
 import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
 import {
   peekCachedPois,
@@ -198,6 +198,11 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(() => hashStationId());
   const [origin, setOrigin] = useState<OriginValue | null>(null);
   const [pickMode, setPickMode] = useState(false);
+  /**
+   * 地図タップで指定した地点の受け取り先。出発地点だけでなく、自由地点（経由地）と
+   * 最終目的地でも「地図で選ぶ」を使えるようにするため、対象を持っておく。
+   */
+  const [pickTarget, setPickTarget] = useState<'origin' | 'custom-stop' | 'final-destination'>('origin');
   const [routeStage, setRouteStage] = useState<RouteStage>('form');
   const [results, setResults] = useState<PlannedRoute[] | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -820,6 +825,19 @@ export default function App() {
   }, []);
   const activeSaved = trip ? (savedRoutes.find((r) => r.id === trip.savedRouteId) ?? null) : null;
   /**
+   * 「いま操作中で、勝手に再読み込みされると内容が失われる」状態かどうか。
+   * Service Workerの更新適用（main.tsx）はこの間だけ延期される。
+   */
+  const busyWithWork =
+    trip != null ||
+    routeStage === 'results' ||
+    routeSelectMode ||
+    (tab === 'route' && courseMode !== 'choose') ||
+    routeSelectedIds.length > 0;
+  useEffect(() => {
+    (window as unknown as { __michinoekiBusy?: boolean }).__michinoekiBusy = busyWithWork;
+  }, [busyWithWork]);
+  /**
    * 「地域を変更」ボタンに出す現在の表示範囲の短い要約。
    * 選択がちょうど1つの地方と一致すれば地方名（例:「東北」）、それ以外は県名を短くまとめる。
    */
@@ -971,10 +989,16 @@ export default function App() {
 
   const startTrip = useCallback(
     (r: PlannedRoute) => {
-      // 保存済みでなければ自動保存してから旅行を開始
-      let sr = loadRoutes().find(
-        (x) => x.route.stops.map((s) => s.stationId).join('>') === r.stops.map((s) => s.stationId).join('>') && !x.done,
-      );
+      /*
+        「保存済みコースの再開」と「いま作ったコースで新規に開始」を分ける。
+        以前は立ち寄り先IDの並びだけで保存済みコースを探していたため、同じ駅を同じ順で
+        選んだ別のコース（出発地点・最終目的地・出発時刻・滞在時間・道路の希望・自由地点が
+        違うもの）を、古い保存コースとして開始してしまう可能性があった。
+        いま表示しているのが保存済みコースそのものである場合だけ再利用し、それ以外は
+        必ず新しい保存として開始する。
+      */
+      const signature = routeSignature(r);
+      let sr = loadRoutes().find((x) => !x.done && routeSignature(x.route) === signature);
       if (!sr) sr = saveRoute(r, `${r.title} ${new Date(r.params.departAt).toLocaleDateString('ja-JP')}`);
       const t: TripState = { savedRouteId: sr.id, startedAt: new Date().toISOString(), progress: {} };
       setTrip(t);
@@ -1493,8 +1517,17 @@ export default function App() {
             onMapTap={closeSheet}
             pickMode={pickMode}
             onPick={(p) => {
-              setOrigin({ lat: p.lat, lng: p.lng, label: `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})` });
+              const label = `地図指定 (${p.lat.toFixed(3)}, ${p.lng.toFixed(3)})`;
+              if (pickTarget === 'custom-stop') {
+                addCustomStop({ name: null, address: label, lat: p.lat, lng: p.lng });
+              } else if (pickTarget === 'final-destination') {
+                // 最終目的地は作成画面のstateだが、下書きへ入れておけば画面へ戻った時点で復元される
+                persistDraft({ finalDestination: { name: null, address: label, lat: p.lat, lng: p.lng } });
+              } else {
+                setOrigin({ lat: p.lat, lng: p.lng, label });
+              }
               setPickMode(false);
+              setPickTarget('origin');
               setTab('route');
             }}
             routeLine={routeLine}
@@ -1556,6 +1589,12 @@ export default function App() {
           {tab === 'map' && routeSelectMode && showSelectionSheet && (
             <RouteSelectionSheet
               stations={STATIONS}
+              onRequestMapPickForStop={() => {
+                setShowSelectionSheet(false);
+                setPickTarget('custom-stop');
+                setPickMode(true);
+                setTab('map');
+              }}
               selectedIds={routeSelectedIds}
               getStation={getStation}
               selectedPois={selectedPois}
@@ -1727,7 +1766,12 @@ export default function App() {
                 visits={visits}
                 getStation={getStation}
                 onProgress={setProgress}
-                onArrived={(id) => setState(id, 'visited')}
+                onArrived={(id) => {
+                  // 既にスタンプ取得済みの駅で「到着した」を押しても記録を降格させない
+                  // （visited < stamped。applyStateは'visited'にするとstampAtを消すため）
+                  if (visits[id]?.state === 'stamped') return;
+                  setState(id, 'visited');
+                }}
                 onStamp={(id) => setState(id, 'stamped')}
                 onFinish={finishTrip}
                 onEndTrip={() => {
@@ -1742,6 +1786,14 @@ export default function App() {
                 onNavToPoi={(poi) =>
                   openExternal(
                     navToPointUrl({ lat: poi.lat, lng: poi.lng }, trip.roadPref ?? activeSaved.route.params.roadPref),
+                  )
+                }
+                onNavToCustom={(info) =>
+                  openExternal(
+                    navToPointUrl(
+                      { lat: info.lat, lng: info.lng },
+                      trip.roadPref ?? activeSaved.route.params.roadPref,
+                    ),
                   )
                 }
                 onNavHome={() =>
@@ -1798,6 +1850,12 @@ export default function App() {
                   origin={origin}
                   onOriginChange={handleManualOriginChange}
                   onRequestMapPick={() => {
+                    setPickTarget('origin');
+                    setPickMode(true);
+                    setTab('map');
+                  }}
+                  onRequestMapPickForStop={(target) => {
+                    setPickTarget(target);
                     setPickMode(true);
                     setTab('map');
                   }}
@@ -1824,6 +1882,7 @@ export default function App() {
                 origin={origin}
                 onOriginChange={setOrigin}
                 onRequestMapPick={() => {
+                  setPickTarget('origin');
                   setPickMode(true);
                   setTab('map');
                 }}

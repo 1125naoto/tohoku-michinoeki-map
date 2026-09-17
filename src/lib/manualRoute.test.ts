@@ -181,6 +181,52 @@ describe('時間超過の扱い', () => {
     if (kept.length > 0) expect(keptEv!.totalMin).toBeLessThanOrEqual(tightBudget);
   });
 
+  it('P1-07回帰: 固定の最終目的地まで含めて時間予算を判定する（除外後に超過しない）', async () => {
+    const selected = nearIds;
+    const { matrix, candidates } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider: failProvider,
+    });
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'optimized' }));
+    // 末尾を「固定の最終目的地」に見立てる（除外候補にはしないが時間には必ず含まれる）
+    const fixedTail = order[order.length - 1];
+    const rest = order.slice(0, -1);
+    const fullEv = evaluateManual(order, matrix, baseParams())!;
+    const tightBudget = Math.round(fullEv.totalMin * 0.6);
+
+    const { kept, excluded, feasible } = fitToBudget(
+      rest,
+      matrix,
+      baseParams(),
+      tightBudget,
+      undefined,
+      fixedTail,
+    );
+    expect(kept.length + excluded.length).toBe(rest.length);
+    // 最終目的地は除外されない
+    expect(excluded).not.toContain(fixedTail);
+    if (feasible) {
+      // 実際に作られる行程（kept + 最終目的地）で予算に収まっていること
+      const actual = evaluateManual([...kept, fixedTail], matrix, baseParams())!;
+      expect(actual.totalMin).toBeLessThanOrEqual(tightBudget);
+    }
+  });
+
+  it('P1-07回帰: 最終目的地だけで予算を超えるならfeasible=falseを返す（「時間内」と偽らない）', async () => {
+    const selected = nearIds;
+    const { matrix, candidates } = await buildManualMatrix(STATIONS, {}, selected, baseParams(), {
+      provider: failProvider,
+    });
+    const order = orderManual(candidates, matrix, baseParams({ orderMode: 'optimized' }));
+    const fixedTail = order[order.length - 1];
+    const rest = order.slice(0, -1);
+    const tailOnly = evaluateManual([fixedTail], matrix, baseParams())!;
+    const impossible = Math.max(1, Math.floor(tailOnly.totalMin * 0.3)); // 最終目的地だけでも超える
+
+    const { kept, feasible } = fitToBudget(rest, matrix, baseParams(), impossible, undefined, fixedTail);
+    expect(feasible).toBe(false);
+    expect(kept).toEqual([]);
+  });
+
   it('回帰: 1件だけなら収まる予算でも、全滞在込みの予算超過分から一律に安全余裕を引いてはならない（本来1件は残るべき）', async () => {
     // 元の全件（大幅超過）の安全余裕を固定で差し引くと、絞り込むほど余裕不足になり全除外され得る。
     // fitToBudgetは候補を減らすたびに安全余裕を再計算しなければならない。

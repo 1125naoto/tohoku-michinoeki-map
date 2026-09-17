@@ -57,8 +57,56 @@ export const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
 const ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const MIN_INTERVAL_MS = 1500;
 const LIMIT = 5;
+/** 同じ検索語を短時間に繰り返し投げないためのキャッシュ保持時間 */
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_MAX = 50;
 
+/**
+ * 施設名検索そのものを止められるスイッチ。
+ * 公開インスタンス側の障害・制限時に、アプリを壊さず名称検索だけを切れるようにしておく
+ * （offにしても住所検索・道の駅名検索・「地図で選ぶ」で地点指定は続けられる）。
+ */
+export const FACILITY_SEARCH_ENABLED = true;
+
+/**
+ * 直列化キュー。
+ * 以前は各リクエストが「前回時刻」を見てからsleepしていたため、同時に2本
+ * （元の語と正規化した語）を投げると両方が同じ待ち時間を計算して**ほぼ同時に発射**していた。
+ * ここでは前の処理が終わるまで次を始めない鎖にし、公開インスタンスへの同時アクセスを防ぐ。
+ */
+let queue: Promise<unknown> = Promise.resolve();
 let lastCall = 0;
+
+function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  // 失敗しても鎖を切らない（次のリクエストが実行できなくなるのを防ぐ）
+  queue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+const cache = new Map<string, { at: number; places: NominatimPlace[] }>();
+
+function readCache(q: string): NominatimPlace[] | null {
+  const hit = cache.get(q);
+  if (!hit) return null;
+  if (Date.now() - hit.at > CACHE_TTL_MS) {
+    cache.delete(q);
+    return null;
+  }
+  return hit.places;
+}
+
+function writeCache(q: string, places: NominatimPlace[]): void {
+  cache.set(q, { at: Date.now(), places });
+  while (cache.size > CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
@@ -72,23 +120,34 @@ export async function searchPlacesByName(query: string): Promise<NominatimPlace[
   const q = query.trim();
   if (!q) return [];
 
+  if (!FACILITY_SEARCH_ENABLED) return [];
+
   const normalized = normalizeFacilityQuery(q);
   if (normalized !== q) {
-    // 「郡山インターチェンジ」等はOSMの施設名（郡山IC）と一致しないため、
-    // 正規化した語でも1回だけ引いて結果を足す（どちらもレート制限を通る）
-    const [original, viaNormalized] = await Promise.all([
-      requestNominatim(q),
-      requestNominatim(normalized).catch(() => [] as NominatimPlace[]),
-    ]);
+    // 「郡山インターチェンジ」等はOSMの施設名（郡山IC）と一致しないため、正規化した語でも引く。
+    // 並列ではなく順番に流す（公開インスタンスへ同時に2本投げない）。
+    const original = await requestNominatim(q);
+    const viaNormalized = await requestNominatim(normalized).catch(() => [] as NominatimPlace[]);
     const seen = new Set(original.map((p) => `${p.lat},${p.lng}`));
     return [...original, ...viaNormalized.filter((p) => !seen.has(`${p.lat},${p.lng}`))];
   }
   return requestNominatim(q);
 }
 
-/** 1回分の問い合わせ（レート制限つき） */
+/** 1回分の問い合わせ（直列キュー＋最低間隔＋同一語キャッシュ） */
 async function requestNominatim(q: string): Promise<NominatimPlace[]> {
+  const cached = readCache(q);
+  if (cached) return cached;
+  return enqueue(async () => {
+    const again = readCache(q); // 順番待ちの間に同じ語が取得済みになっていれば再利用する
+    if (again) return again;
+    const places = await requestNominatimNow(q);
+    writeCache(q, places);
+    return places;
+  });
+}
 
+async function requestNominatimNow(q: string): Promise<NominatimPlace[]> {
   const wait = Math.max(0, lastCall + MIN_INTERVAL_MS - Date.now());
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   lastCall = Date.now();

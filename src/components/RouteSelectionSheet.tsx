@@ -25,6 +25,8 @@ interface Props {
   onOpenPoiDetail: (poi: Poi) => void;
   /** 自由地点（アプリ未登録のホテル・飲食店等）を経由地として追加する */
   onAddCustomStop: (info: CustomStopInfo) => void;
+  /** 自由地点を地図タップで指定する（検索で見つからないときの逃げ道） */
+  onRequestMapPickForStop?: () => void;
 }
 
 const HOURS_BADGE: Record<HoursKind, { cls: string; text: string }> = {
@@ -50,6 +52,7 @@ export default function RouteSelectionSheet({
   onProceed,
   onOpenPoiDetail,
   onAddCustomStop,
+  onRequestMapPickForStop,
 }: Props) {
   const canProceed = selectedIds.length >= MIN_MANUAL_STATIONS;
   const [addingCustom, setAddingCustom] = useState(false);
@@ -135,6 +138,7 @@ export default function RouteSelectionSheet({
       {addingCustom ? (
         <CustomStopForm
           stations={stations}
+          onRequestMapPick={onRequestMapPickForStop}
           title="📌 自由地点を経由地として追加"
           submitLabel="この地点を追加する"
           onSubmit={(info) => {
