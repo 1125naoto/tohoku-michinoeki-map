@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Station } from '../types';
+import type { Prefecture, Station } from '../types';
 import { PREFECTURES } from '../types';
 import PlaceSearchBox from './PlaceSearchBox';
 import { describeGeolocationError, getBestCurrentPosition } from '../lib/geolocation';
@@ -13,6 +13,8 @@ export interface ExtraOriginMode {
 
 interface Props {
   stations: Station[];
+  /** いま地図で見ている都道府県（候補の優先順位づけ用） */
+  contextPrefectures?: Prefecture[];
   origin: OriginValue | null;
   onRequestMapPick: () => void;
   onOriginChange: (o: OriginValue | null) => void;
@@ -30,6 +32,7 @@ interface Props {
  */
 export default function OriginPicker({
   stations,
+  contextPrefectures,
   origin,
   onRequestMapPick,
   onOriginChange,
@@ -104,6 +107,7 @@ export default function OriginPicker({
       {originMode === 'search' && (
         <PlaceSearchBox
           stations={stations}
+          contextPrefectures={contextPrefectures}
           onSelect={(c) => onOriginChange({ lat: c.lat, lng: c.lng, label: c.label })}
           testIdPrefix="origin"
         />

@@ -499,3 +499,41 @@ test.describe('地図から選ぶルート作成', () => {
     expect(data.visits).toEqual({});
   });
 });
+
+test.describe('コース作成途中の周辺検索', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('POI-1/2/3: 選択済みの道の駅から周辺を探せ、探したあとも選択中のコースが残る', async ({ page }) => {
+    await page.goto('/');
+    await closeBanners(page);
+    await enterManualSelect(page);
+    await tapStation(page, ST_A);
+    await tapStation(page, ST_B);
+    await expect(page.getByTestId('route-select-count')).toContainText('2駅選択中');
+
+    // POI-1: 作成途中（コース未完成）でも一覧から周辺検索へ到達できる
+    await page.getByTestId('route-select-show-list').click();
+    await expect(page.getByTestId('route-select-row')).toHaveCount(2);
+    const toggle = page.locator('[data-testid^="draft-"][data-testid$="-nearby-toggle"]').first();
+    await expect(toggle).toContainText('この駅の周辺を探す');
+    const box = await toggle.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    await toggle.click();
+
+    // POI-2: 既存のGoogleマップ市区町村検索をそのまま使う
+    await page.locator('[data-testid^="draft-"][data-testid$="-nearby-category-food"]').first().click();
+    const ramen = page.locator('[data-testid^="draft-"][data-testid$="-nearby-cat-ramen"]').first();
+    await expect(ramen).toContainText('ラーメン');
+    await expect(ramen).toHaveAttribute('target', '_blank');
+    await expect(ramen).toHaveAttribute('rel', /noopener/);
+    const href = decodeURIComponent((await ramen.getAttribute('href')) ?? '');
+    expect(href.startsWith('https://www.google.com/maps/search/?api=1&query=ラーメン ')).toBe(true);
+    expect(href).not.toContain('道の駅');
+
+    // POI-3: 一覧を閉じても選択中のコースは保持される
+    await page.getByTestId('route-select-sheet-close').click();
+    await expect(page.getByTestId('route-select-count')).toContainText('2駅選択中');
+    await expect(page.locator(`[data-sid="${ST_A}"] .rs-route-num`)).toHaveText('1');
+    await expect(page.locator(`[data-sid="${ST_B}"] .rs-route-num`)).toHaveText('2');
+  });
+});

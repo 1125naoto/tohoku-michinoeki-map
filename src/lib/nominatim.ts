@@ -25,8 +25,31 @@ export interface NominatimPlace {
   address: string | null;
   lat: number;
   lng: number;
-  /** OSMの種別（station / motorway_junction / hotel など。表示の補助にだけ使う） */
+  /** OSMの種別（station / motorway_junction / hotel など。表示・並べ替えに使う） */
   kind: string | null;
+  /** OSMの大分類（highway / railway / tourism など。addressdetails=1で得られるcategory） */
+  category: string | null;
+  /** 都道府県（address.province）。取得できなければnull */
+  prefecture: string | null;
+  /** 市区町村（address.city / town / village のいずれか）。取得できなければnull */
+  city: string | null;
+  /** 路線・道路名（address.road）。ICなら「東北自動車道」等 */
+  road: string | null;
+}
+
+/**
+ * 道路施設の表記ゆれを内部の検索語だけ正規化する（画面の入力文字は書き換えない）。
+ * OSMの施設名は「郡山IC」のようにIC表記なので、「インターチェンジ」「インター」で
+ * 入力されると一致しない（実測: 「郡山インターチェンジ」はNominatimで0件）。
+ * 固有名詞の辞書は作らず、一般的な語尾の言い換えだけを扱う。
+ */
+export function normalizeFacilityQuery(query: string): string {
+  return query
+    .replace(/インターチェンジ/g, 'IC')
+    .replace(/インター(?!ネット)/g, 'IC')
+    .replace(/ジャンクション/g, 'JCT')
+    .replace(/パーキングエリア/g, 'PA')
+    .replace(/サービスエリア/g, 'SA');
 }
 
 export const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
@@ -49,12 +72,29 @@ export async function searchPlacesByName(query: string): Promise<NominatimPlace[
   const q = query.trim();
   if (!q) return [];
 
+  const normalized = normalizeFacilityQuery(q);
+  if (normalized !== q) {
+    // 「郡山インターチェンジ」等はOSMの施設名（郡山IC）と一致しないため、
+    // 正規化した語でも1回だけ引いて結果を足す（どちらもレート制限を通る）
+    const [original, viaNormalized] = await Promise.all([
+      requestNominatim(q),
+      requestNominatim(normalized).catch(() => [] as NominatimPlace[]),
+    ]);
+    const seen = new Set(original.map((p) => `${p.lat},${p.lng}`));
+    return [...original, ...viaNormalized.filter((p) => !seen.has(`${p.lat},${p.lng}`))];
+  }
+  return requestNominatim(q);
+}
+
+/** 1回分の問い合わせ（レート制限つき） */
+async function requestNominatim(q: string): Promise<NominatimPlace[]> {
+
   const wait = Math.max(0, lastCall + MIN_INTERVAL_MS - Date.now());
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   lastCall = Date.now();
 
   const url =
-    `${ENDPOINT}?format=jsonv2&addressdetails=0&dedupe=1&countrycodes=jp&accept-language=ja` +
+    `${ENDPOINT}?format=jsonv2&addressdetails=1&dedupe=1&countrycodes=jp&accept-language=ja` +
     `&limit=${LIMIT}&q=${encodeURIComponent(q)}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`施設検索に失敗しました (HTTP ${res.status})`);
@@ -77,12 +117,18 @@ export async function searchPlacesByName(query: string): Promise<NominatimPlace[
     const rest = parts
       .slice(parts[0] === name ? 1 : 0)
       .filter((p) => p !== '日本' && !/^\d{3}-\d{4}$/.test(p));
+    const addr = isRecord(raw.address) ? raw.address : {};
+    const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
     out.push({
       name,
       address: rest.length > 0 ? rest.join(' ') : null,
       lat,
       lng,
-      kind: typeof raw.type === 'string' ? raw.type : null,
+      kind: str(raw.type),
+      category: str(raw.category),
+      prefecture: str(addr.province) ?? str(addr.state),
+      city: str(addr.city) ?? str(addr.town) ?? str(addr.village) ?? str(addr.county),
+      road: str(addr.road),
     });
   }
   return out;

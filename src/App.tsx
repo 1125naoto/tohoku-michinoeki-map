@@ -1789,6 +1789,7 @@ export default function App() {
               ) : (
                 <ManualRouteBuilder
                   stations={STATIONS}
+                  contextPrefectures={selectedPrefectures}
                   getStation={getStation}
                   selectedIds={routeSelectedIds}
                   selectedPois={selectedPois}
@@ -1819,6 +1820,7 @@ export default function App() {
             ) : (
               <PlannerForm
                 stations={STATIONS}
+                contextPrefectures={selectedPrefectures}
                 origin={origin}
                 onOriginChange={setOrigin}
                 onRequestMapPick={() => {

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { searchPlaces, type PlaceCandidate } from '../lib/placeSearch';
 import { OSM_ATTRIBUTION } from '../lib/nominatim';
-import type { Station } from '../types';
+import type { Prefecture, Station } from '../types';
 
 interface Props {
   stations: Station[];
+  /** いま地図で見ている都道府県。候補の優先順位づけにだけ使う（絞り込みはしない） */
+  contextPrefectures?: Prefecture[];
   /** 候補が選ばれたとき。呼び出し側が出発地点/経由地/最終目的地として使う */
   onSelect: (c: PlaceCandidate) => void;
   placeholder?: string;
@@ -18,7 +20,13 @@ interface Props {
  * 入力のたびには検索しない（Nominatimの公開インスタンスはオートコンプリート禁止）。
  * 「検索」ボタンを押したときだけ1回問い合わせる。
  */
-export default function PlaceSearchBox({ stations, onSelect, placeholder, testIdPrefix }: Props) {
+export default function PlaceSearchBox({
+  stations,
+  contextPrefectures,
+  onSelect,
+  placeholder,
+  testIdPrefix,
+}: Props) {
   const [text, setText] = useState('');
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +38,9 @@ export default function PlaceSearchBox({ stations, onSelect, placeholder, testId
     setError(null);
     setCandidates(null);
     try {
-      const { candidates: found, geocodeFailed, usedOsm } = await searchPlaces(text, stations);
+      const { candidates: found, geocodeFailed, usedOsm } = await searchPlaces(text, stations, {
+        prefectures: contextPrefectures ?? [],
+      });
       setCandidates(found);
       setShowOsmCredit(usedOsm);
       if (found.length === 0) {
@@ -88,6 +98,7 @@ export default function PlaceSearchBox({ stations, onSelect, placeholder, testId
                   data-testid={`${testIdPrefix}-search-result`}
                 >
                   <span className="origin-candidate-name">{c.label}</span>
+                  {c.detail && <span className="origin-candidate-sub">{c.detail}</span>}
                   {c.sub && <span className="origin-candidate-sub">{c.sub}</span>}
                 </button>
               </li>

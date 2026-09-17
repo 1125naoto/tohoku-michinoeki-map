@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import StationNearbySearch from './StationNearbySearch';
 import type { CustomStopInfo, Station } from '../types';
 import { getStatus, type HoursKind } from '../lib/hours';
 import { MIN_MANUAL_STATIONS } from '../lib/manualRoute';
@@ -98,6 +99,8 @@ export default function RouteSelectionSheet({
                   )}
                   {custom && <span className="badge pre">📌 自由地点・{custom.address}</span>}
                 </span>
+                {/* 作成途中でも、選択済みの道の駅の周辺（昼食など）をその場で探せるようにする */}
+                {st && <StationNearbySearch station={st} testIdPrefix={`draft-${id}`} />}
               </span>
               <span className="route-select-actions">
                 <button

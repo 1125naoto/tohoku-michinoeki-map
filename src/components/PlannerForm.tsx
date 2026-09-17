@@ -19,6 +19,8 @@ interface Props {
   planning: boolean;
   /** コースの作り方の選択へ戻る（入力中の内容・出発地点は消さない） */
   onBack: () => void;
+  /** いま地図で見ている都道府県（名称検索の優先順位づけ用） */
+  contextPrefectures?: Prefecture[];
 }
 
 function defaultDepartAt(): string {
@@ -44,6 +46,7 @@ export default function PlannerForm({
   onSubmit,
   planning,
   onBack,
+  contextPrefectures,
 }: Props) {
   const [budgetMin, setBudgetMin] = useState(240);
   const [customBudget, setCustomBudget] = useState('');
@@ -105,6 +108,7 @@ export default function PlannerForm({
         <h3>1. どこから出発？</h3>
         <OriginPicker
           stations={stations}
+          contextPrefectures={contextPrefectures}
           origin={origin}
           onOriginChange={onOriginChange}
           onRequestMapPick={onRequestMapPick}

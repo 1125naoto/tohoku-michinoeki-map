@@ -1,5 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
-import { useNationwideSelection } from './helpers';
+import { AREA_SELECTION_KEY, AREA_SESSION_KEY, useNationwideSelection } from './helpers';
+
+/** 「福島県を表示中」の状態から始める（名称検索の優先順位づけの文脈になる） */
+async function useFukushimaSelection(page: Page) {
+  await page.addInitScript(
+    ([key, value, sessionKey]) => {
+      try {
+        localStorage.setItem(key, value);
+        sessionStorage.setItem(sessionKey, '1');
+      } catch {
+        /* noop */
+      }
+    },
+    [AREA_SELECTION_KEY, JSON.stringify({ prefectures: ['福島県'] }), AREA_SESSION_KEY] as const,
+  );
+}
 
 /**
  * RC1後のUX改善2点のE2E。
@@ -77,14 +92,30 @@ test.describe('出発地点の「名称・住所から探す」', () => {
   /** 施設名検索(Nominatim)をモックする（実APIへは接続しない） */
   async function mockNominatim(
     page: Page,
-    places: { name: string; display_name: string; lat: number; lon: number; type?: string }[],
+    places: {
+      name: string;
+      display_name: string;
+      lat: number;
+      lon: number;
+      type?: string;
+      category?: string;
+      address?: Record<string, string>;
+    }[],
   ) {
     await page.route('**nominatim.openstreetmap.org/**', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          places.map((p) => ({ name: p.name, display_name: p.display_name, lat: String(p.lat), lon: String(p.lon), type: p.type ?? 'yes' })),
+          places.map((p) => ({
+            name: p.name,
+            display_name: p.display_name,
+            lat: String(p.lat),
+            lon: String(p.lon),
+            type: p.type ?? 'yes',
+            category: p.category ?? null,
+            address: p.address ?? {},
+          })),
         ),
       }),
     );
@@ -165,9 +196,27 @@ test.describe('出発地点の「名称・住所から探す」', () => {
     await expect(page.getByTestId('origin-search-results')).toHaveCount(0);
   });
 
-  test('施設名（郡山IC・秋田駅）で候補が出て出発地点にできる', async ({ page }) => {
+  test('SEARCH-1: 福島県を見ているとき「郡山IC」は福島県郡山市のICが先頭に出る', async ({ page }) => {
+    await useFukushimaSelection(page);
     await mockNominatim(page, [
-      { name: '郡山IC', display_name: '郡山IC, 東北自動車道, 喜久田町, 郡山市, 福島県, 963-0725, 日本', lat: 37.44, lon: 140.32, type: 'motorway_junction' },
+      {
+        name: '郡山IC',
+        display_name: '郡山IC, 西名阪自動車道, 大和郡山市, 奈良県, 639-1160, 日本',
+        lat: 34.64,
+        lon: 135.78,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '奈良県', city: '大和郡山市', road: '西名阪自動車道' },
+      },
+      {
+        name: '郡山IC',
+        display_name: '郡山IC, 東北自動車道, 喜久田町, 郡山市, 福島県, 963-0725, 日本',
+        lat: 37.44,
+        lon: 140.32,
+        type: 'motorway_junction',
+        category: 'highway',
+        address: { province: '福島県', city: '郡山市', road: '東北自動車道' },
+      },
     ]);
     await mockGeocode(page, [{ title: '宮城県仙台市太白区郡山', lat: 38.22, lng: 140.89 }]);
     await page.goto('/');
@@ -179,11 +228,44 @@ test.describe('出発地点の「名称・住所から探す」', () => {
 
     const results = page.getByTestId('origin-search-result');
     await expect(results.first()).toContainText('郡山IC', { timeout: 15000 });
-    await expect(results.first()).toContainText('郡山市');
+    // 同名の奈良県側ではなく、いま見ている福島県のICが先頭（路線名も分かる）
+    await expect(results.first()).toContainText('福島県郡山市');
+    await expect(results.first()).toContainText('東北自動車道');
+    // 奈良県の同名ICも候補には残る（県で絞り込まない）
+    await expect(page.getByTestId('origin-search-results')).toContainText('奈良県');
     // OpenStreetMapの出典表示を出す
     await expect(page.getByTestId('origin-search-credit')).toContainText('OpenStreetMap');
     await results.first().click();
     await expect(page.getByTestId('origin-label')).toContainText('郡山IC');
+  });
+
+  test('SEARCH-5: 福島県を見ているときでも「秋田駅」を検索できる（県で絞り込まない）', async ({
+    page,
+  }) => {
+    await useFukushimaSelection(page);
+    await mockNominatim(page, [
+      {
+        name: '秋田駅',
+        display_name: '秋田駅, 中通七丁目, 秋田市, 秋田県, 010-0002, 日本',
+        lat: 39.717,
+        lon: 140.13,
+        type: 'train_station',
+        category: 'railway',
+        address: { province: '秋田県', city: '秋田市' },
+      },
+    ]);
+    await mockGeocode(page, [{ title: '秋田県秋田市', lat: 39.72, lng: 140.1 }]);
+    await page.goto('/');
+    await goToCourseTab(page);
+    await page.getByTestId('course-mode-auto').click();
+    await page.getByTestId('origin-mode-search').click();
+    await page.getByTestId('origin-search-input').fill('秋田駅');
+    await page.getByTestId('origin-search-run').click();
+    const results = page.getByTestId('origin-search-result');
+    await expect(results.first()).toContainText('秋田駅', { timeout: 15000 });
+    await expect(results.first()).toContainText('秋田県秋田市');
+    await results.first().click();
+    await expect(page.getByTestId('origin-label')).toContainText('秋田駅');
   });
 
   test('ROUTE-10: 通信失敗でも画面が落ちず、案内が出る', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CustomStopInfo, PlannedRoute, RoadPref, Station } from '../types';
+import type { CustomStopInfo, PlannedRoute, RoadPref, Station, Prefecture } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
 import { statusAtArrival } from '../lib/hours';
 import { poiDisplayName, type Poi } from '../lib/poi';
@@ -31,6 +31,8 @@ const BUDGETS = [
 const STAYS = [15, 30, 45, 60];
 
 interface Props {
+  /** いま地図で見ている都道府県（名称検索の優先順位づけ用） */
+  contextPrefectures?: Prefecture[];
   stations: Station[];
   getStation: (id: string) => Station | undefined;
   selectedIds: string[];
@@ -74,6 +76,7 @@ interface Props {
 type Phase = 'settings' | 'computing' | 'error' | 'over-budget' | 'order-review' | 'hours-review';
 
 export default function ManualRouteBuilder({
+  contextPrefectures,
   stations,
   getStation,
   selectedIds,
@@ -308,6 +311,7 @@ export default function ManualRouteBuilder({
           <h3>出発地点を選んでください</h3>
           <OriginPicker
             stations={stations}
+            contextPrefectures={contextPrefectures}
             origin={origin}
             onOriginChange={onOriginChange}
             onRequestMapPick={onRequestMapPick}
@@ -518,6 +522,7 @@ export default function ManualRouteBuilder({
         <h3>出発地点</h3>
         <OriginPicker
           stations={stations}
+          contextPrefectures={contextPrefectures}
           origin={origin}
           onOriginChange={onOriginChange}
           onRequestMapPick={onRequestMapPick}
