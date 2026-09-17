@@ -6,6 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import './styles.css';
 import App from './App';
 import { STATIONS } from './data';
+import { createSwUpdateScheduler } from './lib/swUpdate';
 
 // E2Eテスト・デバッグ用に駅ID一覧を公開（個人情報は含まない）
 (window as unknown as { __stationIds: string[] }).__stationIds = STATIONS.map((s) => s.id);
@@ -52,44 +53,38 @@ if ('serviceWorker' in navigator) {
   let reloaded = false;
   /**
    * 操作中の自動再読み込みを避ける。
-   * コース作成中・完成コース表示中・旅行中に新しいSWが有効化されると、以前は即座に
-   * location.reload() していたため、作りかけの内容や進行中の画面が消えていた。
-   * アプリ側が window.__michinoekiBusy を立てている間は延期し、画面が隠れた時・
-   * 操作が終わった時に適用する（更新自体はスキップしない）。
+   * 判定は lib/swUpdate.ts に切り出してある（単体テスト可能にするため）。
+   * 「表示中かつ操作中でない」ときにだけ適用し、隠れている間は適用しない。
    */
   const isBusy = () => (window as unknown as { __michinoekiBusy?: boolean }).__michinoekiBusy === true;
-  const applyUpdate = () => {
-    if (reloaded) return;
-    reloaded = true;
-    location.reload();
-  };
-  const applyWhenIdle = () => {
-    if (reloaded) return;
-    if (!isBusy()) {
-      applyUpdate();
-      return;
-    }
-    // 操作が終わる or 画面を離れるまで待ってから適用する
-    const timer = setInterval(() => {
-      if (!isBusy()) {
+  const scheduler = createSwUpdateScheduler({
+    isBusy,
+    isVisible: () => document.visibilityState === 'visible',
+    reload: () => {
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    },
+    // 操作の区切り・画面復帰のタイミングで再判定する。
+    // 「隠れた時に適用」はしない（戻る操作でページが破棄される瞬間に再読み込みすると、
+    //  iOS Safariで空白のページが残るため）。
+    subscribe: (onChange) => {
+      const timer = setInterval(onChange, 2000);
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') onChange();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      window.addEventListener('pageshow', onVisible);
+      return () => {
         clearInterval(timer);
-        applyUpdate();
-      }
-    }, 2000);
-    document.addEventListener(
-      'visibilitychange',
-      () => {
-        if (document.visibilityState === 'hidden') {
-          clearInterval(timer);
-          applyUpdate();
-        }
-      },
-      { once: true },
-    );
-  };
+        document.removeEventListener('visibilitychange', onVisible);
+        window.removeEventListener('pageshow', onVisible);
+      };
+    },
+  });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
-    applyWhenIdle();
+    scheduler.notifyUpdateReady();
   });
   window.addEventListener('load', () => {
     navigator.serviceWorker

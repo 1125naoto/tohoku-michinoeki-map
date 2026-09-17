@@ -26,6 +26,9 @@ export default defineConfig({
   projects: [
     // スマートフォン優先: 全テストをiPhone相当で実行
     { name: 'iphone', use: { ...devices['iPhone 13'] } },
+    // Owner実機（iPhone Safari）で起きた白画面のように、WebKit固有の復帰挙動に依存する
+    // 回帰だけを実際のWebKitで確認する（全シナリオは流さない）
+    { name: 'webkit-iphone', use: { ...devices['iPhone 13'], browserName: 'webkit' }, grep: /@webkit/ },
     // その他の画面はスモーク+スクリーンショットのみ
     { name: 'android', use: { ...devices['Pixel 5'] }, grep: /@smoke/ },
     { name: 'tablet', use: { ...devices['iPad (gen 7)'] }, grep: /@smoke/ },
