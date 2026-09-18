@@ -17,7 +17,7 @@ import { STATIONS, getStation } from './data';
 import { computeStats } from './lib/stats';
 import { planCourses } from './lib/planner';
 import { osrmProvider } from './lib/routing';
-import { latLngUrl, navToPointUrl, navToStationUrl, stationSearchUrl } from './lib/gmaps';
+import { latLngUrl, navToPointUrl, stationSearchUrl } from './lib/gmaps';
 import { googleWebSearchUrl, stationNearbySearchQuery } from './lib/websearch';
 import {
   filterSummary,
@@ -37,7 +37,6 @@ import {
 } from './lib/areaSelection';
 import { applyBackup, buildBackup, parseBackup, type BackupFile, type ParseResult, type RestoreMode } from './lib/backup';
 import type { LatLng } from './lib/geo';
-import type { Station } from './types';
 import {
   applyState,
   clearAllUserData,
@@ -926,20 +925,6 @@ export default function App() {
     }
   }, []);
 
-  /** 外部URLを新しいタブで直接開く（ブロック時のみ現在タブで遷移） */
-  const openExternal = useCallback((url: string) => {
-    const w = window.open(url, '_blank');
-    if (w) {
-      try {
-        w.opener = null;
-      } catch {
-        /* noop */
-      }
-    } else {
-      location.assign(url);
-    }
-  }, []);
-
   /**
    * 周辺スポットの外部探索導線を3つの役割に分離する（Fable 5.1 Root Cause Audit
    * 再監査結果の最終形）。
@@ -1174,26 +1159,22 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 6000);
   }, []);
 
-  const openOfficial = useCallback((id: string) => {
-    const st = getStation(id);
-    if (!st) return;
-    // 公式URLがない施設は登録済み情報ページ（全国道の駅連絡会/国交省）へフォールバック
-    const url = st.officialUrl ?? st.infoUrl;
-    // 新しいタブで開く。注意: features に 'noopener' を渡すと成功時も null が返り
-    // ブロック判定できないため、開いた後に opener を切る方式にする。
-    // 本当にポップアップブロックされた場合（null）のみ、中間画面を挟まず現在のタブで直接遷移する
-    // （訪問記録はlocalStorage保存済みのため、ブラウザの「戻る」で復帰しても保持される）
-    const w = window.open(url, '_blank');
-    if (w) {
-      try {
-        w.opener = null;
-      } catch {
-        /* cross-origin等で触れない場合は無視 */
-      }
-    } else {
-      location.assign(url);
-    }
-  }, []);
+  /**
+   * タップトーストの「公式HP」の遷移先。公式URLがない施設は登録済み情報ページ
+   * （全国道の駅連絡会/国交省）へフォールバック。
+   * iOSのホーム画面追加PWA（standalone表示）ではwindow.open()が信頼できず
+   * （成功時でもnullを返し得る）、フォールバックのlocation.assign()がアプリ自身の
+   * ルート画面を外部URLへ丸ごと遷移させてしまう（実機で報告された白画面の一因）。
+   * URLだけを返し、呼び出し側の<a target="_blank" rel="noopener noreferrer">
+   * ネイティブアンカーで開く（既存の駅詳細シート等と同じ、window.open()を使わない方式）。
+   */
+  const officialUrlFor = useCallback(
+    (id: string): string | null => {
+      const st = getStation(id);
+      return st ? (st.officialUrl ?? st.infoUrl) : null;
+    },
+    [getStation],
+  );
 
   /** マーカーのタップ: 詳細シートを開くだけ。訪問状態は一切変更しない（誤タップでの色変化を防ぐ） */
   const handleOpenStation = useCallback((id: string) => {
@@ -1707,8 +1688,8 @@ export default function App() {
                 persistDraft({ stayOverrides: { ...manualDraftSnapshot.stayOverrides, [poiDetail.id]: min } })
               }
               onToggleRoute={() => togglePoiSelectWithModeEntry(poiDetail)}
-              onNav={() => openExternal(navToPointUrl({ lat: poiDetail.lat, lng: poiDetail.lng }, 'highway_ok'))}
-              onGoogleSearch={() => openExternal(poiGoogleSearchUrl(poiDetail))}
+              navUrl={navToPointUrl({ lat: poiDetail.lat, lng: poiDetail.lng }, 'highway_ok')}
+              googleSearchUrl={poiGoogleSearchUrl(poiDetail)}
               onClose={() => setPoiDetail(null)}
             />
           )}
@@ -1743,12 +1724,17 @@ export default function App() {
                     元に戻す
                   </button>
                 )}
-                <button
-                  data-testid="tap-toast-official"
-                  onClick={() => openOfficial(toast.stationId)}
-                >
-                  公式HP
-                </button>
+                {officialUrlFor(toast.stationId) && (
+                  <a
+                    className="btn-nav-link"
+                    href={officialUrlFor(toast.stationId) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="tap-toast-official"
+                  >
+                    公式HP
+                  </a>
+                )}
                 <button aria-label="閉じる" onClick={() => setToast(null)} data-testid="tap-toast-close">
                   ✕
                 </button>
@@ -1780,30 +1766,6 @@ export default function App() {
                 }}
                 onShowMap={() => previewOnMap(activeSaved.route)}
                 onExit={() => setTab('map')}
-                onNavToStation={(st: Station) =>
-                  openExternal(navToStationUrl(st, trip.roadPref ?? activeSaved.route.params.roadPref))
-                }
-                onNavToPoi={(poi) =>
-                  openExternal(
-                    navToPointUrl({ lat: poi.lat, lng: poi.lng }, trip.roadPref ?? activeSaved.route.params.roadPref),
-                  )
-                }
-                onNavToCustom={(info) =>
-                  openExternal(
-                    navToPointUrl(
-                      { lat: info.lat, lng: info.lng },
-                      trip.roadPref ?? activeSaved.route.params.roadPref,
-                    ),
-                  )
-                }
-                onNavHome={() =>
-                  openExternal(
-                    navToPointUrl(
-                      { lat: activeSaved.route.params.origin.lat, lng: activeSaved.route.params.origin.lng },
-                      trip.roadPref ?? activeSaved.route.params.roadPref,
-                    ),
-                  )
-                }
                 roadPref={trip.roadPref ?? activeSaved.route.params.roadPref}
                 onChangeRoadPref={(rp) =>
                   setTrip((prev) => {

@@ -69,6 +69,28 @@ button:disabled {
   opacity: 0.45;
   cursor: default;
 }
+/*
+ * Googleマップ等への外部ナビ導線は、ボタンではなく <a target="_blank"> の
+ * ネイティブアンカーで開く（iOSのホーム画面追加PWAでwindow.open()が信頼できない
+ * ため。実機で報告された白画面の対策）。anchor要素は上のbutton{}を継承しないので、
+ * 見た目を変えない目的だけで同じ box-model を最小限だけ再現する
+ * （StationSheetの.btn-link等、既存の外部リンクと同じ考え方）。
+ */
+.btn-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  padding: 10px 14px;
+  min-height: 44px;
+}
 input,
 select {
   font: inherit;

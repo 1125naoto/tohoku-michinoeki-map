@@ -221,3 +221,88 @@ test.describe('旅行中からの復帰（白画面の回帰）@webkit', () => {
     await expect(page.getByTestId('stats-stamped')).toContainText('1');
   });
 });
+
+/**
+ * Production v1.1.0 実機不具合の回帰確認: Googleマップ等への外部遷移と復帰（白画面／戻れない問題）。
+ *
+ * 根本原因: iOSのホーム画面追加PWA（standalone表示）ではwindow.open()が信頼できず、
+ * 成功時でもnullを返し得る（iOS/iPadOSの既知の制約）。旧実装はwindow.open()がnullを
+ * 返した場合に「ポップアップブロック」とみなし、フォールバックとしてlocation.assign(url)で
+ * アプリ自身のルート画面を外部URLへ丸ごと遷移させていた。standalone表示ではこのフォール
+ * バックがポップアップブロック以外でも発動しやすく、アプリの状態（React root・旅行中の
+ * 進行状況）を巻き込んで壊し、復帰時に白画面や状態消失として現れ得る。「戻る」導線が
+ * 無いというOwnerの報告も、この経路ではアプリ自身が外部URLへ置き換わってしまうために
+ * 生じていた可能性がある。
+ *
+ * 修正: 旅行中ナビ（trip-nav/trip-nav-home）・周辺スポット詳細のナビ（poi-detail-nav等、
+ * 本ファイルの下のブロック参照）・タップトーストの公式HPリンクを、window.open()を一切
+ * 使わないネイティブ<a target="_blank" rel="noopener noreferrer">へ統一した
+ * （駅詳細シートの「Googleマップで開く」・完成ルートの分割ナビ等、既存の正常系と同じ方式）。
+ * これによりJSのフォールバックによるアプリ自身の遷移は構造的に起こり得なくなる。
+ *
+ * 注意（過大評価の防止）: ここで使うPlaywrightのiphone(Chromium)・webkit-iphone(WebKit)は、
+ * いずれもiOSのホーム画面追加PWA（standalone表示）そのものを再現するものではない。
+ * ここで検証できるのは「アプリ自身のページが外部URLへ遷移しないこと」「復帰後に白画面や
+ * 状態消失が起きないこと」という、修正によって除去したコード上の危険経路そのものである。
+ * standalone表示特有のwindow.open()の挙動は実機（Owner iPhone・ホーム画面追加状態）でのみ
+ * 最終確認できる。
+ */
+test.describe('Googleマップ等への外部遷移と復帰（白画面・戻れない問題の回帰） @webkit', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('trip-nav: ネイティブアンカーで開き、アプリ自身は遷移せず、復帰後も白画面にならず旅行状態を保つ @webkit', async ({
+    page,
+    context,
+  }) => {
+    await seedTrip(page);
+    await openTripView(page);
+    await expect(page.getByTestId('trip-current')).toBeVisible();
+    const currentName = await page.getByTestId('trip-current').textContent();
+    const progressBefore = await page.getByTestId('trip-progress').textContent();
+    const originUrl = page.url();
+
+    // 1. window.open()ではなく、ネイティブ<a target="_blank" rel="noopener noreferrer">であること
+    const navLink = page.getByTestId('trip-nav');
+    await expect(navLink).toHaveJSProperty('tagName', 'A');
+    expect(await navLink.getAttribute('target')).toBe('_blank');
+    expect(await navLink.getAttribute('rel')).toContain('noopener');
+    expect(await navLink.getAttribute('href')).toContain('google.com/maps/dir');
+
+    // 2. クリックすると新しいタブでGoogleマップが開く
+    const popupPromise = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
+    await navLink.click();
+    const popup = await popupPromise;
+    expect(popup).not.toBeNull();
+
+    // 3. 最重要: アプリ自身のページは一切遷移していない
+    //    （旧実装はwindow.open()失敗時にlocation.assign()でアプリ自身を外部URLへ
+    //    丸ごと遷移させていた。この経路が無くなったことを直接確認する）
+    expect(page.url()).toBe(originUrl);
+    await popup?.close();
+
+    // 4. アプリ自身の状態はそのまま（rootは空にならず、旅行の進行状況も変わらない）
+    expect(await page.evaluate(() => document.getElementById('root')?.childElementCount ?? 0)).toBeGreaterThan(0);
+    await expect(page.getByTestId('error-screen')).toHaveCount(0);
+    await expect(page.getByTestId('trip-view')).toBeVisible();
+    await expect(page.getByTestId('trip-current')).toHaveText(currentName ?? '');
+    await expect(page.getByTestId('trip-progress')).toHaveText(progressBefore ?? '');
+
+    // 5. 外部アプリ切り替え相当の復帰後も白画面にならず、そのまま操作を続けられる
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    await page.waitForTimeout(800);
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+      window.dispatchEvent(new Event('focus'));
+    });
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => document.getElementById('root')?.childElementCount ?? 0)).toBeGreaterThan(0);
+    await expect(page.getByTestId('trip-view')).toBeVisible();
+    await expect(page.getByTestId('trip-nav')).toBeVisible();
+    await page.getByTestId('trip-arrived').click();
+    await expect(page.getByTestId('trip-arrived')).toContainText('到着済み');
+  });
+});

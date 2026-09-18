@@ -10,8 +10,10 @@ interface Props {
   stayMin: number;
   onChangeStayMin: (min: number) => void;
   onToggleRoute: () => void;
-  onNav: () => void;
-  onGoogleSearch: () => void;
+  /** Googleマップへのナビ導線。iOSホーム画面PWAでのwindow.open()不安定挙動を避けるため
+   * URL文字列を受け取り、<a target="_blank">のネイティブアンカーで開く */
+  navUrl: string;
+  googleSearchUrl: string;
   onClose: () => void;
 }
 
@@ -28,8 +30,8 @@ export default function PoiDetailSheet({
   stayMin,
   onChangeStayMin,
   onToggleRoute,
-  onNav,
-  onGoogleSearch,
+  navUrl,
+  googleSearchUrl,
   onClose,
 }: Props) {
   const [customStay, setCustomStay] = useState('');
@@ -106,12 +108,18 @@ export default function PoiDetailSheet({
         >
           {selectedNumber != null ? '選択を解除' : '➕ ルートに追加'}
         </button>
-        <button onClick={onNav} data-testid="poi-detail-nav">
+        <a className="btn-nav-link" href={navUrl} target="_blank" rel="noopener noreferrer" data-testid="poi-detail-nav">
           🧭 ここへナビ
-        </button>
-        <button onClick={onGoogleSearch} data-testid="poi-detail-google">
+        </a>
+        <a
+          className="btn-nav-link"
+          href={googleSearchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="poi-detail-google"
+        >
           🔍 Googleマップで評価・口コミを見る
-        </button>
+        </a>
       </div>
       <p className="msg info" style={{ marginTop: 10 }}>
         評価・口コミはこのアプリには表示していません（OpenStreetMapに評価データが無いため）。

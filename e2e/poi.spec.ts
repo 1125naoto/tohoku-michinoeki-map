@@ -1344,3 +1344,51 @@ test.describe('周辺スポット検索: 細分類フィルター', () => {
     await expect(markers).toHaveCount(7);
   });
 });
+
+/**
+ * Production v1.1.0 実機不具合の回帰確認（続き。e2e/trip-resume.spec.tsの同名ブロック参照）。
+ * 周辺スポット詳細シートの「ここへナビ」「Googleマップで評価・口コミを見る」は、
+ * 以前は window.open() 経由で開いていた（E2Eカバレッジ無し）。ネイティブアンカーへ
+ * 統一したことを、ここで直接確認する。
+ */
+test.describe('Googleマップ等への外部遷移と復帰（白画面・戻れない問題の回帰） @webkit', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('poi-detail-nav / poi-detail-google: ネイティブアンカーで開き、アプリ自身は遷移しない @webkit', async ({
+    page,
+    context,
+  }) => {
+    await mockOverpassResponse(page);
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    const legend = page.getByTestId('legend-panel');
+    if (await legend.isVisible().catch(() => false)) await page.getByTestId('legend-toggle').click();
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました', { timeout: 10000 });
+
+    await page.locator('[data-poi-id="osm:node/1"]').click();
+    await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
+    const originUrl = page.url();
+
+    for (const testId of ['poi-detail-nav', 'poi-detail-google'] as const) {
+      const link = page.getByTestId(testId);
+      await expect(link).toHaveJSProperty('tagName', 'A');
+      expect(await link.getAttribute('target')).toBe('_blank');
+      expect(await link.getAttribute('rel')).toContain('noopener');
+      expect(await link.getAttribute('href')).toMatch(/^https:\/\/www\.google\.com\//);
+
+      const popupPromise = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
+      await link.click();
+      const popup = await popupPromise;
+      expect(popup).not.toBeNull();
+      // 最重要: アプリ自身のページは一切遷移していない（window.open()失敗時のフォール
+      // バックがアプリ自身を外部URLへ丸ごと遷移させていた旧経路が無くなったことの確認）
+      expect(page.url()).toBe(originUrl);
+      await popup?.close();
+    }
+
+    // 詳細シート・ルート追加ボタンの状態も外部遷移の前後で変わらない
+    await expect(page.getByTestId('poi-detail-sheet')).toBeVisible();
+    await expect(page.getByTestId('poi-detail-toggle-route')).toContainText('ルートに追加');
+  });
+});

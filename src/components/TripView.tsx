@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { RoadPref, SavedRoute, Station, StopProgress, TripState, VisitMap } from '../types';
 import { formatHM, formatMin } from '../lib/geo';
-import { poiDisplayName, type Poi } from '../lib/poi';
-import type { CustomStopInfo } from '../types';
+import { poiDisplayName } from '../lib/poi';
+import { navToPointUrl, navToStationUrl } from '../lib/gmaps';
 import { RouteTimeline } from './RouteResults';
 import RoadPrefPicker from './RoadPrefPicker';
 import ConfirmDialog from './ConfirmDialog';
@@ -23,21 +23,12 @@ interface Props {
   onEndTrip: () => void;
   onShowMap: () => void;
   onExit: () => void;
-  /** Googleマップで次の駅へ（中間画面なしで直接開く） */
-  onNavToStation: (st: Station) => void;
-  /** Googleマップで次の周辺スポットへ */
-  onNavToPoi: (poi: Poi) => void;
-  /** Googleマップで次の自由地点（アプリ未登録の場所）へ */
-  onNavToCustom: (info: CustomStopInfo) => void;
-  /** 帰路ナビ（出発地点へ） */
-  onNavHome: () => void;
   /** 旅行中の道路の希望（未変更ならコース作成時の設定） */
   roadPref: RoadPref;
   onChangeRoadPref: (r: RoadPref) => void;
 }
 
 export default function TripView({
-  onNavToCustom,
   saved,
   trip,
   visits,
@@ -49,9 +40,6 @@ export default function TripView({
   onEndTrip,
   onShowMap,
   onExit,
-  onNavToStation,
-  onNavToPoi,
-  onNavHome,
   roadPref,
   onChangeRoadPref,
 }: Props) {
@@ -87,6 +75,21 @@ export default function TripView({
     (curCustom ? (curCustom.name ?? curCustom.address) : null);
   /** 画面表示上の種別名（道の駅 / 周辺スポット / 立ち寄り先） */
   const curKindLabel = isStationStop ? '道の駅' : curCustom ? '立ち寄り先' : '周辺スポット';
+  /**
+   * Googleマップへのナビ導線。iOSのホーム画面追加PWA（standalone表示）では
+   * window.open()が信頼できず（成功時でもnullを返し得る）、呼び出し側の
+   * フォールバックがアプリ自身のルート画面を外部URLへ丸ごと遷移させてしまい、
+   * 実機で報告された白画面（Safariの空タブ）につながる。既存の正常系
+   * （駅詳細シートの「Googleマップで開く」・完成ルートの分割ナビ等）と同じ
+   * <a target="_blank" rel="noopener noreferrer"> のネイティブアンカーへ統一する。
+   */
+  const curNavUrl = curStation
+    ? navToStationUrl(curStation, roadPref)
+    : curPoi
+      ? navToPointUrl({ lat: curPoi.lat, lng: curPoi.lng }, roadPref)
+      : curCustom
+        ? navToPointUrl({ lat: curCustom.lat, lng: curCustom.lng }, roadPref)
+        : null;
   const curLeg = currentIdx >= 0 ? r.legs[currentIdx] : null;
   const allDone = currentStop === null;
   // 「到着」だけ押した周辺スポット（「次へ」で確定するまでの一時状態）
@@ -235,20 +238,18 @@ export default function TripView({
             ごろ到着予定 ／ 滞在{currentStop.stayMin}分
           </p>
           <div className="btn-grid">
-            <button
-              className="btn-primary wide"
-              style={{ minHeight: 56, fontSize: 17 }}
-              onClick={() =>
-                curStation
-                  ? onNavToStation(curStation)
-                  : curPoi
-                    ? onNavToPoi(curPoi)
-                    : curCustom && onNavToCustom(curCustom)
-              }
-              data-testid="trip-nav"
-            >
-              🧭 Googleマップで次の{isStationStop ? '駅' : curCustom ? '立ち寄り先' : 'スポット'}へ
-            </button>
+            {curNavUrl && (
+              <a
+                className="btn-primary wide btn-nav-link"
+                style={{ minHeight: 56, fontSize: 17 }}
+                href={curNavUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="trip-nav"
+              >
+                🧭 Googleマップで次の{isStationStop ? '駅' : curCustom ? '立ち寄り先' : 'スポット'}へ
+              </a>
+            )}
             {isStationStop ? (
               <>
                 {/*
@@ -321,14 +322,16 @@ export default function TripView({
           <h3>出発地点（{r.params.origin.label}）へ帰りましょう</h3>
           <p className="addr">帰着予定 {formatHM(new Date(r.returnAt))}ごろ</p>
           <div className="btn-grid">
-            <button
-              className="btn-primary wide"
+            <a
+              className="btn-primary wide btn-nav-link"
               style={{ minHeight: 56, fontSize: 17 }}
-              onClick={onNavHome}
+              href={navToPointUrl({ lat: r.params.origin.lat, lng: r.params.origin.lng }, roadPref)}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="trip-nav-home"
             >
               🧭 Googleマップで出発地点へ戻る
-            </button>
+            </a>
             <button className="wide" onClick={() => setFinishing(true)} data-testid="trip-finish-btn">
               🏁 コースを終了する
             </button>
