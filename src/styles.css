@@ -2100,3 +2100,12 @@ a {
 .stop-nearby-body {
   margin-top: 8px;
 }
+
+/* ===== 旅行中「スタンプ取得」ボタン: 取得済みを色と文言で明確に示す ===== */
+/* 訪問済みマーカーと同じ深緑（--visited）に白文字。取得できたことを直感的に伝える */
+.btn-grid .trip-stamp-done,
+button.trip-stamp-done {
+  background: var(--visited);
+  color: #fff;
+  font-weight: 700;
+}

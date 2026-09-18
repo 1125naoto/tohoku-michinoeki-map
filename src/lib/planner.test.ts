@@ -173,17 +173,19 @@ describe('優先条件', () => {
   });
 
   it('開業前(upcoming)はどの設定でも候補にならない', async () => {
+    // 開業日が未到来の「くらたけ天草戦国ミュージアム」(熊本県天草市・2026年11月22日予定)の近くから計画する
     const { courses } = await plan(
       {},
       {
         includeVisited: true,
         includeStamped: true,
+        prefs: ['熊本県'],
         budgetMin: 480,
-        origin: { lat: 37.15, lng: 140.44, label: '石川町付近' },
+        origin: { lat: 32.41, lng: 130.33, label: '天草市付近' },
       },
     );
     for (const r of courses) {
-      expect(r.stops.map((s) => s.stationId)).not.toContain('mlit-r64-ishikawa');
+      expect(r.stops.map((s) => s.stationId)).not.toContain('mne-23223');
     }
   });
 

@@ -136,7 +136,9 @@ describe('到着時刻判定とデータ網羅', () => {
     const c = hoursCoverage();
     const tohoku = STATIONS.filter((s) => AREA_BY_PREFECTURE[s.pref] === '東北');
     expect(c.confirmed + c.partial + c.unverified + c.upcoming).toBe(tohoku.length);
-    expect(c.upcoming).toBe(1); // 石川（開業前）
+    // 石川は2026年9月18日の開業を公式サイトで確認し営業時間データ(partial)へ更新したため、
+    // 東北の開業前は0件（残る開業前「くらたけ天草戦国ミュージアム」は熊本県で対象外）
+    expect(c.upcoming).toBe(0);
     expect(c.unverified).toBeGreaterThan(0); // 要確認は正常な状態（推測で埋めない）
     for (const st of STATIONS) {
       // 北海道・関東は営業時間データが未収録のため、未知ID扱い(unknown)で返ることを許容する

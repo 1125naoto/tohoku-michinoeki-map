@@ -91,6 +91,8 @@ export default function TripView({
   const allDone = currentStop === null;
   // 「到着」だけ押した周辺スポット（「次へ」で確定するまでの一時状態）
   const arrivedNotDone = currentStop && trip.progress[currentStop.stationId] === 'arrived';
+  /** いま表示している駅が、保存済みの記録上スタンプ取得済みか */
+  const currentStamped = !!(currentStop && isStationStop && visits[currentStop.stationId]?.state === 'stamped');
 
   if (finishing || (allDone && !r.params.returnToStart)) {
     // 終了: 実際に訪問できた道の駅だけを確認して一括反映（周辺スポットは対象外）
@@ -264,14 +266,22 @@ export default function TripView({
                 >
                   {arrivedNotDone ? '✓ 到着済み' : '✓ 到着した'}
                 </button>
+                {/*
+                  表示は押した事実ではなく「その駅に実際に保存されている状態」から決める
+                  （visits は保存成功後に更新される）。そのため再描画・再読み込み・復帰後も、
+                  既にスタンプ取得済みの駅へ再訪した場合も、正しく取得済みで表示される。
+                  次の駅へ進むと currentStop が変わり、その駅自身の状態で表示し直す。
+                */}
                 <button
+                  className={currentStamped ? 'trip-stamp-done' : undefined}
+                  aria-pressed={currentStamped}
                   onClick={() => {
                     onStamp(currentStop.stationId);
                     onProgress(currentStop.stationId, 'arrived');
                   }}
                   data-testid="trip-stamp"
                 >
-                  印 スタンプ取得
+                  {currentStamped ? '印 スタンプ取得済み' : '印 スタンプ取得'}
                 </button>
                 <button
                   className="wide"

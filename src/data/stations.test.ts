@@ -1063,18 +1063,21 @@ describe('沖縄追加と全国最新版突合（販売版・全国展開Phase 9
     expect(yadoriki!.note).toBeTruthy();
   });
 
-  it('福島県「石川」は開業前のままで、座標が一次情報値へ更新され、station IDは変わっていない', () => {
+  it('福島県「石川」は2026年9月18日の開業を公式サイトで確認して開業済みへ更新。station IDと座標は変わっていない', () => {
     const ishikawa = STATIONS.find((s) => s.id === 'mlit-r64-ishikawa');
     expect(ishikawa).toBeDefined(); // localStorage互換のためIDは変更しない
-    expect(ishikawa!.status).toBe('pre_open'); // 2026年9月18日グランドオープン予定
+    expect(ishikawa!.status).toBe('open');
+    expect(isRoutable(ishikawa!)).toBe(true);
     expect(ishikawa!.lat).toBeCloseTo(37.1664616, 6);
     expect(ishikawa!.lng).toBeCloseTo(140.4297082, 6);
+    // 開業の根拠（道の駅石川公式サイト）を出典に持つ
+    expect(ishikawa!.sources.some((u) => u.includes('michinoeki-isikawa.com'))).toBe(true);
     expect(ishikawa!.sources.some((u) => u.includes('michi-no-eki.jp/stations/views/22977'))).toBe(true);
   });
 
-  it('開業前はこの2駅のみで、ルート候補から除外される', () => {
+  it('開業前は開業日が未到来の1駅（くらたけ天草戦国ミュージアム・2026年11月22日予定）のみで、ルート候補から除外される', () => {
     const preOpen = STATIONS.filter((s) => s.status === 'pre_open');
-    expect(preOpen.map((s) => s.id).sort()).toEqual(['mlit-r64-ishikawa', 'mne-23223'].sort());
+    expect(preOpen.map((s) => s.id)).toEqual(['mne-23223']);
     for (const s of preOpen) expect(isRoutable(s)).toBe(false);
   });
 

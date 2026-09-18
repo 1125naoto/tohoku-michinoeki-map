@@ -17,9 +17,9 @@ const ST_B = 'mne-19029'; // たまかわ（福島県）
 const ROUTE_ID = 'e2e-trip-route';
 
 /** 旅行中（TripState）の状態を端末に用意した状態で開く */
-async function seedTrip(page: Page) {
+async function seedTrip(page: Page, preVisits: Record<string, 'stamped' | 'visited'> = {}) {
   await page.addInitScript(
-    ([areaKey, sessionKey, routesKey, tripKey, stA, stB, routeId]) => {
+    ([areaKey, sessionKey, routesKey, tripKey, stA, stB, routeId, visitsKey, pre]) => {
       try {
         localStorage.setItem(areaKey as string, JSON.stringify({ prefectures: ['福島県'] }));
         sessionStorage.setItem(sessionKey as string, '1');
@@ -74,11 +74,36 @@ async function seedTrip(page: Page) {
           tripKey as string,
           JSON.stringify({ savedRouteId: routeId, startedAt: depart, progress: {} }),
         );
+        const preMap = pre as Record<string, string>;
+        if (Object.keys(preMap).length > 0 && localStorage.getItem(visitsKey as string) == null) {
+          const at = '2026-01-01T00:00:00.000Z';
+          const v: Record<string, unknown> = {};
+          for (const [id, state] of Object.entries(preMap)) {
+            v[id] = {
+              state,
+              visitedAt: at,
+              wishlistAt: null,
+              stampAt: state === 'stamped' ? at : null,
+              updatedAt: at,
+            };
+          }
+          localStorage.setItem(visitsKey as string, JSON.stringify(v));
+        }
       } catch {
         /* noop */
       }
     },
-    [AREA_SELECTION_KEY, AREA_SESSION_KEY, 'tohoku-me:routes:v1', 'tohoku-me:trip:v1', ST_A, ST_B, ROUTE_ID] as const,
+    [
+      AREA_SELECTION_KEY,
+      AREA_SESSION_KEY,
+      'tohoku-me:routes:v1',
+      'tohoku-me:trip:v1',
+      ST_A,
+      ST_B,
+      ROUTE_ID,
+      'tohoku-me:visits:v2',
+      preVisits,
+    ] as const,
   );
 }
 
@@ -147,5 +172,52 @@ test.describe('旅行中からの復帰（白画面の回帰）@webkit', () => {
     await expect(page.getByTestId('trip-nav')).toBeVisible();
     // 訪問記録は復帰だけでは変化しない
     await expect(page.getByTestId('stats-visited')).toContainText('0／1237駅');
+  });
+
+  test('スタンプ取得ボタン: 取得で深緑＋「スタンプ取得済み」になり、次の駅へは誤記録せず、再読み込み後も維持 @webkit', async ({
+    page,
+  }) => {
+    await seedTrip(page);
+    await openTripView(page);
+    const stamp = page.getByTestId('trip-stamp');
+
+    // 1. 未取得の駅では未取得表示
+    await expect(stamp).toHaveText('印 スタンプ取得');
+    await expect(stamp).not.toHaveClass(/trip-stamp-done/);
+    const firstName = await page.getByTestId('trip-current').textContent();
+
+    // 2. タップ → 対象駅にスタンプ記録 → ボタンが深緑＋「スタンプ取得済み」
+    await stamp.click();
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
+    await expect(stamp).toHaveText('印 スタンプ取得済み');
+    await expect(stamp).toHaveClass(/trip-stamp-done/);
+    await expect(stamp).toHaveAttribute('aria-pressed', 'true');
+    const bg = await stamp.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bg).toBe('rgb(31, 107, 74)'); // 訪問済みマーカーと同じ深緑 #1f6b4a
+    // 同じ駅のまま（スタンプを押しても勝手に次へ進まない）
+    await expect(page.getByTestId('trip-current')).toHaveText(firstName ?? '');
+
+    // 5. 再読み込みしても取得済み表示を維持
+    await page.reload();
+    await page.getByTestId('tab-route').click();
+    await expect(page.getByTestId('trip-stamp')).toHaveText('印 スタンプ取得済み');
+
+    // 3. 次の駅へ → 次駅は未取得表示のまま（スタンプが誤記録されていない）
+    await page.getByTestId('trip-next').click();
+    await expect(page.getByTestId('trip-current')).not.toHaveText(firstName ?? '');
+    await expect(page.getByTestId('trip-stamp')).toHaveText('印 スタンプ取得');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
+  });
+
+  test('スタンプ取得ボタン: 既に取得済みの駅へ再訪すると最初から取得済み表示 @webkit', async ({ page }) => {
+    // 4. 1駅目（季の里天栄）を以前にスタンプ取得済みの状態で旅行を開始する
+    await seedTrip(page, { [ST_A]: 'stamped' });
+    await openTripView(page);
+    await expect(page.getByTestId('trip-stamp')).toHaveText('印 スタンプ取得済み');
+    await expect(page.getByTestId('trip-stamp')).toHaveClass(/trip-stamp-done/);
+    // 「到着した」を押してもスタンプ記録を降格させない（P1-02）
+    await page.getByTestId('trip-arrived').click();
+    await expect(page.getByTestId('trip-stamp')).toHaveText('印 スタンプ取得済み');
+    await expect(page.getByTestId('stats-stamped')).toContainText('1');
   });
 });
