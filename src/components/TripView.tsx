@@ -15,7 +15,7 @@ interface Props {
   onProgress: (stationId: string, p: StopProgress) => void;
   /** 到着した: visited(赤)にして次へ */
   onArrived: (stationId: string) => void;
-  /** スタンプ取得: stamped(紫)にして次へ */
+  /** スタンプ取得: stamped にする（マーカーは訪問済みと同じ深緑＋赤い「済」） */
   onStamp: (stationId: string) => void;
   /** 道の駅だけを対象に一括反映する（周辺スポットは達成率・スタンプ数に影響しない） */
   onFinish: (visitedIds: string[], stampIds: string[]) => void;

@@ -9,11 +9,13 @@
   --primary-contrast: #ffffff;
   --accent: #f0a202;
   --danger: #c62828;
-  --want: #e0a106;
-  --visited: #d83a34; /* 訪問済み=赤（マーカー・バッジ・凡例で統一） */
-  --unvisited: #1a4f9e; /* 未訪問=青（マーカーと統一） */
-  --preopen: #8a8f98;
-  --stamp: #6a3ab2;
+  /* 訪問状態の色（マーカー・バッジ・凡例で統一）。落ち着いた配色（C案）。
+     スタンプ取得済みは訪問済みと同じ深緑で、区別は赤い「済」バッジだけで行う。 */
+  --want: #e06a5a; /* 行きたい=コーラルピンク */
+  --visited: #1f6b4a; /* 訪問済み=深緑 */
+  --unvisited: #1a4f9e; /* 未訪問=濃い青 */
+  --preopen: #8a8f98; /* 開業前=グレー */
+  --stamp: #c62828; /* スタンプの「済」バッジ=赤（マーク本体の色ではない） */
   /* 選択状態・クラスタは訪問状態の色（緑/黄/赤）と衝突しない紺色 */
   --select: #1c5bb0;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
@@ -476,13 +478,22 @@ a {
 }
 .rs-marker.want .rs-badge {
   background: var(--want);
-  color: #3d2c00;
+  color: #fff;
 }
+/* 訪問済み: マーク本体が深緑になったため、✓バッジは白地＋深緑にして視認性を確保する
+   （色だけでなく記号でも状態が分かる二重符号化を維持しつつ、赤い「済」と明確に区別する） */
 .rs-marker.visited .rs-badge {
-  background: var(--visited);
+  background: #fff;
+  color: var(--visited);
+  border-color: var(--visited);
 }
+/* スタンプ取得済み: マーク本体は訪問済みと同じ深緑のまま、右上の赤い「済」だけで区別する。
+   本体の白い図形を隠さない大きさに留め、タップは下の .rs-hit が受けるので邪魔しない。 */
 .rs-marker.stamp .rs-badge {
   background: var(--stamp);
+  color: #fff;
+  font-size: 9px;
+  letter-spacing: -0.5px;
 }
 /* 開業前: グレー背景（SVG側で着色）+「準」バッジ */
 .rs-marker.pre .rs-badge {
@@ -852,15 +863,16 @@ a {
 }
 .badge.want {
   background: color-mix(in srgb, var(--want) 22%, transparent);
-  color: #9c6f00;
+  color: #a83b2c;
 }
 .badge.visited {
   background: color-mix(in srgb, var(--visited) 18%, transparent);
   color: var(--visited);
 }
+/* スタンプ取得済み: マーカーと同じく「訪問済みの深緑＋赤の済」に合わせる */
 .badge.stamp {
-  background: rgba(123, 31, 162, 0.15);
-  color: #9c4dcc;
+  background: color-mix(in srgb, var(--stamp) 15%, transparent);
+  color: var(--stamp);
 }
 .badge.pre {
   background: rgba(138, 143, 152, 0.2);

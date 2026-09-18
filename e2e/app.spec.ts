@@ -210,7 +210,7 @@ test.describe('地図と詳細カード @smoke', () => {
     await expect(panel).not.toContainText('押すたびに');
     // 凡例の「訪問済み」サンプルが赤（旧・緑の定義が残っていない）
     const visitedSample = panel.locator('.rs-marker.visited');
-    expect(await visitedSample.innerHTML()).toContain('#d83a34');
+    expect(await visitedSample.innerHTML()).toContain('#1f6b4a');
     expect(await panel.innerHTML()).not.toContain('#198754');
     await page.getByTestId('legend-toggle').click();
     await expect(panel).toBeHidden();
@@ -302,26 +302,26 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('0／1237駅');
     await expect(page.getByTestId('tap-toast')).toBeHidden();
 
-    // シート内「✓ 訪問済みにする」: 赤・訪問済み
+    // シート内「✓ 訪問済みにする」: 深緑・訪問済み
     await page.getByTestId('btn-visited').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('訪問済みに変更しました');
     await expect(page.getByTestId('tap-toast-name')).toContainText(STATION_NAME);
     await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
-    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1f6b4a');
 
-    // シート内「★ 行きたいにする」: オレンジ・行きたい（達成数から外れる）。シートは開いたまま
+    // シート内「★ 行きたいにする」: コーラルピンク・行きたい（達成数から外れる）。シートは開いたまま
     await page.getByTestId('btn-want').click();
     await expect(page.getByTestId('tap-toast-msg')).toContainText('行きたいに変更しました');
     await expect(page.getByTestId('stats-visited')).toContainText('0／1237駅');
     await expect(page.locator(`.rs-marker.want[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
-    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d9640a');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#e06a5a');
 
     // 元に戻す → 直前の訪問済みへ復元
     await expect(page.getByTestId('tap-toast-undo')).toBeVisible();
     await page.getByTestId('tap-toast-undo').click();
     await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
-    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1f6b4a');
 
     // シート内「印 スタンプ取得済みにする」: 訪問済みから直接スタンプへ（達成数+スタンプ数に加算）
     await page.getByTestId('btn-stamp').click();
@@ -329,7 +329,7 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
     await expect(page.getByTestId('stats-stamped')).toContainText('1');
     await expect(page.locator(`.rs-marker.stamp[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 10000 });
-    expect((await markerFill(page, STATION_ID))?.attr).toBe('#6a3ab2');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1f6b4a');
 
     // シート内「未訪問に戻す」: 青・未訪問へ戻る（達成数・スタンプ数から外れる）
     await page.getByTestId('btn-reset').click();
@@ -345,7 +345,7 @@ test.describe('詳細カードの操作', () => {
     await expect(page.getByTestId('stats-visited')).toContainText('1／1237駅');
     await page.goto(`/#station=${STATION_ID}`);
     await expect(page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`)).toBeVisible({ timeout: 15000 });
-    expect((await markerFill(page, STATION_ID))?.attr).toBe('#d83a34');
+    expect((await markerFill(page, STATION_ID))?.attr).toBe('#1f6b4a');
   });
 
   test('マーカーを連打しても状態は変わらない（詳細シートを開くだけ・誤タップでの色変化を防ぐ）', async ({
@@ -430,13 +430,13 @@ test.describe('詳細カードの操作', () => {
       await expect(page.getByTestId('stats-stamped')).toContainText(stamped);
     };
 
-    // シート内ボタンで色を変える（青→赤→オレンジ→紫→青）
+    // シート内ボタンで色を変える（青→深緑→コーラル→深緑(スタンプ)→青）
     await page.getByTestId('btn-visited').click();
-    await expectStage('#d83a34', 'rgb(216, 58, 52)', '1／1237駅', '0');
+    await expectStage('#1f6b4a', 'rgb(31, 107, 74)', '1／1237駅', '0');
     await page.getByTestId('btn-want').click();
-    await expectStage('#d9640a', 'rgb(217, 100, 10)', '0／1237駅', '0');
+    await expectStage('#e06a5a', 'rgb(224, 106, 90)', '0／1237駅', '0');
     await page.getByTestId('btn-stamp').click();
-    await expectStage('#6a3ab2', 'rgb(106, 58, 178)', '1／1237駅', '1');
+    await expectStage('#1f6b4a', 'rgb(31, 107, 74)', '1／1237駅', '1');
     await page.getByTestId('btn-reset').click();
     await expectStage('#1a4f9e', 'rgb(26, 79, 158)', '0／1237駅', '0');
 
@@ -1790,8 +1790,8 @@ test.describe('営業時間の表示（時刻固定・Asia/Tokyo基準）', () =
     await page.getByTestId('btn-visited').click(); // → 訪問済み(赤)
     const visited = page.locator(`.rs-marker.visited[data-sid="${STATION_ID}"]`);
     await expect(visited).toBeVisible({ timeout: 10000 });
-    // 本体は赤(#d83a34)のまま、左下の営業ドットは緑(hrs-open)で別表示
-    expect(await visited.innerHTML()).toContain('#d83a34');
+    // 本体は深緑(#1f6b4a)のまま、左下の営業ドットは緑(hrs-open)で別表示
+    expect(await visited.innerHTML()).toContain('#1f6b4a');
     await expect(visited.locator('.hrs-dot.hrs-open')).toBeVisible();
     // ツールチップにも駅名+営業状態
     await marker.hover();

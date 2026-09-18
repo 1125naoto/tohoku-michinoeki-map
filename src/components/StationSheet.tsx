@@ -54,7 +54,7 @@ export default function StationSheet({ station: st, visits, onSetState, onClose,
           {st.status === 'open' && state === 'unvisited' && <span className="badge none">未訪問</span>}
           {state === 'wishlist' && <span className="badge want">★ 行きたい</span>}
           {state === 'visited' && <span className="badge visited">✓ 訪問済み</span>}
-          {state === 'stamped' && <span className="badge stamp">印 スタンプ取得済み</span>}
+          {state === 'stamped' && <span className="badge stamp">済 スタンプ取得済み</span>}
         </p>
         {rec?.visitedAt && (state === 'visited' || state === 'stamped') && (
           <p className="addr">訪問日: {new Date(rec.visitedAt).toLocaleDateString('ja-JP')}</p>
