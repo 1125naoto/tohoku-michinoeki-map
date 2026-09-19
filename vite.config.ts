@@ -5,6 +5,8 @@ import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { MONITOR_CONFIG } from './src/monitorSite/config';
+import { renderMonitorSite, type SiteMode } from './src/monitorSite/render';
 
 // GitHub Pages（プロジェクトページ）ではサブパス配信になるため、ビルド時の環境変数で切り替える。
 // ローカルのプレビュー/開発サーバーでは未設定=ルート('/')のまま。
@@ -72,6 +74,31 @@ function buildInfoPlugin(): Plugin {
   };
 }
 
+/**
+ * 先行モニター販売サイト（/monitor/ 配下の静的HTML）をdistへ出力する。
+ * 生成内容と「受付準備中／受付中」の判定は src/monitorSite/render.ts が唯一の情報源。
+ * 本番ビルド('live')にはTest modeのURLやダミー事業者情報は一切出力されない。
+ * QA用: MONITOR_MODE=test でビルドすると、Stripe Test modeのURL＋ダミー情報の
+ * 「TEST BUILD」（noindex・公開禁止）を出力する。
+ */
+function monitorSitePlugin(): Plugin {
+  let base = '/';
+  return {
+    name: 'michinoeki-monitor-site',
+    apply: 'build',
+    configResolved(resolved) {
+      base = resolved.base;
+    },
+    generateBundle() {
+      const mode: SiteMode = process.env.MONITOR_MODE === 'test' ? 'test' : 'live';
+      const files = renderMonitorSite(MONITOR_CONFIG, { mode, base });
+      for (const [fileName, source] of Object.entries(files)) {
+        this.emitFile({ type: 'asset', fileName, source });
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base: DEPLOY_BASE,
   define: {
@@ -85,6 +112,7 @@ export default defineConfig({
   plugins: [
     react(),
     buildInfoPlugin(),
+    monitorSitePlugin(),
     VitePWA({
       // 新しいビルドを検知したら自動更新（古い道の駅データが永久に残らない）
       registerType: 'autoUpdate',
@@ -127,6 +155,10 @@ export default defineConfig({
         // アプリ本体+道の駅データ(JSにバンドル)をプリキャッシュ → オフラインで一覧閲覧可
         globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
         navigateFallback: iconPath('index.html'),
+        // 販売サイト(/monitor/)は静的HTMLの別ページ。アプリのSPAフォールバックに吸われたり、
+        // 古いHTMLがprecacheから配信されたりしないよう、precache対象外＋フォールバック対象外にする。
+        globIgnores: ['monitor/**'],
+        navigateFallbackDenylist: [/\/monitor(\/|$)/],
         runtimeCaching: [
           {
             // OSMタイル: 直近に見た範囲だけキャッシュ（オフラインでは表示不可の旨をUIで案内）
