@@ -1,7 +1,8 @@
 # 先行モニター販売 運用手順（FIRST 10 PAID MONITORS / MANUAL FULFILMENT）
 
-販売名称「道の駅ナビ 先行モニター」／先行モニター価格 月額250円／正式版 月額500円を予定。
+販売名称「道の駅ナビ 先行モニター」／先行モニター価格 月額250円（税込）／正式版 月額500円を予定。
 販売方式は**手動対応**（Supabase・アカウント・自動entitlementは作らない。最初の10人で需要を確認してから判断する）。
+**Ownerがコマンド実行・ファイル編集をする必要はない。** Claude Codeが実行し、Owner本人にしかできない操作だけを最後に示す。
 
 ## 1. 構成
 
@@ -19,92 +20,74 @@ SNS / Business OS ─▶ 販売LP  /monitor/  ─▶ Stripe Payment Link（決�
 ```
 
 - ページは `src/monitorSite/render.ts` が静的HTMLとして生成し、`vite build` が `dist/monitor/` へ出力する（JS・Cookie・解析なし）。
-- 事業者情報・Live URLは `src/monitorSite/config.ts` にだけ置く。**公開リポジトリなので、Ownerが確認した値だけを入れる。Stripeの秘密鍵は絶対に入れない**（Payment Link / Portal URLは公開URLで秘密ではない）。
+- 事業者情報・Live URLは `src/monitorSite/config.ts` にだけ置く。**公開リポジトリなので、Ownerが既に公開している事実だけを入れ、Stripeの秘密鍵は絶対に入れない**（Payment Link / Portal URLは公開URLで秘密ではない）。
 - Service Workerは `/monitor/` をprecache・SPAフォールバックの対象外にしている（`vite.config.ts`）。
 
-## 2. 現在の状態（受付準備中）
+## 2. 現在の状態と、受付が開く条件
 
-`config.ts` の `owner`（事業者情報）と `live`（Live URL）が空のため、本番の `/monitor/` は**受付準備中**（申込ボタンなし・noindex）。
-`/monitor/status.json` の `salesOpen` と `missing` で現在の状態と不足項目を確認できる。
-次がすべて揃うと自動的に**受付中**になる（`evaluateSalesGate`。Test modeのURLはLiveとして受け付けない）:
+`/monitor/status.json` で確認できる: `ownerInfoReady`（事業者情報が確認済みか）と `salesOpen`（購入ボタンまで開いているか）と `missing`。
 
-| 項目 | 内容 |
+| 項目 | 状態 | 出所 |
+|---|---|---|
+| 販売事業者名（個人事業主）・所在地/電話の請求開示方式・お問い合わせメール | 反映済み | お宝ファインダーで既に公開している特商法表記（Business OSの `LEGAL_*` 設定）と同一の事実。**メールはStripe登録・購入者サポート用の窓口として再利用** |
+| 価格表示: 月額250円（税込）／正式版は月額500円を予定 | 反映済み | Owner指定 |
+| 返金: 決済済み期間は原則返金なし（法令上必要な場合・重複請求・運営者側の決済事故などは除外しない） | 反映済み（**Owner review required**） | Owner指定の暫定方針 |
+| 解約: いつでも解約可能。解約後は次回以降の請求を停止（現在の請求期間の終了時に有効） | 反映済み | Owner指定＋Customer Portalの設定と一致 |
+| 制定日 | 2026年9月19日 | Owner指定 |
+| `live.paymentLink` / `live.portalLoginUrl` | **未設定 → 「受付準備中」（購入ボタンなし・noindex）** | Stripe Liveで作成後に設定 |
+
+お宝ファインダー固有の条件（14日間の返金保証・アカウント/ログイン・LINE通知・Cookie等）は**持ち込んでいない**。
+
+## 3. Stripe Live 設定（Claude Codeが自動実行。Owner本人の操作は下記だけ）
+
+自動化スクリプト: `node scripts/stripe-monitor-setup.mjs`（冪等。既存オブジェクトを検出して再利用し、重複しない。Test modeで冪等性を検証済み）。
+Liveで作成するには `--live --apply --confirm-live-create` が必須（片方だけなら拒否）。**Ownerの承認前にLiveオブジェクトは作らない。**
+
+作成されるもの（Liveでも同じ内容）:
+
+| 種別 | 内容 |
 |---|---|
-| `owner.sellerName` | 特商法の販売事業者名（個人の場合は氏名）**Owner確認** |
-| `owner.addressDisclosure` / `address` | 所在地: `on_request`（請求があれば遅滞なく開示。要件あり）か `published`（掲載）**Owner確認** |
-| `owner.phoneDisclosure` / `phone` | 電話番号: 同上 **Owner確認** |
-| `owner.supportEmail` | 購入者サポート／改善要望の受付メール **Owner確認** |
-| `owner.taxNote` | 税の表示（例: 表示価格は税込みです）**Owner確認** |
-| `owner.refundPolicy` | 返金・キャンセル条件 **Owner決定** |
-| `owner.effectiveDate` | 制定日 `YYYY-MM-DD` |
-| `owner.responseTimeNote` | （任意）利用案内メールをお送りするまでの目安 |
-| `live.paymentLink` | Stripe **Live** の Payment Link（`https://buy.stripe.com/…`。`test_` は不可） |
-| `live.portalLoginUrl` | Stripe **Live** の Customer Portal ログインURL（`https://billing.stripe.com/p/login/…`） |
+| Product | 道の駅ナビ 先行モニター（カード明細表記 `MICHINOEKI NAVI`） |
+| Price | JPY 250 / month（lookup key `michinoeki_monitor_250_monthly`） |
+| Payment Link | 決済後は `/monitor/thanks/` へ。利用規約・特商法への同意文言つき |
+| Customer Portal | 解約は請求期間の終了時。専用ログインページ。請求履歴・支払い方法・メール変更。プラン変更は不可 |
 
-## 3. Stripe Live セットアップ（Owner本人が実行）
+### Owner本人にしかできない操作（最小）
 
-Test modeでは次を作成・検証済み（`config.ts` の `test`）。Liveは同じ内容をOwnerがLiveで作る。
-Stripe CLIで行う場合は `stripe login`（ブラウザ承認）後、各コマンドに `--live` を付ける。**秘密鍵はチャットへ貼らない**。
+1. **承認の返信**: 「Live作成を承認します」と伝える。
+2. **Stripeの承認ボタンを1回押す**: Claude Codeが `stripe login --non-interactive` で「ブラウザURLと確認コード」を表示する。そのURLを開き、確認コードが一致することを見て、**Liveの（Sandboxではない）アカウント**で「承認（Allow）」を押す。CLIの操作は不要。認証情報はこのPCのStripe CLIに保存され、表示もチャット貼り付けも不要。Liveは別プロファイル（`STRIPE_PROJECT`）に保存し、既存のSandbox認証は変更しない。
+3. **Stripeの公開ビジネス名を設定する**（Dashboard → 設定 → ビジネス → 公開情報）。下記の判定のとおり、これはDashboardでしか変更できない（APIキーでは変更不可）。
+4. **メール通知をONにする**（Dashboard → 設定 → メール通知）。手動対応のため「支払い成功」の通知が申込みを知る唯一のトリガーになる。
 
-```bash
-# 1) Product
-stripe products create --live --name "道の駅ナビ 先行モニター" \
-  --description "道の駅ナビ 先行モニター（月額）。全国版の利用、先行モニターとしての参加、改善要望の送信。" \
-  -d "metadata[app]=michinoeki-navi" -d "metadata[plan]=early-monitor"
+Claude Codeが承認後に行うこと: Live作成 → 出力されたURLを `config.ts` の `live` へ反映 → 単体テスト・build・e2e → `main` へpush（自動デプロイ）→ `/monitor/status.json` が `salesOpen: true` になったことと、Payment Linkの金額（¥250/月）の表示を確認。
 
-# 2) Price（月額250円）  ※<PRODUCT_ID> は 1) の id
-stripe prices create --live --product <PRODUCT_ID> --currency jpy --unit-amount 250 \
-  -d "recurring[interval]=month" --lookup-key michinoeki_monitor_250_monthly
+（フォールバック: 上記2をせず、DashboardでProduct/Price/Payment Link/Customer Portalを上の内容どおりに手で作り、Payment LinkのURLとPortalログインURL（どちらも公開URL）をClaude Codeへ伝えても同じ結果になる。）
 
-# 3) Payment Link（決済後は /monitor/thanks/ へ）  ※<PRICE_ID> は 2) の id
-stripe payment_links create --live \
-  -d "line_items[0][price]=<PRICE_ID>" -d "line_items[0][quantity]=1" \
-  -d "after_completion[type]=redirect" \
-  -d "after_completion[redirect][url]=https://1125naoto.github.io/tohoku-michinoeki-map/monitor/thanks/" \
-  -d "billing_address_collection=auto" \
-  -d "custom_text[submit][message]=お申込みにより、利用規約・プライバシーポリシー・特定商取引法に基づく表記（https://1125naoto.github.io/tohoku-michinoeki-map/monitor/）に同意したものとみなします。月額250円は毎月自動更新され、解約は決済後のページからいつでも手続きできます。" \
-  -d "subscription_data[metadata][app]=michinoeki-navi" -d "metadata[app]=michinoeki-navi"
+## 4. Stripeの表示名（ブランディング）の判定
 
-# 4) Customer Portal（解約は請求期間の終了時。専用ログインページを有効化）
-stripe billing_portal configurations create --live \
-  -d "name=道の駅ナビ 先行モニター（解約・支払い管理）" \
-  -d "business_profile[headline]=道の駅ナビ 先行モニターのお支払い管理・解約" \
-  -d "business_profile[privacy_policy_url]=https://1125naoto.github.io/tohoku-michinoeki-map/monitor/privacy/" \
-  -d "business_profile[terms_of_service_url]=https://1125naoto.github.io/tohoku-michinoeki-map/monitor/terms/" \
-  -d "default_return_url=https://1125naoto.github.io/tohoku-michinoeki-map/monitor/" \
-  -d "features[invoice_history][enabled]=true" -d "features[payment_method_update][enabled]=true" \
-  -d "features[customer_update][enabled]=true" -d "features[customer_update][allowed_updates][0]=email" \
-  -d "features[subscription_cancel][enabled]=true" -d "features[subscription_cancel][mode]=at_period_end" \
-  -d "features[subscription_cancel][proration_behavior]=none" \
-  -d "features[subscription_update][enabled]=false" -d "login_page[enabled]=true"
-```
+判明した事実:
 
-4) の出力の `login_page.url` が `live.portalLoginUrl`、3) の `url` が `live.paymentLink`。
-Stripeダッシュボードで同じ設定を行っても良い。
+- Stripe checkout・領収書・Customer Portalの事業者名は**アカウント単位**（公開ビジネス名）で、Payment Linkや商品の設定では上書きできない。Test modeのSandboxでは「お宝ファインダーサンドボックス」と表示される（実測）。
+- Business OS（お宝ファインダー）のStripeは `STRIPE_MODE=test` で、**Liveで課金された実績・実顧客は無い**（Live化は未実施）。したがって公開ビジネス名を変更しても影響を受ける既存の購入者・領収書は、Business OS側には存在しない（Liveダッシュボード上の有無だけはOwnerが確認）。
+- 変更が影響するのは**今後発行される**書類（領収書・メール・checkout・Portal）だけ。既存のProduct名・Price・過去の書類は変わらない。カード明細表記は、道の駅ナビの商品側に `MICHINOEKI NAVI` を指定して区別する。
+- 販売事業者は同一の個人事業主なので、特商法の販売事業者名と決済ページの事業者名が一致するほうが購入者の信頼と法的整合性の面で望ましい。
 
-**必ず確認・決める点**
+| 案 | 判定 |
+|---|---|
+| **A. 既存アカウントを共通の事業者ブランドとして使う**（公開ビジネス名を特商法の販売事業者名に合わせる） | **最小・安全（推奨）**。Otakaraは未Liveのため影響なし。作業はDashboardの1項目。 |
+| B. 道の駅ナビ用に別Stripeアカウント | 新規の本人確認・銀行口座・新しい認証が必要で重い。今回の目的（10人の需要確認）に対し過剰。 |
+| C. 既存アカウントのまま商品側のブランディングで区別 | **不可**（checkoutの事業者名はアカウント単位で、商品側では変えられない）。 |
 
-- **決済ページ／領収書に出る事業者名は Stripe アカウントの公開ビジネス名**（Test modeでは「お宝ファインダーサンドボックス」）。同じStripeアカウントを使うと、購入者には「お宝ファインダー」名義で表示される。道の駅ナビの購入者に混乱を与えないよう、(a) アカウントの公開ビジネス名を整理する、(b) 別アカウントにする、のどちらかをOwnerが決める。
-- **新規の申込みを知る手段**: Stripeダッシュボード（設定 → メール通知）で「支払い成功」等の通知をONにする。手動対応のため、通知が唯一のトリガーになる。
-- 既存のBusiness OS（お宝ファインダー）のWebhookは、同じStripeアカウントの道の駅ナビのイベントを受け取っても「該当顧客なし」として無視する（確認済み。誤処理なし）。
-
-## 4. 受付を開く手順
-
-1. `src/monitorSite/config.ts` の `owner` と `live` を、Ownerが確認した値で埋める（この作業はClaude Codeに依頼してよい。値はチャットに貼って良いが、**Stripeの秘密鍵は貼らない**）。
-2. `npx vitest run src/monitorSite` → `npm run build` → `npx playwright test e2e/monitor-site.spec.ts` を通す（受付中になると「準備中」前提のe2eは更新が必要）。
-3. `main` へpush（GitHub Pagesへ自動デプロイ）。
-4. `https://1125naoto.github.io/tohoku-michinoeki-map/monitor/status.json` が `salesOpen: true` になったことを確認。
-5. **Live Payment Linkを実際に開き、金額が¥250/月であることだけ確認する**（自分で購入するかはOwner判断）。
-6. Business OSのCampaign（`a2272ba3cb6040329c7410cbc70ec34e`）のdestination/CTAが `/monitor/` と一致していることを確認してから、SNS用のAI仕上げ・投稿へ進む。
+推奨Aの設定値: 公開ビジネス名 = 特商法の販売事業者名（個人事業主名）。屋号を使う場合も、特商法・LP・規約の事業者名と同じにすること。なお、Stripeの「特定商取引法に基づく表記のURL」欄はアカウント共通のため、複数商品を扱う間は空のままで構わない。
 
 ## 5. 新しい先行モニターが決済したら（手動対応）
 
 1. Stripeの通知（またはダッシュボード）で決済とメールアドレスを確認。
 2. 購入者のメールアドレス宛に、利用開始のご案内（アプリのURL・ホーム画面への追加方法・改善要望の送り先）を送る。
-3. 改善要望は `owner.supportEmail` に届く。要望を実装する約束はしていない（LP・規約に明記済み）。
+3. 改善要望は問い合わせメールに届く。要望を実装する約束はしていない（LP・規約に明記済み）。
 4. 解約はCustomer Portalで購入者自身が行う（請求期間の終了時に有効）。
 
-## 6. QA（Test mode）で見た目と導線を確認する
+## 6. QA（Test mode）で見た目と導線を確認する（Claude Code用）
 
 ```powershell
 $env:DEPLOY_BASE='/tohoku-michinoeki-map/'; $env:MONITOR_MODE='test'
@@ -113,7 +96,7 @@ npx vite preview --outDir dist-test --port 4181 --strictPort   # http://localhos
 ```
 
 - `MONITOR_MODE=test` のビルドは「TEST BUILD」表示・noindex・Stripe Test URL・ダミー事業者情報で**受付中**の見た目を出す。**このビルドは公開しない**。
-- Git Bash では `DEPLOY_BASE=/…` がWindowsパスに書き換えられる（MSYSのパス変換）。**PowerShellから実行する**こと。
+- Git Bash では `DEPLOY_BASE=/…` や `stripe get /v1/…` の `/…` がWindowsパスに書き換えられる（MSYSのパス変換）。**PowerShellから実行する**か `MSYS_NO_PATHCONV=1` を付ける。
 
 Test modeのStripe ID（実課金なし）: product `prod_VHnEmi8owLfA7e` / price `price_1UHDe0EtgcvJ6JiZ0hg8uRsq` / payment link `plink_1UHDeEEtgcvJ6JiZDk1SLopC` / portal config `bpc_1UHDeSEtgcvJ6JiZOBvG8giu`。
 
@@ -122,3 +105,8 @@ Test modeのStripe ID（実課金なし）: product `prod_VHnEmi8owLfA7e` / pric
 アプリ本体（`https://1125naoto.github.io/tohoku-michinoeki-map/`）は**現在、誰でもログインなしで使える公開状態**で、GitHub Pagesでは**本当の認証・アクセス制御は作れない**（リポジトリ自体も公開）。
 販売サイトは、そのことを隠さず「先行モニターは参加型プログラム（参加・フィードバック・意見反映の機会）で、モニター専用の機能制限は設けていない」と明記している。
 将来「有料でないと使えない」状態にしたい場合は、アカウント・サーバー側の購読状態確認（`PRODUCT_ARCHITECTURE.md` §5・§7）が必要で、最初の10人で需要を確認してから判断する。
+
+## 8. 商品情報の事実確認（Business OS Product Intelligence との整合）
+
+アプリ（Production）で確認済みの事実: 全国1,237施設・47都道府県／訪問状態「未訪問・訪問済み・行きたい・スタンプ取得済み」／行きたい駅を選んでルート作成／ルートの所要時間（目安）／Googleマップへ引き継ぎ／周辺検索のカテゴリは「食べる・観光・温泉・休憩・宿泊」。**「買い物」カテゴリは存在しない**（配信JS全体に「買い物」の文字列なし）。
+Business OSのProduct Intelligenceにあった「買い物」の記載（6箇所）は「温泉・休憩」へ訂正済み（2026-09-19、Owner経路・LLM呼び出しなし）。

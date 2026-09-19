@@ -2,7 +2,8 @@
  * 「道の駅ナビ 先行モニター」販売サイトの設定（FIRST 10 PAID MONITORS / MANUAL FULFILMENT）。
  *
  * このファイルは**公開リポジトリ**にコミットされる。したがって:
- *  - 個人情報（氏名・住所・電話・メール等）はOwnerが確認・承認するまで一切入れない（null のまま）。
+ *  - 事業者情報は、Ownerが既に公開している特商法表記と同一の事実だけを入れる（住所・電話は請求開示方式のため保持しない）。
+ *    未確認の個人情報を推測で入れない。
  *  - Stripeの秘密鍵・Webhook秘密は絶対に入れない。Payment Link / Customer Portal のURLは
  *    公開前提のURLで秘密ではない。
  *  - `owner` の必須項目と `live` のURLが揃うまで、販売サイトは「受付準備中」表示のままになり、
@@ -19,8 +20,8 @@ export interface OwnerLegalInfo {
   phone: string | null;
   /** 購入者サポート・フィードバックの受付メール */
   supportEmail: string | null;
-  /** 税の表示（例: 表示価格の税込/税別の別）。Owner確認が必要 */
-  taxNote: string | null;
+  /** 先行モニター価格（月額250円）が税込か。true=税込 / false=税別 / null=未確認。Owner確認が必要 */
+  monitorPriceTaxInclusive: boolean | null;
   /** 返金・キャンセル条件（特商法の必須記載）。Owner確認が必要 */
   refundPolicy: string | null;
   /** 制定・施行日 YYYY-MM-DD */
@@ -58,16 +59,19 @@ export const MONITOR_CONFIG: MonitorConfig = {
   monitorPriceYen: 250,
   plannedFullPriceYen: 500,
   targetMonitors: 10,
+  //: Ownerが既に確認・公開している事業者情報（お宝ファインダーの特商法ページ／Business OSの
+  //: LEGAL_* 設定と同一の事実）から再利用した共通の事業者情報。2026-09-19。
+  //: 返金・解約・税・制定日は道の駅ナビ用にOwnerが指定した暫定方針（Owner review required）。
   owner: {
-    sellerName: null,
-    addressDisclosure: null,
+    sellerName: '奥山 直人',
+    addressDisclosure: 'on_request',
     address: null,
-    phoneDisclosure: null,
+    phoneDisclosure: 'on_request',
     phone: null,
-    supportEmail: null,
-    taxNote: null,
-    refundPolicy: null,
-    effectiveDate: null,
+    supportEmail: 'otakarafinder.info@gmail.com',
+    monitorPriceTaxInclusive: true,
+    refundPolicy: 'デジタルサービス（月額サービス）の性質上、お支払い済みの期間については、原則として返金いたしません。ただし、法令上必要な場合、重複してご請求した場合、運営者側の決済上の事故があった場合などは、この限りではありません。その場合は、お問い合わせください。',
+    effectiveDate: '2026-09-19',
     responseTimeNote: null,
   },
   live: {
@@ -90,7 +94,7 @@ export const TEST_OWNER_DUMMY: OwnerLegalInfo = {
   phoneDisclosure: 'on_request',
   phone: null,
   supportEmail: 'test-dummy@example.invalid',
-  taxNote: '（テスト用ダミー）税の表示',
+  monitorPriceTaxInclusive: true,
   refundPolicy: '（テスト用ダミー）返金条件',
   effectiveDate: '2000-01-01',
   responseTimeNote: null,

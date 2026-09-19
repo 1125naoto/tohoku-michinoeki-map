@@ -75,6 +75,19 @@ test.describe('先行モニター販売サイト @smoke', () => {
     }
   });
 
+  test('特商法・規約: 確認済みの事業者情報と暫定方針（返金・解約・税込・制定日）が表示される', async ({ page }) => {
+    await page.goto('/monitor/tokushoho/');
+    const t = await page.locator('main').innerText();
+    expect(t).toContain('請求があった場合、遅滞なく開示します');
+    expect(t).toContain('先行モニター価格（月額250円）は税込です。');
+    expect(t).toContain('原則として返金いたしません');
+    expect(t).toContain('次回以降の請求は発生しません');
+    expect(t).toContain('2026年9月19日');
+    expect(t).not.toContain('（テスト用ダミー');
+    await page.goto('/monitor/');
+    await expect(page.locator('.price .box').first()).toContainText('月額250円（税込）');
+  });
+
   test('アプリ本体（/）は従来どおり表示される（販売サイト追加で壊れていない）', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#root')).toHaveCount(1);

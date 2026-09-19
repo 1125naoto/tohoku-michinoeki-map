@@ -13,7 +13,10 @@ import { MONITOR_CONFIG, TEST_OWNER_DUMMY, type MonitorConfig, type OwnerLegalIn
 export type SiteMode = 'live' | 'test';
 
 export interface SalesGate {
+  /** 購入ボタン・Live URLまで含めて受付中か */
   open: boolean;
+  /** 事業者情報（特商法・規約・プライバシー用）が確認済みか。Live URLの有無とは独立 */
+  ownerReady: boolean;
   /** 未充足の必須項目（表示用の名前。値は含まない） */
   missing: string[];
 }
@@ -37,21 +40,23 @@ const filled = (v: string | null | undefined): v is string => typeof v === 'stri
 export function resolveSite(cfg: MonitorConfig, mode: SiteMode): ResolvedSite {
   const owner = mode === 'test' ? TEST_OWNER_DUMMY : cfg.owner;
   const urls = mode === 'test' ? cfg.test : cfg.live;
-  const missing: string[] = [];
-  if (!filled(owner.sellerName)) missing.push('販売事業者名');
-  if (owner.addressDisclosure === null) missing.push('所在地の開示方法');
-  else if (owner.addressDisclosure === 'published' && !filled(owner.address)) missing.push('所在地');
-  if (owner.phoneDisclosure === null) missing.push('電話番号の開示方法');
-  else if (owner.phoneDisclosure === 'published' && !filled(owner.phone)) missing.push('電話番号');
-  if (!filled(owner.supportEmail) || !EMAIL_RE.test(owner.supportEmail)) missing.push('お問い合わせメール');
-  if (!filled(owner.taxNote)) missing.push('税の表示');
-  if (!filled(owner.refundPolicy)) missing.push('返金・キャンセル条件');
-  if (!filled(owner.effectiveDate) || !DATE_RE.test(owner.effectiveDate)) missing.push('制定日');
+  const ownerMissing: string[] = [];
+  if (!filled(owner.sellerName)) ownerMissing.push('販売事業者名');
+  if (owner.addressDisclosure === null) ownerMissing.push('所在地の開示方法');
+  else if (owner.addressDisclosure === 'published' && !filled(owner.address)) ownerMissing.push('所在地');
+  if (owner.phoneDisclosure === null) ownerMissing.push('電話番号の開示方法');
+  else if (owner.phoneDisclosure === 'published' && !filled(owner.phone)) ownerMissing.push('電話番号');
+  if (!filled(owner.supportEmail) || !EMAIL_RE.test(owner.supportEmail)) ownerMissing.push('お問い合わせメール');
+  if (owner.monitorPriceTaxInclusive === null) ownerMissing.push('税込・税別の別');
+  if (!filled(owner.refundPolicy)) ownerMissing.push('返金・キャンセル条件');
+  if (!filled(owner.effectiveDate) || !DATE_RE.test(owner.effectiveDate)) ownerMissing.push('制定日');
+  const urlMissing: string[] = [];
   const linkRe = mode === 'test' ? TEST_PAYMENT_LINK_RE : LIVE_PAYMENT_LINK_RE;
   const portalRe = mode === 'test' ? TEST_PORTAL_RE : LIVE_PORTAL_RE;
-  if (!filled(urls.paymentLink) || !linkRe.test(urls.paymentLink)) missing.push(mode === 'test' ? 'Test Payment Link' : 'Live Payment Link');
-  if (!filled(urls.portalLoginUrl) || !portalRe.test(urls.portalLoginUrl)) missing.push(mode === 'test' ? 'Test Customer Portal' : 'Live Customer Portal');
-  return { mode, gate: { open: missing.length === 0, missing }, owner, urls };
+  if (!filled(urls.paymentLink) || !linkRe.test(urls.paymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link' : 'Live Payment Link');
+  if (!filled(urls.portalLoginUrl) || !portalRe.test(urls.portalLoginUrl)) urlMissing.push(mode === 'test' ? 'Test Customer Portal' : 'Live Customer Portal');
+  const missing = [...ownerMissing, ...urlMissing];
+  return { mode, gate: { open: missing.length === 0, ownerReady: ownerMissing.length === 0, missing }, owner, urls };
 }
 
 export function evaluateSalesGate(cfg: MonitorConfig, mode: SiteMode): SalesGate {
@@ -62,6 +67,20 @@ const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const yen = (n: number): string => `${n}円`;
+
+/** 'YYYY-MM-DD' → 'YYYY年M月D日'（形式が不正なら空文字） */
+export function jpDate(d: string | null): string {
+  const m = typeof d === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(d) : null;
+  return m ? `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日` : '';
+}
+
+/** 先行モニター価格の税の扱い（Owner確認済みの構造化された値から生成。自由記述にしない） */
+export function taxSentence(cfg: MonitorConfig, owner: OwnerLegalInfo): string | null {
+  if (owner.monitorPriceTaxInclusive === null) return null;
+  return owner.monitorPriceTaxInclusive
+    ? `先行モニター価格（月額${yen(cfg.monitorPriceYen)}）は税込です。`
+    : `先行モニター価格（月額${yen(cfg.monitorPriceYen)}）は税別です（別途、消費税がかかります）。`;
+}
 
 const CSS = `
 *{box-sizing:border-box}
@@ -131,7 +150,7 @@ function page(p: PageInput): string {
     site.mode === 'test'
       ? '<div class="banner test">TEST BUILD（Stripe Test mode・ダミー事業者情報）— 公開・販売には使用しないでください</div>'
       : !site.gate.open
-        ? '<div class="banner closed">現在、先行モニターの受付準備中です（受付開始前のため、掲載内容は準備中の項目を含みます）</div>'
+        ? `<div class="banner closed">${site.gate.ownerReady ? 'お申込みの受付を準備中です（受付開始までお待ちください）' : '現在、先行モニターの受付準備中です（受付開始前のため、掲載内容は準備中の項目を含みます）'}</div>`
         : '';
   return `<!doctype html>
 <html lang="ja">
@@ -168,11 +187,11 @@ ${p.body}
 
 /** 受付準備中／受付中で出し分ける、事業者固有の値（未確認の値は決して捏造しない） */
 function ownerValue(site: ResolvedSite, value: string | null, fallback = '受付開始時に掲載します'): string {
-  return site.gate.open && filled(value) ? esc(value) : fallback;
+  return site.gate.ownerReady && filled(value) ? esc(value) : fallback;
 }
 
 function disclosure(site: ResolvedSite, mode: OwnerLegalInfo['addressDisclosure'], value: string | null): string {
-  if (!site.gate.open) return '受付開始時に掲載します';
+  if (!site.gate.ownerReady) return '受付開始時に掲載します';
   if (mode === 'published' && filled(value)) return esc(value);
   return '請求があった場合、遅滞なく開示します。「お問い合わせ」のメールアドレスまでご連絡ください。';
 }
@@ -184,6 +203,7 @@ function mailto(email: string, subject: string, bodyText: string): string {
 // ── LP ────────────────────────────────────────────────────────────────
 
 function renderLanding(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
+  const taxTag = !site.gate.ownerReady || site.owner.monitorPriceTaxInclusive === null ? '' : site.owner.monitorPriceTaxInclusive ? '（税込）' : '（税別）';
   const cta = site.gate.open
     ? `<a class="btn" href="${esc(site.urls.paymentLink ?? '')}" rel="noopener">月額${yen(cfg.monitorPriceYen)}で先行モニターに参加する</a>
 <p class="note">お支払いはStripeの決済ページで行います。お申込み前に<a href="${base}monitor/terms/">利用規約</a>・<a href="${base}monitor/tokushoho/">特定商取引法に基づく表記</a>をご確認ください。毎月自動更新で、解約はいつでも手続きできます。</p>`
@@ -198,7 +218,7 @@ function renderLanding(site: ResolvedSite, cfg: MonitorConfig, base: string): st
 <h1>全国の道の駅を、記録して、ルートにして、めぐる。</h1>
 <p>「${esc(cfg.appName)}」は、全国の道の駅を地図で探し、訪問やスタンプの記録を残しながら、行きたい駅をつないでドライブルートを作れるアプリです。先行モニターとして使っていただき、改善のご意見をお寄せください。</p>
 <div class="price">
-<div class="box"><div class="lbl">先行モニター価格</div><div class="amt">月額${yen(cfg.monitorPriceYen)}</div></div>
+<div class="box"><div class="lbl">先行モニター価格</div><div class="amt">月額${yen(cfg.monitorPriceYen)}<small>${taxTag}</small></div></div>
 <div class="box plan"><div class="lbl">正式版</div><div class="amt">月額${yen(cfg.plannedFullPriceYen)}<small>を予定</small></div></div>
 </div>
 ${cta}
@@ -263,8 +283,9 @@ ${cta}
 // ── 利用規約 ────────────────────────────────────────────────────────
 
 function renderTerms(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
-  const tax = site.gate.open && filled(site.owner.taxNote) ? `<p>${esc(site.owner.taxNote)}</p>` : '<p>税の表示は受付開始時に掲載します。</p>';
-  const refund = site.gate.open && filled(site.owner.refundPolicy) ? `<p>${esc(site.owner.refundPolicy)}</p>` : '<p>返金・キャンセル条件は受付開始時に掲載します。</p>';
+  const taxText = site.gate.ownerReady ? taxSentence(cfg, site.owner) : null;
+  const tax = taxText ? `<p>${esc(taxText)}</p>` : '<p>税の表示は受付開始時に掲載します。</p>';
+  const refund = site.gate.ownerReady && filled(site.owner.refundPolicy) ? `<p>${esc(site.owner.refundPolicy)}</p>` : '<p>返金・キャンセル条件は受付開始時に掲載します。</p>';
   const cancel =
     site.gate.open && site.urls.portalLoginUrl
       ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">Stripeの解約・お支払い管理ページ</a>`
@@ -326,14 +347,14 @@ ${refund}
 <h2>第10条（準拠法）</h2>
 <p>本規約は日本法に準拠します。</p>
 
-<p class="note">制定日: ${ownerValue(site, site.owner.effectiveDate)}</p>
+<p class="note">制定日: ${ownerValue(site, jpDate(site.owner.effectiveDate))}</p>
 `;
 }
 
 // ── プライバシーポリシー ─────────────────────────────────────────────
 
 function renderPrivacy(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
-  const contact = site.gate.open && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
+  const contact = site.gate.ownerReady && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
   return `
 <h1>プライバシーポリシー</h1>
 <p>${esc(cfg.productName)}（以下「本サービス」）における個人情報等の取扱いを定めます。</p>
@@ -372,20 +393,21 @@ function renderPrivacy(site: ResolvedSite, cfg: MonitorConfig, base: string): st
 
 <h2>8. 改定</h2>
 <p>本ポリシーを改定する場合は、このページでお知らせします。</p>
-<p class="note">制定日: ${ownerValue(site, site.owner.effectiveDate)}</p>
+<p class="note">制定日: ${ownerValue(site, jpDate(site.owner.effectiveDate))}</p>
 `;
 }
 
 // ── 特定商取引法に基づく表記 ─────────────────────────────────────────
 
 function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
-  const open = site.gate.open;
+  const ownerReady = site.gate.ownerReady;
+  const portalLive = site.gate.open && site.urls.portalLoginUrl;
   const cancel =
-    open && site.urls.portalLoginUrl
-      ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">Stripeの解約・お支払い管理ページ</a>から、いつでも解約できます。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。`
-      : '受付開始時に掲載します。';
-  const email = open && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
-  const timing = open && filled(site.owner.responseTimeNote)
+    portalLive
+      ? `<a href="${esc(site.urls.portalLoginUrl ?? '')}" rel="noopener">Stripeの解約・お支払い管理ページ</a>から、いつでも解約できます。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。`
+      : 'お申込み後、Stripeの解約・お支払い管理ページから、いつでも解約できます（解約ページのURLは受付開始時に掲載します）。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。';
+  const email = ownerReady && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
+  const timing = ownerReady && filled(site.owner.responseTimeNote)
     ? `お支払い確認後、運営者からご登録のメールアドレス宛に利用開始のご案内をお送りします（運営者の手作業による対応です）。${esc(site.owner.responseTimeNote)}`
     : 'お支払い確認後、運営者からご登録のメールアドレス宛に利用開始のご案内をお送りします（運営者の手作業による対応です）。';
   return `
@@ -398,7 +420,7 @@ function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): 
 <dt>メールアドレス</dt><dd>${email}</dd>
 <dt>サービス名</dt><dd>${esc(cfg.productName)}</dd>
 <dt>サービスの内容</dt><dd>全国版「${esc(cfg.appName)}」（ウェブアプリ）の利用、先行モニターとしての参加、改善要望・フィードバックの送信、今後の改善・アップデートに意見を反映する機会。アプリ本体は現時点でログイン不要のウェブアプリとして公開されており、先行モニター専用の機能制限は設けていません。</dd>
-<dt>販売価格</dt><dd>先行モニター価格 月額${yen(cfg.monitorPriceYen)}。正式版は月額${yen(cfg.plannedFullPriceYen)}を予定しています（予定であり、変更される場合があります）。${site.gate.open && filled(site.owner.taxNote) ? esc(site.owner.taxNote) : '税の表示は受付開始時に掲載します。'}</dd>
+<dt>販売価格</dt><dd>先行モニター価格 月額${yen(cfg.monitorPriceYen)}。正式版は月額${yen(cfg.plannedFullPriceYen)}を予定しています（予定であり、変更される場合があります）。${site.gate.ownerReady && taxSentence(cfg, site.owner) ? esc(taxSentence(cfg, site.owner) ?? '') : '税の表示は受付開始時に掲載します。'}</dd>
 <dt>販売価格以外の必要料金</dt><dd>インターネット接続にかかる通信料等は、お客様のご負担となります。</dd>
 <dt>お支払い方法</dt><dd>Stripeの決済ページに表示されるお支払い方法（クレジットカード等）。</dd>
 <dt>お支払い時期</dt><dd>お申込み時に初回のお支払いが発生し、以降は毎月、お申込み日を基準に自動更新されます。</dd>
@@ -408,14 +430,14 @@ function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): 
 <dt>動作環境</dt><dd>スマートフォンやパソコンの最新のブラウザ。インターネット接続が必要です。</dd>
 <dt>その他</dt><dd>営業時間・施設情報・ルートの所要時間は目安であり、正確性を保証するものではありません。詳しくは<a href="${base}monitor/terms/">利用規約</a>をご確認ください。</dd>
 </dl>
-<p class="note">制定日: ${ownerValue(site, site.owner.effectiveDate)}</p>
+<p class="note">制定日: ${ownerValue(site, jpDate(site.owner.effectiveDate))}</p>
 `;
 }
 
 // ── お問い合わせ・改善要望 ───────────────────────────────────────────
 
 function renderContact(site: ResolvedSite, cfg: MonitorConfig): string {
-  if (!site.gate.open || !filled(site.owner.supportEmail)) {
+  if (!site.gate.ownerReady || !filled(site.owner.supportEmail)) {
     return `
 <h1>お問い合わせ・改善要望</h1>
 <div class="notice">お問い合わせ窓口は、先行モニターの受付開始時に掲載します。</div>
@@ -496,6 +518,6 @@ export function renderMonitorSite(cfg: MonitorConfig = MONITOR_CONFIG, opts: Ren
     'monitor/thanks/index.html': mk('monitor/thanks/', `先行モニターのご案内｜${cfg.productName}`, `${cfg.productName}のお申込み完了後のご案内`, renderThanks(site, cfg, base)),
   };
   // 機械可読の状態（個人情報・URLは含めない）。Owner/検証用。
-  files['monitor/status.json'] = JSON.stringify({ mode: site.mode, salesOpen: site.gate.open, missing: site.gate.missing }, null, 2);
+  files['monitor/status.json'] = JSON.stringify({ mode: site.mode, salesOpen: site.gate.open, ownerInfoReady: site.gate.ownerReady, missing: site.gate.missing }, null, 2);
   return files;
 }
