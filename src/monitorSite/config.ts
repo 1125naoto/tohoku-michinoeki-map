@@ -50,6 +50,11 @@ export interface MonitorConfig {
   appUrl: string;
   monitorPriceYen: number;
   plannedFullPriceYen: number;
+  /**
+   * Ownerが「販売開始」を承認したか。falseの間は、Live URLや事業者情報が揃っていても購入ボタンを出さず
+   * 「受付準備中」のまま（誤って実課金の導線を公開しないための最後のスイッチ）。
+   */
+  salesLaunchApproved: boolean;
   owner: OwnerLegalInfo;
   /** Live（本番）のURL。Ownerが Stripe Live で作成後に設定する */
   live: StripeUrls;
@@ -65,6 +70,7 @@ export const MONITOR_CONFIG: MonitorConfig = {
   appUrl: 'https://1125naoto.github.io/tohoku-michinoeki-map/',
   monitorPriceYen: 250,
   plannedFullPriceYen: 500,
+  salesLaunchApproved: false,
   //: Ownerが既に確認・公開している事業者情報（お宝ファインダーの特商法ページ／Business OSの
   //: LEGAL_* 設定と同一の事実）から再利用した共通の事業者情報。2026-09-19。
   //: 返金・解約・税・制定日は道の駅ナビ用にOwnerが指定した暫定方針（Owner review required）。
@@ -80,11 +86,13 @@ export const MONITOR_CONFIG: MonitorConfig = {
     effectiveDate: '2026-09-19',
     responseTimeNote: null,
   },
+  //: Stripe Live: 販売に使うのは、Ownerが Dashboard で作成した Payment Link（商品「道の駅ナビ 全国版」・￥250/月）と、
+  //: その Customer Portal。公開URLで秘密ではない。
   live: {
     // Ownerが本番（Live）で作成済みのPayment Link（商品「道の駅ナビ 全国版」・￥250/月）。公開URLで秘密ではない。
     paymentLink: 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00',
-    // 解約・お支払い管理のログインURL（Stripe Dashboard → 設定 → Billing → カスタマーポータル）。未提供のため未設定。
-    portalLoginUrl: null,
+    // 同じStripe Live上のCustomer Portal公開ログインURL（購入者が契約内容・お支払い方法の確認と解約を行う）。公開URLで秘密ではない。
+    portalLoginUrl: 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00',
   },
   test: {
     // Stripe Test mode（実課金は発生しない）: prod_VHnEmi8owLfA7e / price_1UHDe0EtgcvJ6JiZ0hg8uRsq /

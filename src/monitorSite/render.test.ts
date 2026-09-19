@@ -12,10 +12,13 @@ const PAGES = ['index', 'terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as
 
 /** Ownerが本番で作成済みのPayment Link（config.tsの値と一致していること＝リンクミスの検出） */
 const OWNER_PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+/** Ownerが確認した、Customer Portalの公開ログインURL */
+const OWNER_PORTAL_URL = 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00';
 
 /** 解約ポータルURLまで揃った「受付中」を検証するための架空の値（実在しない） */
 const OPEN_CFG: MonitorConfig = {
   ...MONITOR_CONFIG,
+  salesLaunchApproved: true,
   owner: {
     sellerName: '架空 太郎',
     addressDisclosure: 'on_request',
@@ -34,8 +37,11 @@ const OPEN_CFG: MonitorConfig = {
   },
 };
 
-/** 事業者情報は確認済みだが、Payment Linkが無い設定（受付準備中） */
-const CLOSED_CFG: MonitorConfig = { ...MONITOR_CONFIG, live: { paymentLink: null, portalLoginUrl: null } };
+/** リポジトリの実設定に「販売開始承認」を加えた、受付中の状態（承認スイッチの値に依存せず、LP等の中身を検証する） */
+const LIVE_CFG: MonitorConfig = { ...MONITOR_CONFIG, salesLaunchApproved: true };
+
+/** 販売開始は承認済みだが、Payment Link / Customer Portalが無い設定（受付準備中） */
+const CLOSED_CFG: MonitorConfig = { ...MONITOR_CONFIG, salesLaunchApproved: true, live: { paymentLink: null, portalLoginUrl: null } };
 
 /** 事業者情報が未確認（全項目null）の設定: 捏造せず「受付開始時に掲載します」を出すことを検証する */
 const UNCONFIRMED_CFG: MonitorConfig = {
@@ -54,29 +60,38 @@ const h2s = (h: string) => [...h.matchAll(/<h2>([\s\S]*?)<\/h2>/g)].map((m) => m
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('販売ゲート（evaluateSalesGate）', () => {
-  it('リポジトリの実設定: 事業者情報は確認済みで、Ownerが作成したLive Payment Linkにより受付中になる', () => {
+  it('リポジトリの実設定: 事業者情報・Live URLは揃っており、受付中かどうかは「販売開始承認」スイッチだけで決まる', () => {
     const g = evaluateSalesGate(MONITOR_CONFIG, 'live');
-    expect(g).toEqual({ open: true, ownerReady: true, missing: [] });
+    expect(g.ownerReady).toBe(true);
+    expect(g.missing).toEqual(MONITOR_CONFIG.salesLaunchApproved ? [] : ['Ownerの販売開始承認']);
+    expect(g.open).toBe(MONITOR_CONFIG.salesLaunchApproved);
   });
 
-  it('リポジトリの実設定: Payment Linkは、Ownerが指定したURLと1文字も違わない', () => {
+  it('リポジトリの実設定: Payment Link と Customer Portal は、Ownerが指定したURLと1文字も違わない', () => {
     expect(MONITOR_CONFIG.live.paymentLink).toBe(OWNER_PAYMENT_LINK);
+    expect(MONITOR_CONFIG.live.portalLoginUrl).toBe(OWNER_PORTAL_URL);
   });
 
-  it('リポジトリの実設定: 秘密値を含まず、住所・電話は請求開示方式で保持しない', () => {
+  it('リポジトリの実設定: 秘密値を含まず、住所・電話は請求開示方式で保持せず、Live URLは公開URLの形式', () => {
     const o = MONITOR_CONFIG.owner;
     expect(o.addressDisclosure).toBe('on_request');
     expect(o.phoneDisclosure).toBe('on_request');
     expect(o.address).toBeNull();
     expect(o.phone).toBeNull();
+    expect(MONITOR_CONFIG.live.paymentLink).toMatch(/^https:\/\/buy\.stripe\.com\/(?!test_)[A-Za-z0-9]+$/);
+    expect(MONITOR_CONFIG.live.portalLoginUrl).toMatch(/^https:\/\/billing\.stripe\.com\/p\/login\/(?!test_)[A-Za-z0-9]+$/);
     expect(JSON.stringify(MONITOR_CONFIG)).not.toMatch(/sk_(live|test)_|rk_(live|test)_|whsec_|pk_(live|test)_/);
   });
 
-  it('Payment Linkが無ければ、事業者情報が確認済みでも受付準備中（購入ボタンを出さない）', () => {
+  it('Payment Link / Customer Portal のどちらかが無ければ、受付準備中（購入ボタンを出さない）', () => {
     const g = evaluateSalesGate(CLOSED_CFG, 'live');
     expect(g.ownerReady).toBe(true);
     expect(g.open).toBe(false);
-    expect(g.missing).toEqual(['Live Payment Link']);
+    expect(g.missing).toEqual(['Live Payment Link', 'Live Customer Portal']);
+    const noPortal: MonitorConfig = { ...LIVE_CFG, live: { paymentLink: OWNER_PAYMENT_LINK, portalLoginUrl: null } };
+    expect(evaluateSalesGate(noPortal, 'live').missing).toEqual(['Live Customer Portal']);
+    const noLink: MonitorConfig = { ...LIVE_CFG, live: { paymentLink: null, portalLoginUrl: OWNER_PORTAL_URL } };
+    expect(evaluateSalesGate(noLink, 'live').missing).toEqual(['Live Payment Link']);
   });
 
   it('事業者情報が未確認なら、ownerReadyもopenもfalse（捏造しない）', () => {
@@ -88,14 +103,15 @@ describe('販売ゲート（evaluateSalesGate）', () => {
     );
   });
 
-  it('解約ポータルURLは任意: 未設定でも受付中。設定するなら正しい形式であること', () => {
-    expect(MONITOR_CONFIG.live.portalLoginUrl).toBeNull();
-    expect(evaluateSalesGate(MONITOR_CONFIG, 'live').open).toBe(true);
+  it('解約導線は必須: Customer Portal URLが正しい形式で揃わなければ受付中にならない（メール解約への逃げ道は作らない）', () => {
     expect(evaluateSalesGate(OPEN_CFG, 'live').open).toBe(true);
-    const bad: MonitorConfig = { ...OPEN_CFG, live: { paymentLink: OPEN_CFG.live.paymentLink, portalLoginUrl: 'https://example.com/portal' } };
-    const g = evaluateSalesGate(bad, 'live');
-    expect(g.open).toBe(false);
-    expect(g.missing.join()).toContain('Customer Portal');
+    expect(evaluateSalesGate(LIVE_CFG, 'live').open).toBe(true);
+    for (const bad of ['https://example.com/portal', 'http://billing.stripe.com/p/login/abc', 'https://billing.stripe.com/p/login/test_abc', 'https://billing.stripe.com/p/session/abc']) {
+      const cfg: MonitorConfig = { ...OPEN_CFG, live: { paymentLink: OPEN_CFG.live.paymentLink, portalLoginUrl: bad } };
+      const g = evaluateSalesGate(cfg, 'live');
+      expect(g.open, bad).toBe(false);
+      expect(g.missing, bad).toEqual(['Live Customer Portal']);
+    }
   });
 
   it('Test modeのURLはLiveとして受け付けない（本番への混入防止）', () => {
@@ -107,9 +123,9 @@ describe('販売ゲート（evaluateSalesGate）', () => {
   });
 
   it('Stripe以外・http・パス違いのURL、不正なメール・日付は受け付けない', () => {
-    const withLink = (paymentLink: string): MonitorConfig => ({ ...OPEN_CFG, live: { paymentLink, portalLoginUrl: null } });
+    const withLink = (paymentLink: string): MonitorConfig => ({ ...OPEN_CFG, live: { paymentLink, portalLoginUrl: OPEN_CFG.live.portalLoginUrl } });
     for (const bad of ['https://example.com/x', 'http://buy.stripe.com/abc', 'https://buy.stripe.com/abc/def', 'https://buy.stripe.com.evil.com/abc', 'https://buy.stripe.com/']) {
-      expect(evaluateSalesGate(withLink(bad), 'live').open, bad).toBe(false);
+      expect(evaluateSalesGate(withLink(bad), 'live').missing, bad).toEqual(['Live Payment Link']);
     }
     expect(evaluateSalesGate({ ...OPEN_CFG, owner: { ...OPEN_CFG.owner, supportEmail: 'not-an-email' } }, 'live').missing).toContain('お問い合わせメール');
     expect(evaluateSalesGate({ ...OPEN_CFG, owner: { ...OPEN_CFG.owner, effectiveDate: '2026/10/01' } }, 'live').missing).toContain('制定日');
@@ -128,11 +144,11 @@ describe('販売ゲート（evaluateSalesGate）', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('LP（リポジトリの実設定・受付中）', () => {
-  const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+  const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
   const lp = html(files, 'index');
   const plain = text(lp);
 
-  it('全ページが生成され、状態は open（Payment Linkだけ設定・解約ポータルURLは未設定）', () => {
+  it('全ページが生成され、状態は open（Payment Link・Customer Portalが設定済み）', () => {
     for (const p of PAGES) expect(html(files, p), p).toBeTruthy();
     expect(JSON.parse(files['monitor/status.json'])).toMatchObject({ mode: 'live', salesOpen: true, ownerInfoReady: true, missing: [] });
   });
@@ -205,6 +221,12 @@ describe('LP（リポジトリの実設定・受付中）', () => {
     expect(plain).not.toContain('無料モニター');
   });
 
+  it('500円は「通常価格」と断定しない（販売実績が無いため、「正式版の予定価格」として示す）', () => {
+    expect(plain).toContain('正式版の予定価格');
+    for (const banned of ['通常価格', '通常料金', '通常月額', '元値', '今だけ', '期間限定', '限定価格', '大幅', '激安']) expect(plain, banned).not.toContain(banned);
+    expect(plain).not.toMatch(/通常[\s　]*(価格|料金|月額)?[^。]{0,6}500円/);
+  });
+
   it('料金の自動変更（一定期間後に500円へ）を約束・示唆しない', () => {
     expect(plain).not.toMatch(/(か月|ヶ月|カ月|年|期間|日)(後|経過|以降)[^。]{0,20}500円/);
     expect(plain).not.toMatch(/自動的に(月額)?500円/);
@@ -243,7 +265,7 @@ describe('LP（リポジトリの実設定・受付中）', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('購入CTA（Stripe Payment Linkへの接続）', () => {
-  const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+  const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
   const lp = html(files, 'index');
   const ctas = [...lp.matchAll(/<a class="btn cta[^"]*" data-checkout href="([^"]+)" rel="([^"]+)">([^<]+)<\/a>/g)];
 
@@ -258,8 +280,13 @@ describe('購入CTA（Stripe Payment Linkへの接続）', () => {
 
   it('LP内のStripe向けリンクは、Payment Link以外に存在しない（別URL・Test URLの混入なし）', () => {
     const stripe = [...lp.matchAll(/href="(https:\/\/[^"]*stripe\.com[^"]*)"/g)].map((m) => m[1]);
-    expect(stripe.length).toBe(ctas.length);
-    for (const u of stripe) expect(u).toBe(OWNER_PAYMENT_LINK);
+    const buy = stripe.filter((u) => u.startsWith('https://buy.stripe.com/'));
+    const portal = stripe.filter((u) => u.startsWith('https://billing.stripe.com/'));
+    expect(buy.length).toBe(ctas.length); // 購入リンクは、購入CTAだけ
+    for (const u of buy) expect(u).toBe(OWNER_PAYMENT_LINK);
+    expect(portal.length).toBeGreaterThanOrEqual(2); // FAQとフッターの解約導線
+    for (const u of portal) expect(u).toBe(OWNER_PORTAL_URL);
+    expect(stripe.length).toBe(buy.length + portal.length); // それ以外のStripe向けリンクは無い
     expect(lp).not.toContain('test_');
   });
 
@@ -339,14 +366,14 @@ describe('流入元の判別（UTM → Stripe client_reference_id）', () => {
   });
 
   it('スクリプトは、CTAのある受付中のLPにだけ入り、他のページ・受付準備中のページには入らない', () => {
-    const open = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+    const open = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
     expect(html(open, 'index')).toContain(`<script>${CHECKOUT_ATTRIBUTION_JS}</script>`);
     for (const p of ['terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as const) expect(html(open, p), p).not.toContain('<script');
     expect(html(renderMonitorSite(CLOSED_CFG, { mode: 'live', base: BASE }), 'index')).not.toContain('<script');
   });
 
   it('プライバシーポリシーに、流入元の参照コードをStripeへ渡すことを明記している', () => {
-    const open = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+    const open = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
     expect(text(html(open, 'privacy'))).toContain('参照コードとして付ける場合があります');
   });
 });
@@ -380,6 +407,22 @@ describe('受付準備中（Payment Linkが無い場合）', () => {
   });
 });
 
+describe('販売開始スイッチ（Live URLが設定済みでも、Ownerの承認までは購入導線を出さない）', () => {
+  const held = renderMonitorSite({ ...OPEN_CFG, salesLaunchApproved: false }, { mode: 'live', base: BASE });
+  it('承認前: Live URLが設定されていても、どのページにもStripeへのリンクを出さず、noindex・受付準備中', () => {
+    expect(allHtml(held)).not.toMatch(/buy\.stripe\.com|billing\.stripe\.com/);
+    expect(html(held, 'index')).not.toContain('class="btn"');
+    expect(html(held, 'index')).toContain('noindex');
+    expect(JSON.parse(held['monitor/status.json'])).toMatchObject({ salesOpen: false, ownerInfoReady: true, missing: ['Ownerの販売開始承認'] });
+  });
+  it('承認後は受付中になる', () => {
+    expect(evaluateSalesGate({ ...OPEN_CFG, salesLaunchApproved: true }, 'live')).toEqual({ open: true, ownerReady: true, missing: [] });
+  });
+  it('testモード（公開しないQAビルド）は承認スイッチの対象外', () => {
+    expect(evaluateSalesGate({ ...MONITOR_CONFIG, salesLaunchApproved: false }, 'test').open).toBe(true);
+  });
+});
+
 describe('事業者情報が未確認の場合（捏造しない）', () => {
   it('未確認の事業者情報は「受付開始時に掲載します」と出し、メール・氏名・価格の税表記を出さない', () => {
     const files = renderMonitorSite(UNCONFIRMED_CFG, { mode: 'live', base: BASE });
@@ -395,7 +438,7 @@ describe('事業者情報が未確認の場合（捏造しない）', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('暫定方針（返金・解約・税・制定日）と、事業者情報の反映', () => {
-  const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+  const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
 
   it('返金: 決済済み期間は原則返金なし。ただし法令上必要な対応・重複請求・運営者側の決済事故は除外しない', () => {
     const t = text(html(files, 'tokushoho')) + text(html(files, 'terms'));
@@ -412,22 +455,44 @@ describe('暫定方針（返金・解約・税・制定日）と、事業者情�
     expect(text(html(files, 'terms'))).toContain('いつでも解約できます');
   });
 
-  it('解約ポータルURLが未設定の間は、存在しない解約ページを案内せず、お問い合わせメールでの解約を案内する', () => {
-    for (const p of ['index', 'terms', 'tokushoho'] as const) {
-      const t = text(html(files, p));
-      expect(t, p).toContain('へのご連絡により、いつでも解約できます');
-      expect(t, p).not.toContain('解約・お支払い管理ページ（Stripe）');
-      expect(t, p).not.toContain('受付開始時に掲載します');
+  it('解約: LP・規約・特商法・ご案内ページの解約導線は、Customer Portal（Ownerが確認した公開URL）へ向く', () => {
+    for (const p of ['index', 'terms', 'tokushoho', 'thanks'] as const) {
+      expect(html(files, p), p).toContain(`href="${OWNER_PORTAL_URL}" rel="noopener"`);
+      expect(text(html(files, p)), p).toContain('契約内容・お支払い方法の確認／解約');
     }
-    expect(html(files, 'thanks')).not.toContain('billing.stripe.com');
-    expect(text(html(files, 'thanks'))).toContain('へご連絡ください');
+    for (const p of ['index', 'terms', 'tokushoho'] as const) {
+      expect(text(html(files, p)), p).toMatch(/契約内容・お支払い方法の確認／解約ページ（Stripe）\s*から、いつでも解約できます/);
+    }
   });
 
-  it('解約ポータルURLを設定すると、LP・規約・特商法・ご案内ページの解約導線がそのURLになる', () => {
-    const open = renderMonitorSite(OPEN_CFG, { mode: 'live', base: BASE });
-    for (const p of ['index', 'terms', 'tokushoho', 'thanks'] as const) {
-      expect(html(open, p), p).toContain('href="https://billing.stripe.com/p/login/liveFakePortal456"');
+  it('「メールで連絡しないと解約できない」という旧暫定表記が、どのページにも残っていない', () => {
+    const all = text(allHtml(files));
+    for (const legacy of ['へのご連絡により、いつでも解約できます', 'メールで解約', '解約をご希望の場合は', 'ご連絡ください。解約', '解約はお問い合わせ']) {
+      expect(all, legacy).not.toContain(legacy);
     }
+    expect(all).not.toMatch(/解約[^。]{0,30}(メール|お問い合わせ)で(受け付け|ご連絡)/);
+  });
+
+  it('Customer Portalで確認できない表現をしない（請求期間終了時の解約・領収書・プラン変更などを断定しない）', () => {
+    const all = text(allHtml(files));
+    for (const overclaim of ['請求期間の終了時', '領収書', '請求書', 'プラン変更', 'アップグレード', 'ダウングレード']) {
+      expect(all, overclaim).not.toContain(overclaim);
+    }
+  });
+
+  it('Customer Portalの入り方: 購入時のメールアドレスを入力すると管理ページへのリンクがメールで届く（Stripeの実挙動）', () => {
+    for (const p of ['index', 'tokushoho', 'thanks'] as const) {
+      expect(text(html(files, p)), p).toContain('ご購入時のメールアドレスを入力すると、管理ページへのリンクがメールで届きます。');
+    }
+  });
+
+  it('全ページのフッターに「契約内容の確認・解約」の入口がある（受付中のみ）', () => {
+    for (const p of PAGES) expect(html(files, p), p).toContain(`<a href="${OWNER_PORTAL_URL}" rel="noopener">契約内容の確認・解約</a>`);
+    for (const p of PAGES) expect(html(renderMonitorSite(CLOSED_CFG, { mode: 'live', base: BASE }), p), p).not.toContain('契約内容の確認・解約</a>');
+  });
+
+  it('決済後ページのCustomer Portal CTA: 「契約内容・お支払い方法の確認／解約はこちら」', () => {
+    expect(html(files, 'thanks')).toContain(`<a class="btn sub" href="${OWNER_PORTAL_URL}" rel="noopener">契約内容・お支払い方法の確認／解約はこちら</a>`);
   });
 
   it('制定日は「2026年9月19日」と表示される', () => {
@@ -447,6 +512,13 @@ describe('暫定方針（返金・解約・税・制定日）と、事業者情�
     const tok = text(html(files, 'tokushoho'));
     expect(tok).toContain('お支払い完了後、すぐにご利用いただけます');
     expect(allHtml(files)).not.toContain('手作業');
+  });
+
+  it('法的な販売者名は、Ownerが確認済みの個人事業主名のまま。X集客アカウント名「お出かけナビ」を販売者名・事業者名にしていない', () => {
+    const tok = text(html(files, 'tokushoho'));
+    expect(tok).toMatch(/販売事業者 奥山 直人/);
+    expect(tok).toMatch(/運営統括責任者 奥山 直人/);
+    for (const p of PAGES) expect(text(html(files, p)), p).not.toContain('お出かけナビ');
   });
 
   it('お宝ファインダー固有の条件（14日間の返金保証・アカウント・LINE等）を持ち込まない', () => {
@@ -472,7 +544,7 @@ describe('ヘルパー', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('お支払い完了後のご案内ページ（/monitor/thanks/）', () => {
-  const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+  const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
   const th = html(files, 'thanks');
   const t = text(th);
 
@@ -484,7 +556,7 @@ describe('お支払い完了後のご案内ページ（/monitor/thanks/）', () 
     expect(t).toContain('かんたんな使い方');
     expect(th).toContain('href="mailto:');
     expect(t).toContain('解約は、いつでも手続きできます');
-    expect(t).toContain('解約・お支払い情報の変更をご希望の場合');
+    expect(t).toContain('契約内容・お支払い方法の確認／解約はこちら');
   });
 
   it('決済していない人でも技術的にアクセスできるページであることを隠さず、購入済みの証明のように見せない', () => {
@@ -529,14 +601,14 @@ describe('testモード（公開しないQA用ビルド）と、公開前プレ�
   });
 
   it('QA配信（base が -qa/）は、検索エンジンに出さず、プレビューである旨を表示する', () => {
-    const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: '/tohoku-michinoeki-map-qa/' });
+    const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: '/tohoku-michinoeki-map-qa/' });
     const lp = html(files, 'index');
     expect(lp).toContain('name="robots" content="noindex,nofollow"');
     expect(lp).toContain('公開前の確認用プレビュー');
   });
 
   it('本番配信は、LP・規約・特商法・プライバシー・問い合わせを検索エンジンに出してよい（ご案内ページだけnoindex）', () => {
-    const files = renderMonitorSite(MONITOR_CONFIG, { mode: 'live', base: BASE });
+    const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
     for (const p of ['index', 'terms', 'privacy', 'tokushoho', 'contact'] as const) expect(html(files, p), p).not.toContain('name="robots"');
     expect(html(files, 'thanks')).toContain('name="robots" content="noindex,nofollow"');
   });
@@ -544,7 +616,7 @@ describe('testモード（公開しないQA用ビルド）と、公開前プレ�
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe.each([
-  ['受付中（実設定）', MONITOR_CONFIG],
+  ['受付中（実設定）', LIVE_CFG],
   ['受付中（解約ポータル設定あり）', OPEN_CFG],
   ['受付準備中', CLOSED_CFG],
 ] as const)('表現・リンクの安全性: %s', (_name, cfg) => {

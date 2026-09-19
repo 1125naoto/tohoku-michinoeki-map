@@ -56,9 +56,10 @@ export function resolveSite(cfg: MonitorConfig, mode: SiteMode): ResolvedSite {
   const linkRe = mode === 'test' ? TEST_PAYMENT_LINK_RE : LIVE_PAYMENT_LINK_RE;
   const portalRe = mode === 'test' ? TEST_PORTAL_RE : LIVE_PORTAL_RE;
   if (!filled(urls.paymentLink) || !linkRe.test(urls.paymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link' : 'Live Payment Link');
-  // 解約ポータルURLは任意。未設定なら「解約はお問い合わせメール」の表示になる。設定するなら形式が正しいこと。
-  if (filled(urls.portalLoginUrl) && !portalRe.test(urls.portalLoginUrl)) urlMissing.push(mode === 'test' ? 'Test Customer Portal（形式不正）' : 'Live Customer Portal（形式不正）');
-  const missing = [...ownerMissing, ...urlMissing];
+  if (!filled(urls.portalLoginUrl) || !portalRe.test(urls.portalLoginUrl)) urlMissing.push(mode === 'test' ? 'Test Customer Portal' : 'Live Customer Portal');
+  //: Liveでは、Ownerの「販売開始」承認があるまで受付中にしない（testモード=公開しないQAビルドは対象外）
+  const launchMissing = mode === 'live' && !cfg.salesLaunchApproved ? ['Ownerの販売開始承認'] : [];
+  const missing = [...ownerMissing, ...urlMissing, ...launchMissing];
   return { mode, gate: { open: missing.length === 0, ownerReady: ownerMissing.length === 0, missing }, owner, urls };
 }
 
@@ -249,7 +250,7 @@ ${banner}
 ${p.body}
 </main>
 <footer>
-<nav aria-label="運営情報">${nav('', '新リリース・モニター募集')}${nav('terms/', '利用規約')}${nav('privacy/', 'プライバシーポリシー')}${nav('tokushoho/', '特定商取引法に基づく表記')}${nav('contact/', 'お問い合わせ・改善要望')}</nav>
+<nav aria-label="運営情報">${nav('', '新リリース・モニター募集')}${nav('terms/', '利用規約')}${nav('privacy/', 'プライバシーポリシー')}${nav('tokushoho/', '特定商取引法に基づく表記')}${nav('contact/', 'お問い合わせ・改善要望')}${site.gate.open && filled(site.urls.portalLoginUrl) ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
 <small>${esc(cfg.productName)}</small>
 </footer>
 ${checkoutScript ? `<script>${CHECKOUT_ATTRIBUTION_JS}</script>\n` : ''}</body>
@@ -280,15 +281,17 @@ function checkoutButton(site: ResolvedSite, cfg: MonitorConfig, extraClass = '')
   return `<a class="btn cta${extraClass ? ` ${extraClass}` : ''}" data-checkout href="${esc(site.urls.paymentLink)}" rel="noopener">月額${yen(cfg.monitorPriceYen)}で始める</a>`;
 }
 
-/** 「解約はどこから」を表す文（"…から" / "…により"）。未確認の値は捏造しない */
-function cancelMethod(site: ResolvedSite, base: string): string {
+/** Customer Portal（Stripeの管理ページ）へのリンク文言。Portalで実際にできること（契約内容・お支払い方法の確認と解約）だけを書く */
+export const PORTAL_LINK_LABEL = '契約内容・お支払い方法の確認／解約';
+/** Portalへの入り方（Stripeの公開ログインページの実際の挙動: 購入時のメールアドレスへ、管理ページへの直接リンクが届く） */
+export const PORTAL_HOWTO = 'ご購入時のメールアドレスを入力すると、管理ページへのリンクがメールで届きます。';
+
+/** 「解約はどこから」を表す文（"…から"）。受付中は必ずCustomer Portalへのリンク（受付開始の条件にPortal URLがある） */
+function cancelMethod(site: ResolvedSite): string {
   if (site.gate.open && filled(site.urls.portalLoginUrl)) {
-    return `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">解約・お支払い管理ページ（Stripe）</a>から`;
+    return `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">${PORTAL_LINK_LABEL}ページ（Stripe）</a>から`;
   }
-  if (site.gate.open && filled(site.owner.supportEmail)) {
-    return `<a href="${base}monitor/contact/">お問い合わせ</a>（${esc(site.owner.supportEmail)}）へのご連絡により`;
-  }
-  return '解約・お支払い管理ページ（受付開始時に掲載します）から';
+  return `${PORTAL_LINK_LABEL}ページ（受付開始時に掲載します）から`;
 }
 
 const fig = (base: string, file: string, alt: string, caption: string): string =>
@@ -302,7 +305,7 @@ function renderLanding(site: ResolvedSite, cfg: MonitorConfig, base: string): st
   const stations = cfg.stationCount.toLocaleString('en-US');
   const cta = checkoutButton(site, cfg);
   const closed = site.gate.open ? '' : `<div class="notice">現在、${esc(cfg.planName)}の受付準備中です。受付を開始するまで、しばらくお待ちください。</div>`;
-  const cancel = cancelMethod(site, base);
+  const cancel = cancelMethod(site);
   return `
 <section class="hero">
 <span class="eyebrow">${esc(cfg.planName)}｜月額${yen(cfg.monitorPriceYen)}${tax}</span>
@@ -370,7 +373,7 @@ ${cta}
 
 <h2>よくある質問</h2>
 <details><summary>月額料金はいくらですか？</summary><p>${esc(cfg.planName)}として、月額${yen(cfg.monitorPriceYen)}${tax}です。</p></details>
-<details><summary>解約できますか？</summary><p>${cancel}、いつでも解約できます。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。</p></details>
+<details><summary>解約できますか？</summary><p>${cancel}、いつでも解約できます。解約後は、次回以降の請求は発生しません。${PORTAL_HOWTO}</p></details>
 <details><summary>スマートフォンで使えますか？</summary><p>はい。スマートフォンの画面に合わせて作っています。パソコンでもご利用いただけます。</p></details>
 <details><summary>iPhone / Androidで使えますか？</summary><p>iPhone（Safari）、Android（Chrome）などの最新のブラウザでご利用いただけます。</p></details>
 <details><summary>アプリのインストールは必要ですか？</summary><p>App StoreやGoogle Playからのインストールは不要です。ブラウザで開いてそのまま使えます。ホーム画面に追加すると、アプリのように使えます（iPhoneはSafariの共有ボタンから「ホーム画面に追加」）。</p></details>
@@ -394,7 +397,7 @@ function renderTerms(site: ResolvedSite, cfg: MonitorConfig, base: string): stri
   const taxText = site.gate.ownerReady ? taxSentence(cfg, site.owner) : null;
   const tax = taxText ? `<p>${esc(taxText)}</p>` : '<p>税の表示は受付開始時に掲載します。</p>';
   const refund = site.gate.ownerReady && filled(site.owner.refundPolicy) ? `<p>${esc(site.owner.refundPolicy)}</p>` : '<p>返金・キャンセル条件は受付開始時に掲載します。</p>';
-  const cancel = cancelMethod(site, base);
+  const cancel = cancelMethod(site);
   return `
 <h1>利用規約</h1>
 <p>この規約は、${esc(cfg.productName)}（以下「本サービス」）の利用条件を定めるものです。お申込みをもって、本規約に同意したものとみなします。</p>
@@ -418,7 +421,7 @@ ${tax}
 <h2>第3条（解約）</h2>
 <ol>
 <li>新リリース・モニターは、${cancel}、いつでも解約できます。</li>
-<li>解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。</li>
+<li>解約後は、次回以降の請求は発生しません。</li>
 </ol>
 
 <h2>第4条（返金）</h2>
@@ -506,7 +509,7 @@ function renderPrivacy(site: ResolvedSite, cfg: MonitorConfig, base: string): st
 
 function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
   const ownerReady = site.gate.ownerReady;
-  const cancel = `${cancelMethod(site, base)}、いつでも解約できます。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。`;
+  const cancel = `${cancelMethod(site)}、いつでも解約できます。解約後は、次回以降の請求は発生しません。${PORTAL_HOWTO}`;
   const email = ownerReady && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
   const timing = 'お支払い完了後、すぐにご利用いただけます（お支払い完了後のご案内ページから、アプリを開けます）。';
   return `
@@ -564,9 +567,8 @@ function renderThanks(site: ResolvedSite, cfg: MonitorConfig, base: string): str
 `;
   }
   const email = site.owner.supportEmail ?? '';
-  const portal = filled(site.urls.portalLoginUrl)
-    ? `<p><a class="btn sub" href="${esc(site.urls.portalLoginUrl)}" rel="noopener">解約・お支払い情報の変更（Stripe）</a></p>`
-    : `<p>解約・お支払い情報の変更をご希望の場合は、<a href="${base}monitor/contact/">お問い合わせ</a>（${esc(email)}）へご連絡ください。</p>`;
+  const portal = `<p><a class="btn sub" href="${esc(site.urls.portalLoginUrl ?? '')}" rel="noopener">${PORTAL_LINK_LABEL}はこちら</a></p>
+<p class="small">${PORTAL_HOWTO}</p>`;
   return `
 <h1><span class="nb">お申し込み</span><span class="nb">ありがとうございます</span></h1>
 <p class="lead"><b>${esc(cfg.productName)}</b></p>
@@ -588,8 +590,8 @@ function renderThanks(site: ResolvedSite, cfg: MonitorConfig, base: string): str
 <p><a class="btn sub" href="${esc(mailto(email, `【${cfg.productName}】改善要望`, '■ご要望の内容:\n\n\n■お使いの端末・ブラウザ:\n'))}">改善要望をメールで送る</a></p>
 <p class="small">詳しくは<a href="${base}monitor/contact/">お問い合わせ・改善要望</a>をご覧ください。</p>
 
-<h2>解約・お支払い情報の変更</h2>
-<p>解約は、いつでも手続きできます。解約は現在の請求期間の終了時に有効となり、次回以降の請求は発生しません。</p>
+<h2>契約内容・お支払い方法の確認／解約</h2>
+<p>解約は、いつでも手続きできます。解約後は、次回以降の請求は発生しません。</p>
 ${portal}
 `;
 }

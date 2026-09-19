@@ -2,13 +2,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 /**
  * 新リリース・モニター販売サイト（/monitor/）のE2E。本番ビルド('live')の状態を検証する:
- * Ownerが作成したStripe Payment Linkが設定され、LPの購入CTAが受付中になっている。
+ * Ownerが作成したStripe Payment LinkとCustomer Portalが設定され、LPの購入CTAが受付中になっている。
  * （受付準備中・解約ポータル設定あり・testモードの見た目は、単体テストで網羅している）
  *
  * @smoke を付けたテストは、iPhone・Android・タブレット・デスクトップの全プロジェクトで実行される。
  */
 
 const PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+const PORTAL_URL = 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00';
 
 const PAGES = [
   { path: 'monitor/', h1: '道の駅巡りを、もっと楽しく！' },
@@ -87,11 +88,13 @@ test.describe('新リリース・モニター販売サイト @smoke', () => {
       await expect(a).toHaveText('月額250円で始める');
       await expect(a).toHaveAttribute('rel', /noopener/);
     }
-    // ページ内の、Stripeへ向くリンクは、Payment Link以外に無い
+    // ページ内の、Stripeへ向くリンクは、購入用のPayment Linkと、解約用のCustomer Portalだけ
     const stripeHrefs = await page
       .locator('a[href*="stripe.com"]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''));
-    for (const h of stripeHrefs) expect(h).toBe(PAYMENT_LINK);
+    for (const h of stripeHrefs) expect([PAYMENT_LINK, PORTAL_URL]).toContain(h);
+    // 購入用リンクは、購入CTAだけ（解約導線が購入用リンクにならない）
+    expect(stripeHrefs.filter((h) => h === PAYMENT_LINK).length).toBe(n);
     // 押しやすい大きさ（表示されているCTAの高さが48px以上）
     for (let i = 0; i < n; i++) {
       const a = ctas.nth(i);
@@ -222,7 +225,9 @@ test.describe('新リリース・モニター販売サイト @smoke', () => {
     await expect(page.locator('main')).toContainText('月額250円の新リリース・モニターに、ご参加いただきありがとうございます');
     await expect(page.locator('main')).toContainText('かんたんな使い方');
     await expect(page.locator('main')).toContainText('解約は、いつでも手続きできます');
+    await expect(page.locator('main')).not.toContainText('お問い合わせ（otakarafinder'); // 旧暫定の「メールで解約」表記が無い
     await expect(page.locator('a[href^="mailto:"]').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: '契約内容・お支払い方法の確認／解約はこちら' })).toHaveAttribute('href', PORTAL_URL);
   });
 
   test('特商法・規約: 確認済みの事業者情報と暫定方針（返金・解約・税込・制定日）が表示される', async ({ page }) => {
@@ -235,6 +240,37 @@ test.describe('新リリース・モニター販売サイト @smoke', () => {
     expect(t).toContain('2026年9月19日');
     expect(t).toContain('道の駅ナビ 全国版');
     expect(t).not.toContain('（テスト用ダミー');
+  });
+
+  test('Customer Portal導線: フッター（全ページ）・FAQ・決済後ページの「契約内容・お支払い方法の確認／解約」がPortalへ向く', async ({ page }) => {
+    for (const p of PAGES) {
+      await page.goto(`/${p.path}`);
+      await expect(page.locator('footer nav').getByRole('link', { name: '契約内容の確認・解約' }), p.path).toHaveAttribute('href', PORTAL_URL);
+    }
+    await page.goto('/monitor/');
+    await page.locator('details', { hasText: '解約できますか？' }).locator('summary').click();
+    const faqLink = page.locator('details', { hasText: '解約できますか？' }).getByRole('link');
+    await expect(faqLink).toHaveAttribute('href', PORTAL_URL);
+    await expect(faqLink).toContainText('契約内容・お支払い方法の確認／解約');
+    await expect(page.locator('details', { hasText: '解約できますか？' })).toContainText('ご購入時のメールアドレスを入力すると、管理ページへのリンクがメールで届きます。');
+    // 「メールで連絡しないと解約できない」旧暫定表記が、どのページにも残っていない
+    for (const p of PAGES) {
+      await page.goto(`/${p.path}`);
+      const t = await page.locator('main').innerText();
+      expect(t, p.path).not.toMatch(/へのご連絡により、いつでも解約|メールで解約|解約をご希望の場合/);
+    }
+  });
+
+  test('Customer Portalのリンクをタップすると、Portalのログインページ（Stripe）へ遷移する', async ({ page }) => {
+    await page.goto('/monitor/thanks/');
+    let requested = '';
+    await page.route('https://billing.stripe.com/**', (route) => {
+      requested = route.request().url();
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>portal-stub</title>' });
+    });
+    await page.getByRole('link', { name: '契約内容・お支払い方法の確認／解約はこちら' }).click();
+    await expect(page).toHaveURL(PORTAL_URL);
+    expect(requested).toBe(PORTAL_URL);
   });
 
   test('アプリ本体（/）は従来どおり表示される（販売サイト追加で壊れていない）', async ({ page }) => {
