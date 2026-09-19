@@ -34,41 +34,45 @@ SNS / Business OS ─▶ 販売LP  /monitor/  ─▶ Stripe Payment Link（決�
 | 返金: 決済済み期間は原則返金なし（法令上必要な場合・重複請求・運営者側の決済事故などは除外しない） | 反映済み（**Owner review required**） | Owner指定の暫定方針 |
 | 解約: いつでも解約可能。解約後は次回以降の請求を停止（現在の請求期間の終了時に有効） | 反映済み | Owner指定＋Customer Portalの設定と一致 |
 | 制定日 | 2026年9月19日 | Owner指定 |
-| `live.paymentLink` / `live.portalLoginUrl` | **未設定 → 「受付準備中」（購入ボタンなし・noindex）** | Stripe Liveで作成後に設定 |
+| `live.paymentLink` / `live.portalLoginUrl` | **設定済み**（Stripe Live・2026-09-19作成。公開URLで秘密ではない） | 自動作成スクリプト（Owner承認済み） |
+| `salesLaunchApproved` | **false → 「受付準備中」（購入ボタンなし・noindex）** | Ownerが「販売開始」と伝えたらtrueにして公開する（最後のスイッチ） |
 
 お宝ファインダー固有の条件（14日間の返金保証・アカウント/ログイン・LINE通知・Cookie等）は**持ち込んでいない**。
 
-## 3. Stripe Live 設定（Claude Codeが自動実行。Owner本人の操作は下記だけ）
+## 3. Stripe Live 設定（作成済み）と、販売開始までの残り
 
-自動化スクリプト: `node scripts/stripe-monitor-setup.mjs`（冪等。既存オブジェクトを検出して再利用し、重複しない。Test modeで冪等性を検証済み）。
-Liveで作成するには `--live --apply --confirm-live-create` が必須（片方だけなら拒否）。**Ownerの承認前にLiveオブジェクトは作らない。**
+2026-09-19、Ownerの承認のもと `scripts/stripe-monitor-setup.mjs --live --apply --confirm-live-create` でLiveに作成し、読み戻しで検証済み（再実行しても重複しない）。
 
-作成されるもの（Liveでも同じ内容）:
+| 種別 | Live ID | 内容 |
+|---|---|---|
+| Product | `prod_VHsMbyzvDxhGwK` | 道の駅ナビ 先行モニター（カード明細表記 `MICHINOEKI NAVI`） |
+| Price | `price_1UHIbxICXxuNXmZyVbl7BO43` | JPY 250 / month |
+| Payment Link | `plink_1UHIbzICXxuNXmZyTWTBi1fn` | 決済後は `/monitor/thanks/` へ。利用規約・特商法への同意文言つき |
+| Customer Portal | `bpc_1UHIc1ICXxuNXmZyzEyt1ta2` | 解約は請求期間の終了時。専用ログインページ。請求履歴・支払い方法・メール変更。プラン変更は不可（既定のポータル設定は変更していない） |
 
-| 種別 | 内容 |
-|---|---|
-| Product | 道の駅ナビ 先行モニター（カード明細表記 `MICHINOEKI NAVI`） |
-| Price | JPY 250 / month（lookup key `michinoeki_monitor_250_monthly`） |
-| Payment Link | 決済後は `/monitor/thanks/` へ。利用規約・特商法への同意文言つき |
-| Customer Portal | 解約は請求期間の終了時。専用ログインページ。請求履歴・支払い方法・メール変更。プラン変更は不可 |
+Live認証はOwnerがブラウザで「承認」を1回押しただけ（Stripe CLIの別プロファイル `michinoeki-live`。Sandbox認証は変更していない。秘密値は表示・保存・チャット貼り付けなし）。Liveを操作するときは `STRIPE_PROJECT=michinoeki-live` を付ける。
 
-### Owner本人にしかできない操作（最小）
+### 3a. 販売開始のスイッチ
 
-1. **承認の返信**: 「Live作成を承認します」と伝える。
-2. **Stripeの承認ボタンを1回押す**: Claude Codeが `stripe login --non-interactive` で「ブラウザURLと確認コード」を表示する。そのURLを開き、確認コードが一致することを見て、**Liveの（Sandboxではない）アカウント**で「承認（Allow）」を押す。CLIの操作は不要。認証情報はこのPCのStripe CLIに保存され、表示もチャット貼り付けも不要。Liveは別プロファイル（`STRIPE_PROJECT`）に保存し、既存のSandbox認証は変更しない。
-3. **Stripeの公開ビジネス名を設定する**（Dashboard → 設定 → ビジネス → 公開情報）。下記の判定のとおり、これはDashboardでしか変更できない（APIキーでは変更不可）。
-4. **メール通知をONにする**（Dashboard → 設定 → メール通知）。手動対応のため「支払い成功」の通知が申込みを知る唯一のトリガーになる。
+`salesLaunchApproved`（`config.ts`）がfalseの間は、Live URLも事業者情報も揃っていても、どのページにもStripeへのリンクを出さない（noindex・受付準備中）。Ownerが「販売開始」と伝えたら、Claude Codeが true にして、テスト・build・デプロイ・`/monitor/status.json` が `salesOpen: true` になったこととPayment Linkの金額（¥250/月）の確認まで行う。
 
-Claude Codeが承認後に行うこと: Live作成 → 出力されたURLを `config.ts` の `live` へ反映 → 単体テスト・build・e2e → `main` へpush（自動デプロイ）→ `/monitor/status.json` が `salesOpen: true` になったことと、Payment Linkの金額（¥250/月）の表示を確認。
+### 3b. Owner本人にしかできない操作（Dashboard）
 
-（フォールバック: 上記2をせず、DashboardでProduct/Price/Payment Link/Customer Portalを上の内容どおりに手で作り、Payment LinkのURLとPortalログインURL（どちらも公開URL）をClaude Codeへ伝えても同じ結果になる。）
+1. **Stripeの公開ビジネス名**（Dashboard → 設定 → ビジネス → 公開情報）を、特商法の販売事業者名に合わせる。Dashboardでしか変更できない（下記§4）。
+2. **メール通知をONにする**（Dashboard → 設定 → メール通知 →「支払い成功」）。手動対応のため、申込みを知る唯一のトリガー。
+3. 返金・規約文言の確認（暫定方針。Owner review required）。
+
+### 3c. 参考: Ownerが先にDashboardで作成していたLiveオブジェクト（未使用・未変更）
+
+2026-09-19 14:42 JST にOwnerがDashboardで作成した「道の駅ナビ 全国版」（`prod_VHqkd8f4kNSm2y` / `price_1UHH2vICXxuNXmZyr0tSquxk` ￥250/月 / Payment Link `plink_1UHH4SICXxuNXmZyihmdzOho`）が存在する。決済後は既定の確認ページで、戻り先・同意文言・解約ポータルが未設定。**このサイトでは使用しておらず、変更もしていない。** 誤って共有されないよう、不要ならOwnerの了承後にPayment Linkを無効化（archive）する。
 
 ## 4. Stripeの表示名（ブランディング）の判定
 
 判明した事実:
 
 - Stripe checkout・領収書・Customer Portalの事業者名は**アカウント単位**（公開ビジネス名）で、Payment Linkや商品の設定では上書きできない。Test modeのSandboxでは「お宝ファインダーサンドボックス」と表示される（実測）。
-- Business OS（お宝ファインダー）のStripeは `STRIPE_MODE=test` で、**Liveで課金された実績・実顧客は無い**（Live化は未実施）。したがって公開ビジネス名を変更しても影響を受ける既存の購入者・領収書は、Business OS側には存在しない（Liveダッシュボード上の有無だけはOwnerが確認）。
+- Business OS（お宝ファインダー）のStripeは `STRIPE_MODE=test` だが、**Liveアカウント側の実測（2026-09-19、読み取りのみ）**: 顧客レコード15件（2026-08-14〜08-30作成）、お宝ファインダーの商品・価格あり。**購読0件・課金（charge）0件**のため、領収書・請求書は存在しない。公開ビジネス名を変更しても影響を受ける既存の購入者・領収書はない（顧客レコードは変わらない）。
+- **Liveのアカウント設定（実測）**: 公開ビジネス名「お宝ファインダー」／カード明細表記（Latin `OTAKARAFINDER`・カナ「オタカラファインダー」・漢字「お宝ファインダー」）／特商法URL欄は未設定。**カード明細のカナ・漢字表記はアカウント単位**で、商品側の `MICHINOEKI NAVI` は主にLatin表記に効くため、日本のカードでは「お宝ファインダー」と表示される可能性がある。公開ビジネス名と合わせて、Ownerが判断・変更する（Claude Codeは変更していない）。
 - 変更が影響するのは**今後発行される**書類（領収書・メール・checkout・Portal）だけ。既存のProduct名・Price・過去の書類は変わらない。カード明細表記は、道の駅ナビの商品側に `MICHINOEKI NAVI` を指定して区別する。
 - 販売事業者は同一の個人事業主なので、特商法の販売事業者名と決済ページの事業者名が一致するほうが購入者の信頼と法的整合性の面で望ましい。
 

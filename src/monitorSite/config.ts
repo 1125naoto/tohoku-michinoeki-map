@@ -45,6 +45,11 @@ export interface MonitorConfig {
   monitorPriceYen: number;
   plannedFullPriceYen: number;
   targetMonitors: number;
+  /**
+   * Ownerが「販売開始」を承認したか。falseの間は、Live URLや事業者情報が揃っていても購入ボタンを出さず
+   * 「受付準備中」のまま（誤って実課金の導線を公開しないための最後のスイッチ）。
+   */
+  salesLaunchApproved: boolean;
   owner: OwnerLegalInfo;
   /** Live（本番）のURL。Ownerが Stripe Live で作成後に設定する */
   live: StripeUrls;
@@ -59,6 +64,7 @@ export const MONITOR_CONFIG: MonitorConfig = {
   monitorPriceYen: 250,
   plannedFullPriceYen: 500,
   targetMonitors: 10,
+  salesLaunchApproved: false,
   //: Ownerが既に確認・公開している事業者情報（お宝ファインダーの特商法ページ／Business OSの
   //: LEGAL_* 設定と同一の事実）から再利用した共通の事業者情報。2026-09-19。
   //: 返金・解約・税・制定日は道の駅ナビ用にOwnerが指定した暫定方針（Owner review required）。
@@ -74,9 +80,11 @@ export const MONITOR_CONFIG: MonitorConfig = {
     effectiveDate: '2026-09-19',
     responseTimeNote: null,
   },
+  //: Stripe Live（2026-09-19作成）: prod_VHsMbyzvDxhGwK / price_1UHIbxICXxuNXmZyVbl7BO43 (¥250/月) /
+  //: plink_1UHIbzICXxuNXmZyTWTBi1fn / bpc_1UHIc1ICXxuNXmZyzEyt1ta2。公開URLで秘密ではない。
   live: {
-    paymentLink: null,
-    portalLoginUrl: null,
+    paymentLink: 'https://buy.stripe.com/00weVebKN8sq5LM3LC7Zu01',
+    portalLoginUrl: 'https://billing.stripe.com/p/login/00weVebKN8sq5LM3LC7Zu01',
   },
   test: {
     // Stripe Test mode（実課金は発生しない）: prod_VHnEmi8owLfA7e / price_1UHDe0EtgcvJ6JiZ0hg8uRsq /

@@ -55,7 +55,9 @@ export function resolveSite(cfg: MonitorConfig, mode: SiteMode): ResolvedSite {
   const portalRe = mode === 'test' ? TEST_PORTAL_RE : LIVE_PORTAL_RE;
   if (!filled(urls.paymentLink) || !linkRe.test(urls.paymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link' : 'Live Payment Link');
   if (!filled(urls.portalLoginUrl) || !portalRe.test(urls.portalLoginUrl)) urlMissing.push(mode === 'test' ? 'Test Customer Portal' : 'Live Customer Portal');
-  const missing = [...ownerMissing, ...urlMissing];
+  //: Liveでは、Ownerの「販売開始」承認があるまで受付中にしない（testモード=公開しないQAビルドは対象外）
+  const launchMissing = mode === 'live' && !cfg.salesLaunchApproved ? ['Ownerの販売開始承認'] : [];
+  const missing = [...ownerMissing, ...urlMissing, ...launchMissing];
   return { mode, gate: { open: missing.length === 0, ownerReady: ownerMissing.length === 0, missing }, owner, urls };
 }
 

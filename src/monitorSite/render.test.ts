@@ -8,6 +8,7 @@ const PAGES = ['index', 'terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as
 /** 事業者情報・Live URLが揃った「受付中」を検証するための架空の値（実在しない） */
 const OPEN_CFG: MonitorConfig = {
   ...MONITOR_CONFIG,
+  salesLaunchApproved: true,
   owner: {
     sellerName: '架空 太郎',
     addressDisclosure: 'on_request',
@@ -41,28 +42,29 @@ const allHtml = (files: Record<string, string>) => PAGES.map((p) => html(files, 
 const text = (h: string) => h.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 
 describe('販売ゲート（evaluateSalesGate）', () => {
-  it('リポジトリの実設定: 事業者情報は確認済み、Live URLが無い間は「受付準備中」（申込不可）', () => {
+  it('リポジトリの実設定: 事業者情報・Live URLは揃っているが、Ownerの販売開始承認が無い間は受付準備中（購入ボタンなし）', () => {
     const gate = evaluateSalesGate(MONITOR_CONFIG, 'live');
     expect(gate.ownerReady).toBe(true);
     expect(gate.open).toBe(false);
-    expect(gate.missing).toEqual(['Live Payment Link', 'Live Customer Portal']);
+    expect(gate.missing).toEqual(['Ownerの販売開始承認']);
+    expect(MONITOR_CONFIG.salesLaunchApproved).toBe(false);
   });
 
   it('事業者情報が未確認なら、ownerReadyもopenもfalse（捏造しない）', () => {
     const gate = evaluateSalesGate(UNCONFIRMED_CFG, 'live');
     expect(gate.ownerReady).toBe(false);
     expect(gate.open).toBe(false);
-    expect(gate.missing).toEqual(expect.arrayContaining(['販売事業者名', 'お問い合わせメール', '返金・キャンセル条件', '税込・税別の別', 'Live Payment Link']));
+    expect(gate.missing).toEqual(expect.arrayContaining(['販売事業者名', 'お問い合わせメール', '返金・キャンセル条件', '税込・税別の別', 'Ownerの販売開始承認']));
   });
 
-  it('リポジトリの実設定: 秘密値を含まず、住所・電話は請求開示方式で保持せず、Live URLは未設定', () => {
+  it('リポジトリの実設定: 秘密値を含まず、住所・電話は請求開示方式で保持せず、Live URLは公開URLの形式', () => {
     const o = MONITOR_CONFIG.owner;
     expect(o.addressDisclosure).toBe('on_request');
     expect(o.phoneDisclosure).toBe('on_request');
     expect(o.address).toBeNull();
     expect(o.phone).toBeNull();
-    expect(MONITOR_CONFIG.live.paymentLink).toBeNull();
-    expect(MONITOR_CONFIG.live.portalLoginUrl).toBeNull();
+    expect(MONITOR_CONFIG.live.paymentLink).toMatch(/^https:\/\/buy\.stripe\.com\/(?!test_)[A-Za-z0-9]+$/);
+    expect(MONITOR_CONFIG.live.portalLoginUrl).toMatch(/^https:\/\/billing\.stripe\.com\/p\/login\/(?!test_)[A-Za-z0-9]+$/);
     expect(JSON.stringify(MONITOR_CONFIG)).not.toMatch(/sk_(live|test)_|rk_(live|test)_|whsec_|pk_(live|test)_/);
   });
 
@@ -134,6 +136,22 @@ describe('受付準備中（本番ビルドの現状）', () => {
   it('お問い合わせ・改善要望のmailtoは事業者情報の確認後から使える（購入導線とは独立）', () => {
     expect(html(files, 'contact')).toContain('href="mailto:');
     expect(html(files, 'thanks')).not.toContain('href="mailto:'); // ご案内ページは受付開始まで案内のみ
+  });
+});
+
+describe('販売開始スイッチ（Live URLが設定済みでも、Ownerの承認までは購入導線を出さない）', () => {
+  const held = renderMonitorSite({ ...OPEN_CFG, salesLaunchApproved: false }, { mode: 'live', base: BASE });
+  it('承認前: Live URLが設定されていても、どのページにもStripeへのリンクを出さず、noindex・受付準備中', () => {
+    expect(allHtml(held)).not.toMatch(/buy\.stripe\.com|billing\.stripe\.com/);
+    expect(html(held, 'index')).not.toContain('class="btn"');
+    expect(html(held, 'index')).toContain('noindex');
+    expect(JSON.parse(held['monitor/status.json'])).toMatchObject({ salesOpen: false, ownerInfoReady: true, missing: ['Ownerの販売開始承認'] });
+  });
+  it('承認後は受付中になる', () => {
+    expect(evaluateSalesGate({ ...OPEN_CFG, salesLaunchApproved: true }, 'live')).toEqual({ open: true, ownerReady: true, missing: [] });
+  });
+  it('testモード（公開しないQAビルド）は承認スイッチの対象外', () => {
+    expect(evaluateSalesGate({ ...MONITOR_CONFIG, salesLaunchApproved: false }, 'test').open).toBe(true);
   });
 });
 
