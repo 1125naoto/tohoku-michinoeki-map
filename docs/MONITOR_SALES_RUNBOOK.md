@@ -131,9 +131,11 @@ Business OSのProduct Intelligenceにあった「買い物」の記載（6箇所
 
 縦長・画像中心の1ページ（実アプリ画面のWebP＋本物のHTMLテキスト）。購入ボタンは既存のPayment Link（上記）だけを使う。
 
-- プレビュー（noindex）: GitHub Pagesの `/official/`（`vite build` が `dist/official/` に出力）。
-- 公式ドメイン直下用の単独ビルド: `npm run build:official`（→ `dist-official/`）。`OFFICIAL_LIVE=1 npx vite-node scripts/build-official.ts` で、canonical/OGP/JSON-LD/robots.txt/sitemap.xml を `src/officialSite/config.ts` の `siteOrigin` で出力する。
-- **公式ドメインを実際に保有・接続できてから**、`config.ts` の `live` を true にする（またはビルド時に `OFFICIAL_LIVE=1`）。それまで canonical はプレビュー自身・noindex・robots.txt は全拒否のまま。
-- LINEのCTA: `config.ts` の `lineUrl` に友だち追加URL（`https://lin.ee/…` 等）を入れると、ページ内の全LINE CTAに反映される。null のうちは何も表示されない。
-- Search Console: 公式ドメイン稼働後に「URLプレフィックス」で登録し、HTMLタグの確認トークンを `googleSiteVerification` に設定 → 再ビルド・再配信 → sitemap.xml を送信。
+- **正式URL: `https://michinoekinavi.jp/`**（2026-09-20 Ownerが取得・確定。SOURCE OF TRUTH）。配信は別リポジトリ `1125naoto/michinoekinavi-site`（GitHub Pages＋独自ドメイン。ビルド済みの静的ファイルだけを置く）。このリポジトリ自体のGitHub Pages設定は変えない（アプリ本体・/monitor/・StripeのThanks URLが変わってしまうため）。
+- 更新手順: `npm run build:official`（→ `dist-official/`。canonical/OGP/JSON-LD/robots.txt/sitemap.xml/CNAME/.nojekyll を含む）→ `powershell -File scripts/deploy-official.ps1`（force pushなし）。
+- プレビュー（noindex・canonicalは自身）: このアプリの `/official/`。`vite build` が出力（vite.config.ts が `live:false` を明示）。
+- DNS（レジストラ側の設定。Ownerのみ）: apex `michinoekinavi.jp` に A: 185.199.108.153 / 185.199.109.153 / 185.199.110.153 / 185.199.111.153（任意で AAAA: 2606:50c0:8000::153 / 8001::153 / 8002::153 / 8003::153）、`www` は CNAME → `1125naoto.github.io`。反映後、GitHub Pages設定で「Enforce HTTPS」を有効化（証明書発行に数分〜1時間ほど）。
+- LINEのCTA: `config.ts` の `lineUrl` に友だち追加URL（`https://lin.ee/…` 等）を入れて再ビルド・再配信すると、ページ内の全LINE CTAに反映される。null のうちは何も表示されない。
+- Search Console: 「URLプレフィックス」で `https://michinoekinavi.jp/` を登録し、HTMLタグの確認トークンを `googleSiteVerification` に設定 → 再ビルド・再配信 → 確認 → sitemap.xml を送信。（DNS TXTでの確認でも可）
 - 流入元: `?s=t`（TikTok）`?s=l`（LINE）`?s=x`（X）`?s=y`（YouTube）または `utm_*` → Stripeの `client_reference_id`。
+- 旧 `otakara-finder.jp/michi`（ai-business-os の next.config.mjs の redirects()）: 公式ドメインがHTTPSで動くことを確認してから整理する。TikTokの終わりの画面のQRがこのURLを指すため、消す前に配布済みの画像・動画が無いか確認する。

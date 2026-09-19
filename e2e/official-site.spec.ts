@@ -90,7 +90,7 @@ test.describe('公式HP＋販売LP（プレビュー） @smoke', () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow');
     const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
     expect(canonical).toMatch(/\/official\/$/);
-    expect(canonical).not.toContain('michinavi.jp');
+    expect(canonical).not.toContain('michinoekinavi.jp');
     await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
     await expect(page.locator('meta[name="description"]')).toHaveCount(1);

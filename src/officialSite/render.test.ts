@@ -5,7 +5,7 @@ import { OFFICIAL_CONFIG, isValidLineUrl, type OfficialConfig } from './config';
 import { OFFICIAL_DESCRIPTION, OFFICIAL_TITLE, renderOfficialSite } from './render';
 
 const PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
-const PREVIEW = { base: '/tohoku-michinoeki-map/official/', assetBase: '/tohoku-michinoeki-map/', standalone: false } as const;
+const PREVIEW = { base: '/tohoku-michinoeki-map/official/', assetBase: '/tohoku-michinoeki-map/', standalone: false, live: false } as const;
 const DOMAIN = { base: '/', assetBase: '/', standalone: true } as const;
 
 const html = (o: Parameters<typeof renderOfficialSite>[0], cfg: MonitorConfig = MONITOR_CONFIG, off: OfficialConfig = OFFICIAL_CONFIG) =>
@@ -142,7 +142,7 @@ describe('公式サイト: SEO（プレビュー／公式ドメイン稼働の�
     const h = html(PREVIEW);
     expect(h).toContain('<meta name="robots" content="noindex,nofollow">');
     expect(h).toContain(`<link rel="canonical" href="${MONITOR_CONFIG.appUrl}official/">`);
-    expect(h).not.toContain('michinavi.jp');
+    expect(h).not.toContain('michinoekinavi.jp');
     expect(h).not.toContain('application/ld+json');
     expect(h).not.toContain('google-site-verification');
   });
@@ -151,9 +151,9 @@ describe('公式サイト: SEO（プレビュー／公式ドメイン稼働の�
     const h = html({ ...DOMAIN, live: true });
     expect(h).toContain('content="index,follow');
     expect(h).not.toContain('noindex');
-    expect(h).toContain('<link rel="canonical" href="https://michinavi.jp/">');
-    expect(h).toContain('<meta property="og:url" content="https://michinavi.jp/">');
-    expect(h).toContain('<meta property="og:image" content="https://michinavi.jp/og-image.png">');
+    expect(h).toContain('<link rel="canonical" href="https://michinoekinavi.jp/">');
+    expect(h).toContain('<meta property="og:url" content="https://michinoekinavi.jp/">');
+    expect(h).toContain('<meta property="og:image" content="https://michinoekinavi.jp/og-image.png">');
     expect(h).toContain('<meta name="twitter:card" content="summary_large_image">');
     for (const t of ['"@type":"WebSite"', '"@type":"SoftwareApplication"', '"@type":"FAQPage"']) expect(h).toContain(t);
     expect(h).toContain('"price":"250","priceCurrency":"JPY"');
@@ -192,8 +192,8 @@ describe('公式サイト: SEO（プレビュー／公式ドメイン稼働の�
     expect(pre['robots.txt']).toBe('User-agent: *\nDisallow: /\n');
     expect(pre['sitemap.xml']).toBeUndefined();
     const live = renderOfficialSite({ ...DOMAIN, live: true });
-    expect(live['robots.txt']).toBe('User-agent: *\nAllow: /\n\nSitemap: https://michinavi.jp/sitemap.xml\n');
-    expect(live['sitemap.xml']).toContain('<loc>https://michinavi.jp/</loc>');
+    expect(live['robots.txt']).toBe('User-agent: *\nAllow: /\n\nSitemap: https://michinoekinavi.jp/sitemap.xml\n');
+    expect(live['sitemap.xml']).toContain('<loc>https://michinoekinavi.jp/</loc>');
     expect(live['404.html']).toContain('noindex');
   });
 

@@ -1,9 +1,9 @@
 /**
  * 「道の駅ナビ 全国版」公式ホームページ＋販売LP の設定。
  *
- * このサイトは、独自ドメインの直下（https://michinavi.jp/ を想定）に置く「正式URL（SOURCE OF TRUTH）」用。
- * ドメインが確定・稼働するまでは、プレビュー（noindex・canonicalはプレビューURL）として動く。
- * 公開URLを切り替えるときに変えるのは、このファイルの `live` だけ（ビルド時は OFFICIAL_LIVE=1 でも上書きできる）。
+ * このサイトは、独自ドメインの直下（https://michinoekinavi.jp/ ）に置く「正式URL（SOURCE OF TRUTH）」用。
+ * `live` は公式ドメイン向けの単独ビルド（npm run build:official）の既定値。GitHub Pagesの /official/ プレビューは常にnoindex（vite.config.ts が live:false を明示）。
+ * ビルド時は OFFICIAL_LIVE=0 で一時的に noindex・robots全拒否の版にもできる。
  *
  * 公開リポジトリなので、秘密値は入れない（LINEの友だち追加URL・Search Consoleの確認トークンは公開されるURL/値）。
  */
@@ -16,12 +16,11 @@ export interface OfficialConfig {
   nickname: string;
   /** 「全国○○施設を収録」（アプリのデータ件数と一致することをテストで保証） */
   stationCount: number;
-  /** 公式ドメイン（末尾に / を付ける）。SOURCE OF TRUTH */
+  /** 公式ドメイン（末尾に / を付ける）。SOURCE OF TRUTH。2026-09-20 Ownerが michinoekinavi.jp を取得し正式ドメインに確定 */
   siteOrigin: string;
   /**
-   * 公式ドメインが本物として稼働し、検索エンジンへ出してよいか。
+   * 公式ドメインで検索エンジンへ出してよいか。
    * false=プレビュー（noindex、canonical/OGPはプレビューURL、robots.txtは全拒否）。
-   * ドメインを実際に保有・接続できたことを確認してからtrueにする。
    */
   live: boolean;
   /**
@@ -39,8 +38,8 @@ export const OFFICIAL_CONFIG: OfficialConfig = {
   productName: MONITOR_CONFIG.productName, // 道の駅ナビ 全国版
   nickname: '道ナビ',
   stationCount: MONITOR_CONFIG.stationCount,
-  siteOrigin: 'https://michinavi.jp/',
-  live: false,
+  siteOrigin: 'https://michinoekinavi.jp/',
+  live: true,
   lineUrl: null,
   googleSiteVerification: null,
   sources: { t: 'tiktok', l: 'line', x: 'x', y: 'youtube' },
