@@ -234,7 +234,7 @@ describe('LP（リポジトリの実設定・受付中）', () => {
 
   it('FAQ: 料金・解約・スマホ・iPhone/Android・インストール（PWA）・保存・支払い・個人情報', () => {
     const faq = lp.slice(lp.indexOf('<h2>よくある質問</h2>'), lp.indexOf('class="final"'));
-    for (const q of ['月額料金はいくらですか？', '解約できますか？', 'スマートフォンで使えますか？', 'iPhone / Androidで使えますか？', 'アプリのインストールは必要ですか？', '記録したデータはどこに保存されますか？', 'お支払い方法は？', '個人情報の扱いは？']) {
+    for (const q of ['月額料金はいくらですか？', '解約できますか？', 'スマートフォンで使えますか？', 'iPhone / Androidで使えますか？', 'アプリのインストールは必要ですか？', '記録したデータはどこに保存されますか？', 'お支払い方法は？', 'お支払い画面に「お宝ファインダー」と表示されるのはなぜですか？', '個人情報の扱いは？']) {
       expect(faq, q).toContain(`<summary>${q}</summary>`);
     }
     expect(text(faq)).toContain('新リリース・モニター価格として、月額250円（税込）です。');
@@ -523,7 +523,17 @@ describe('暫定方針（返金・解約・税・制定日）と、事業者情�
 
   it('お宝ファインダー固有の条件（14日間の返金保証・アカウント・LINE等）を持ち込まない', () => {
     const all = text(allHtml(files));
-    for (const banned of ['14日間', 'LINE', 'お宝ファインダー', 'ログインしてください', 'アカウントを作成']) expect(all, banned).not.toContain(banned);
+    for (const banned of ['14日間', 'LINE', 'ログインしてください', 'アカウントを作成']) expect(all, banned).not.toContain(banned);
+  });
+
+  it('「お宝ファインダー」への言及は、LPのFAQ（決済画面の表示の説明）だけ。販売者名・規約・特商法には出てこない', () => {
+    for (const p of ['terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as const) expect(text(html(files, p)), p).not.toContain('お宝ファインダー');
+    const lp = html(files, 'index');
+    const mentions = lp.match(/お宝ファインダー/g)?.length ?? 0;
+    expect(mentions).toBe(2); // FAQの見出し1回＋回答1回
+    const faq = lp.slice(lp.indexOf('<summary>お支払い画面に「お宝ファインダー」'), lp.indexOf('</details>', lp.indexOf('<summary>お支払い画面に「お宝ファインダー」')));
+    expect(text(faq)).toContain('別のサービス「お宝ファインダー」と共通で使用しているため');
+    expect(faq).toContain('特定商取引法に基づく表記</a>に記載のとおり');
   });
 
   it('お問い合わせ・改善要望のmailtoは事業者情報の確認後から使える', () => {

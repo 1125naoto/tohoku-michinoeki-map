@@ -110,7 +110,7 @@ li{margin:.25em 0}
 .price .lbl{font-size:.85rem;color:#4a5a4a}
 .price .amt{font-size:1.7rem;font-weight:800;line-height:1.3}
 .price .amt small{font-size:.9rem;font-weight:600}
-.btn{display:block;text-align:center;background:#2e7d32;color:#fff;text-decoration:none;font-weight:800;font-size:1.05rem;border-radius:12px;padding:14px 12px;min-height:48px}
+.btn{display:block;text-wrap:balance;text-align:center;background:#2e7d32;color:#fff;text-decoration:none;font-weight:800;font-size:1.05rem;border-radius:12px;padding:14px 12px;min-height:48px}
 .btn.sub{background:#fff;color:#1b5e20;border:2px solid #2e7d32}
 .note,.notice{border-radius:10px;padding:10px 14px;margin:14px 0;font-size:.95rem}
 .notice{background:#fff8e1;border:1px solid #f0d98a}
@@ -379,6 +379,7 @@ ${cta}
 <details><summary>アプリのインストールは必要ですか？</summary><p>App StoreやGoogle Playからのインストールは不要です。ブラウザで開いてそのまま使えます。ホーム画面に追加すると、アプリのように使えます（iPhoneはSafariの共有ボタンから「ホーム画面に追加」）。</p></details>
 <details><summary>記録したデータはどこに保存されますか？</summary><p>お使いの端末内に保存され、他の端末とは同期されません。ブラウザのデータを削除すると記録が消える場合があります。</p></details>
 <details><summary>お支払い方法は？</summary><p>Stripeの決済ページに表示されるお支払い方法（クレジットカード等）をご利用いただけます。</p></details>
+<details><summary>お支払い画面に「お宝ファインダー」と表示されるのはなぜですか？</summary><p>運営者が、お支払いの受付に使うStripeのアカウントを、別のサービス「お宝ファインダー」と共通で使用しているためです。この販売の事業者は、<a href="${base}monitor/tokushoho/">特定商取引法に基づく表記</a>に記載のとおりです。</p></details>
 <details><summary>個人情報の扱いは？</summary><p><a href="${base}monitor/privacy/">プライバシーポリシー</a>をご覧ください。</p></details>
 
 <section class="final">

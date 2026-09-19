@@ -74,7 +74,7 @@ test.describe('新リリース・モニター販売サイト @smoke', () => {
     await expect(page.locator('.pricebox .planname')).toHaveText('新リリース・モニター価格');
     // 有料のモニター募集であり、無料と誤認させない
     await expect(page.locator('main')).toContainText('無料ではありません');
-    await expect(page.locator('details')).toHaveCount(8);
+    await expect(page.locator('details')).toHaveCount(9);
   });
 
   test('購入CTA: すべてStripe Payment Linkへ向き、タップしやすい大きさで、押せる', async ({ page }) => {

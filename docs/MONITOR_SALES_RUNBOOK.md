@@ -37,7 +37,7 @@ X / TikTok / YouTube / note ─▶ 販売LP  /monitor/?utm_source=…  ─▶ St
 | 解約: いつでも解約可能。解約後は次回以降の請求を停止（購入者自身がCustomer Portalで手続き。即時か期間終了時かは断定しない） | 反映済み | Owner指定 |
 | 制定日 | 2026年9月19日 | Owner指定 |
 | `live.paymentLink` / `live.portalLoginUrl` | **設定済み**（Ownerが Dashboard で作成した本番のPayment Link〔商品「道の駅ナビ 全国版」・￥250/月〕と、そのCustomer Portalの公開ログインURL。どちらも公開URLで秘密ではない。読み取りのみで表示確認済み） | Owner提供 |
-| `salesLaunchApproved` | 販売開始の最後のスイッチ（§3a）。Ownerの「販売開始」の指示でtrueにして公開する | Owner指示 |
+| `salesLaunchApproved` | **true（販売開始）**。2026-09-20、Ownerの本番公開指示により有効化。falseに戻すと、購入ボタンとStripeへのリンクが全ページから消え、noindexの受付準備中に戻る（§3a） | Owner指示 |
 
 お宝ファインダー固有の条件（14日間の返金保証・アカウント/ログイン・LINE通知・Cookie等）は**持ち込んでいない**。
 

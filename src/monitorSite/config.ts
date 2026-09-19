@@ -70,7 +70,9 @@ export const MONITOR_CONFIG: MonitorConfig = {
   appUrl: 'https://1125naoto.github.io/tohoku-michinoeki-map/',
   monitorPriceYen: 250,
   plannedFullPriceYen: 500,
-  salesLaunchApproved: false,
+  //: 2026-09-20: Ownerの本番公開指示（Production公開→Payment CTA・Customer Portal CTAの本番確認→Stripe「リンクを更新する」）
+  //: をもって販売開始を承認。誤って戻したい場合はfalseにする（購入ボタンとStripeへのリンクが全ページから消え、noindexの受付準備中に戻る）。
+  salesLaunchApproved: true,
   //: Ownerが既に確認・公開している事業者情報（お宝ファインダーの特商法ページ／Business OSの
   //: LEGAL_* 設定と同一の事実）から再利用した共通の事業者情報。2026-09-19。
   //: 返金・解約・税・制定日は道の駅ナビ用にOwnerが指定した暫定方針（Owner review required）。
