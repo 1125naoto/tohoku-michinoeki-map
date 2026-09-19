@@ -7,6 +7,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { MONITOR_CONFIG } from './src/monitorSite/config';
 import { renderMonitorSite, type SiteMode } from './src/monitorSite/render';
+import { renderOfficialSite } from './src/officialSite/render';
 
 // GitHub Pages（プロジェクトページ）ではサブパス配信になるため、ビルド時の環境変数で切り替える。
 // ローカルのプレビュー/開発サーバーでは未設定=ルート('/')のまま。
@@ -99,6 +100,28 @@ function monitorSitePlugin(): Plugin {
   };
 }
 
+/**
+ * 公式HP＋販売LPのプレビュー（GitHub Pagesの /official/ 配下）。noindex・canonicalはプレビュー自身。
+ * 公式ドメインの本番用ビルドは別（scripts/build-official.ts → dist-official/）。画像は public/official/img が
+ * そのまま dist/official/img へコピーされる。
+ */
+function officialPreviewPlugin(): Plugin {
+  let base = '/';
+  return {
+    name: 'michinoeki-official-preview',
+    apply: 'build',
+    configResolved(resolved) {
+      base = resolved.base;
+    },
+    generateBundle() {
+      const files = renderOfficialSite({ base: `${base}official/`, assetBase: base, standalone: false, live: false });
+      for (const [fileName, source] of Object.entries(files)) {
+        this.emitFile({ type: 'asset', fileName: `official/${fileName}`, source });
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base: DEPLOY_BASE,
   define: {
@@ -113,6 +136,7 @@ export default defineConfig({
     react(),
     buildInfoPlugin(),
     monitorSitePlugin(),
+    officialPreviewPlugin(),
     VitePWA({
       // 新しいビルドを検知したら自動更新（古い道の駅データが永久に残らない）
       registerType: 'autoUpdate',
@@ -157,8 +181,8 @@ export default defineConfig({
         navigateFallback: iconPath('index.html'),
         // 販売サイト(/monitor/)は静的HTMLの別ページ。アプリのSPAフォールバックに吸われたり、
         // 古いHTMLがprecacheから配信されたりしないよう、precache対象外＋フォールバック対象外にする。
-        globIgnores: ['monitor/**'],
-        navigateFallbackDenylist: [/\/monitor(\/|$)/],
+        globIgnores: ['monitor/**', 'official/**'],
+        navigateFallbackDenylist: [/\/monitor(\/|$)/, /\/official(\/|$)/],
         runtimeCaching: [
           {
             // OSMタイル: 直近に見た範囲だけキャッシュ（オフラインでは表示不可の旨をUIで案内）

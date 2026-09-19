@@ -282,6 +282,9 @@ test.describe('新リリース・モニター販売サイト @smoke', () => {
   test('Service Workerが /monitor/ をprecache・SPAフォールバックしない（古いHTMLや吸い込みの防止）', async ({ request }) => {
     const sw = await (await request.get('/sw.js')).text();
     expect(sw).not.toContain('monitor/');
-    expect(sw).toMatch(/denylist:\s*\[\s*\/\\\/monitor\(\\\/\|\$\)\/\s*\]/);
+    expect(sw).toMatch(/denylist:\s*\[\s*\/\\\/monitor\(\\\/\|\$\)\//);
+    // 公式HP（/official/）も同様に、precache・SPAフォールバックの対象外
+    expect(sw).not.toContain('official/');
+    expect(sw).toMatch(/denylist:\s*\[[^\]]*\/\\\/official\(\\\/\|\$\)\//);
   });
 });

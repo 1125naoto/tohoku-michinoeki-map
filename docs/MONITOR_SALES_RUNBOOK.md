@@ -126,3 +126,14 @@ Test modeのStripe ID（実課金なし）: product `prod_VHnEmi8owLfA7e` / pric
 
 アプリ（Production）で確認済みの事実: 全国1,237施設・47都道府県／訪問状態「未訪問・訪問済み・行きたい・スタンプ取得済み」／行きたい駅を選んでルート作成／ルートの所要時間（目安）／Googleマップへ引き継ぎ／周辺検索のカテゴリは「食べる・観光・温泉・休憩・宿泊」。**「買い物」カテゴリは存在しない**（配信JS全体に「買い物」の文字列なし）。
 Business OSのProduct Intelligenceにあった「買い物」の記載（6箇所）は「温泉・休憩」へ訂正済み（2026-09-19、Owner経路・LLM呼び出しなし）。
+
+## 9. 公式ホームページ＋販売LP（`src/officialSite/`）
+
+縦長・画像中心の1ページ（実アプリ画面のWebP＋本物のHTMLテキスト）。購入ボタンは既存のPayment Link（上記）だけを使う。
+
+- プレビュー（noindex）: GitHub Pagesの `/official/`（`vite build` が `dist/official/` に出力）。
+- 公式ドメイン直下用の単独ビルド: `npm run build:official`（→ `dist-official/`）。`OFFICIAL_LIVE=1 npx vite-node scripts/build-official.ts` で、canonical/OGP/JSON-LD/robots.txt/sitemap.xml を `src/officialSite/config.ts` の `siteOrigin` で出力する。
+- **公式ドメインを実際に保有・接続できてから**、`config.ts` の `live` を true にする（またはビルド時に `OFFICIAL_LIVE=1`）。それまで canonical はプレビュー自身・noindex・robots.txt は全拒否のまま。
+- LINEのCTA: `config.ts` の `lineUrl` に友だち追加URL（`https://lin.ee/…` 等）を入れると、ページ内の全LINE CTAに反映される。null のうちは何も表示されない。
+- Search Console: 公式ドメイン稼働後に「URLプレフィックス」で登録し、HTMLタグの確認トークンを `googleSiteVerification` に設定 → 再ビルド・再配信 → sitemap.xml を送信。
+- 流入元: `?s=t`（TikTok）`?s=l`（LINE）`?s=x`（X）`?s=y`（YouTube）または `utm_*` → Stripeの `client_reference_id`。
