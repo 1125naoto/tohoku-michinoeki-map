@@ -19,10 +19,10 @@ https://（ユーザー名）.github.io/tohoku-michinoeki-map/
 このURLはスマートフォン・PCのブラウザからそのまま開けます。インストール不要です。
 （ホーム画面に追加する場合は「保存」タブ → 「ホーム画面への追加方法を見る」）
 
-## 先行モニター販売サイト
+## 新リリース・モニター販売サイト
 
-`/monitor/` に「道の駅ナビ 先行モニター」（月額250円・正式版は月額500円を予定）の販売LP・利用規約・プライバシーポリシー・特定商取引法に基づく表記・お問い合わせ・お支払い後のご案内ページを静的HTMLで出力する（`src/monitorSite/`）。
-Ownerの確認値とStripe Liveの購入URLが揃うまでは「受付準備中」表示で、申込ボタンは出ない。運用・Live設定手順は [`docs/MONITOR_SALES_RUNBOOK.md`](./docs/MONITOR_SALES_RUNBOOK.md) を参照。
+`/monitor/` に「道の駅ナビ 全国版」の新リリース・モニター（月額250円（税込）・正式版は月額500円を予定）の販売LP・利用規約・プライバシーポリシー・特定商取引法に基づく表記・お問い合わせ・お申し込み後のご案内ページ（`/monitor/thanks/`）を静的HTMLで出力する（`src/monitorSite/`）。
+購入CTAはStripe Payment Link（Owner作成済み・本番）へ接続する。事業者情報とPayment Linkが揃わない間は「受付準備中」表示で、申込ボタンは出ない。運用・Ownerが行うStripe設定は [`docs/MONITOR_SALES_RUNBOOK.md`](./docs/MONITOR_SALES_RUNBOOK.md) を参照。
 
 ## 開発ブランチについて
 

@@ -1,13 +1,14 @@
 /**
- * 「道の駅ナビ 先行モニター」販売サイトの設定（FIRST 10 PAID MONITORS / MANUAL FULFILMENT）。
+ * 「道の駅ナビ 全国版」新リリース・モニター販売サイトの設定（月額250円・Stripe Payment Linkで決済）。
  *
  * このファイルは**公開リポジトリ**にコミットされる。したがって:
  *  - 事業者情報は、Ownerが既に公開している特商法表記と同一の事実だけを入れる（住所・電話は請求開示方式のため保持しない）。
  *    未確認の個人情報を推測で入れない。
  *  - Stripeの秘密鍵・Webhook秘密は絶対に入れない。Payment Link / Customer Portal のURLは
  *    公開前提のURLで秘密ではない。
- *  - `owner` の必須項目と `live` のURLが揃うまで、販売サイトは「受付準備中」表示のままになり、
+ *  - `owner` の必須項目と `live.paymentLink` が揃うまで、販売サイトは「受付準備中」表示のままになり、
  *    申込ボタンは出ない（evaluateSalesGate）。テスト用URLが本番ビルドへ混入することもない。
+ *    `live.portalLoginUrl`（解約・お支払い管理ページ）は任意。未設定の間は、解約はお問い合わせメールで受け付ける旨を表示する。
  */
 
 export interface OwnerLegalInfo {
@@ -33,18 +34,22 @@ export interface OwnerLegalInfo {
 export interface StripeUrls {
   /** Stripe Payment Link（購入ページ） */
   paymentLink: string | null;
-  /** Stripe Customer Portal のログインページ（解約・お支払い管理） */
+  /** Stripe Customer Portal のログインページ（解約・お支払い管理）。任意（未設定なら、解約はメールで受け付ける表示になる） */
   portalLoginUrl: string | null;
 }
 
 export interface MonitorConfig {
   appName: string;
+  /** 商品名（Stripe商品名・特商法のサービス名と一致させる） */
   productName: string;
+  /** 月額250円のプランの呼称（「無料モニター」と誤認させない） */
+  planName: string;
+  /** 「全国○○施設を収録」の施設数。アプリのデータ件数と一致することをテストで保証する */
+  stationCount: number;
   /** 公開アプリ本体のURL（販売LPには載せず、決済後のご案内ページにのみ載せる） */
   appUrl: string;
   monitorPriceYen: number;
   plannedFullPriceYen: number;
-  targetMonitors: number;
   owner: OwnerLegalInfo;
   /** Live（本番）のURL。Ownerが Stripe Live で作成後に設定する */
   live: StripeUrls;
@@ -54,11 +59,12 @@ export interface MonitorConfig {
 
 export const MONITOR_CONFIG: MonitorConfig = {
   appName: '道の駅ナビ',
-  productName: '道の駅ナビ 先行モニター',
+  productName: '道の駅ナビ 全国版',
+  planName: '新リリース・モニター価格',
+  stationCount: 1237,
   appUrl: 'https://1125naoto.github.io/tohoku-michinoeki-map/',
   monitorPriceYen: 250,
   plannedFullPriceYen: 500,
-  targetMonitors: 10,
   //: Ownerが既に確認・公開している事業者情報（お宝ファインダーの特商法ページ／Business OSの
   //: LEGAL_* 設定と同一の事実）から再利用した共通の事業者情報。2026-09-19。
   //: 返金・解約・税・制定日は道の駅ナビ用にOwnerが指定した暫定方針（Owner review required）。
@@ -75,7 +81,9 @@ export const MONITOR_CONFIG: MonitorConfig = {
     responseTimeNote: null,
   },
   live: {
-    paymentLink: null,
+    // Ownerが本番（Live）で作成済みのPayment Link（商品「道の駅ナビ 全国版」・￥250/月）。公開URLで秘密ではない。
+    paymentLink: 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00',
+    // 解約・お支払い管理のログインURL（Stripe Dashboard → 設定 → Billing → カスタマーポータル）。未提供のため未設定。
     portalLoginUrl: null,
   },
   test: {
