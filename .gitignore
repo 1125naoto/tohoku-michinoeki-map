@@ -13,3 +13,6 @@ Desktop.ini
 __pycache__/
 *.pyc
 dist-official/
+# 購入者ゲート用ローカルキャッシュ・招待コード（生の値。公開はpublic/access-control/active.jsonのハッシュのみ）
+data/access-control/*.local.json
+data/access-control/sync.log
