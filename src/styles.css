@@ -2131,3 +2131,37 @@ button.trip-stamp-done {
   color: #fff;
   font-weight: 700;
 }
+
+/* ===== 購入者ゲート（Supabase entitlements）===== */
+.access-gate {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  background: var(--bg);
+  color: var(--text);
+}
+.access-gate h2 {
+  margin: 0;
+}
+.access-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+.access-gate-form input {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+}
+.access-gate-error {
+  color: var(--danger);
+  font-size: 13px;
+}
