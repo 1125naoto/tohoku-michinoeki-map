@@ -1,0 +1,55 @@
+name: 道の駅ナビ全国版 購入者ゲートの同期
+
+# scripts/sync-subscriptions.mjs を実行し、道の駅ナビの正式Payment Link
+# （plink_1UHH4SICXxuNXmZyihmdzOho）に紐づく有効な契約者だけの一覧
+# （public/access-control/active.json、SHA-256ハッシュのみ）を再生成する。
+# お宝ファインダー等、他プロダクトのデータには一切アクセスしない
+# （Payment Link/Price IDでスコープしている）。
+#
+# secrets.STRIPE_API_KEY が未設定の間は何もせず正常終了する（fail-closed。
+# 既に発行済みのアクセスを誤って剥奪しない。ただし新規購入の反映・解約の失効も
+# 進まない）。このRepository Secretは、Stripeダッシュボードで作成する
+# 読み取り専用（Subscriptions/Checkout Sessions: Read）のrestricted keyを
+# Owner自身がGitHub側（Settings > Secrets and variables > Actions）で直接設定する
+# 想定（このワークフロー・Claude Codeのどちらも生のキー値を扱わない）。
+#
+# 既定のGITHUB_TOKENによるpushはdeploy.ymlのon:pushを起動しないため
+# （refresh-poi-cache.ymlと同じ既知の挙動）、変更があれば明示的にdeploy.ymlを起動する。
+
+on:
+  schedule:
+    # 10分ごと。GitHub Actions側の負荷により多少前後することがある
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Stripe CLI
+        run: |
+          version=$(curl -fsSL https://api.github.com/repos/stripe/stripe-cli/releases/latest | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).tag_name.replace(/^v/, "")')
+          curl -fsSL "https://github.com/stripe/stripe-cli/releases/download/v${version}/stripe_${version}_linux_x86_64.tar.gz" -o stripe.tar.gz
+          tar -xzf stripe.tar.gz
+          sudo mv stripe /usr/local/bin/stripe
+          stripe --version
+
+      - name: 購入者ゲートを同期
+        env:
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          NAMI_ACCESS_CODE: ${{ secrets.NAMI_ACCESS_CODE }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/sync-subscriptions.mjs
