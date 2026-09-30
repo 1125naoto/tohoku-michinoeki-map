@@ -190,6 +190,22 @@ export const CHECKOUT_ATTRIBUTION_JS =
   "}catch(e){}" +
   "})();";
 
+/**
+ * 決済完了直後のThanksページにだけ入る小さなインラインスクリプト。
+ * StripeのPayment Link redirect URLに付与された ?session_id=（Checkout Session ID、
+ * 高エントロピーでStripe以外には推測不可能）を、このドメイン（アプリ本体と同一オリジン）の
+ * localStorageへ1回だけ保存する。これが「月額250円の有効な購入者だけアプリを開ける」
+ * ゲート（src/lib/accessCredential.ts）の資格情報になる。キー名は両者で一致させる必要がある。
+ * 保存後はURLから消す（ブラウザ履歴・共有リンクに残さない）。Cookie・外部送信は行わない。
+ */
+export const SESSION_CAPTURE_JS =
+  "(function(){" +
+  "try{var m=location.search.match(/(?:^\\?|&)session_id=([^&]+)/);if(!m)return;" +
+  "localStorage.setItem('michinoeki_access_credential',decodeURIComponent(m[1]));" +
+  "var u=new URL(location.href);u.searchParams.delete('session_id');history.replaceState(null,'',u.toString());" +
+  "}catch(e){}" +
+  "})();";
+
 interface PageInput {
   site: ResolvedSite;
   cfg: MonitorConfig;
@@ -200,6 +216,8 @@ interface PageInput {
   body: string;
   /** 常に検索エンジンへ出さない（お申込み完了後のご案内など） */
   forceNoindex?: boolean;
+  /** Thanksページにだけ付与する。SESSION_CAPTURE_JS参照 */
+  captureSession?: boolean;
 }
 
 function page(p: PageInput): string {
@@ -253,7 +271,7 @@ ${p.body}
 <nav aria-label="運営情報">${nav('', '新リリース・モニター募集')}${nav('terms/', '利用規約')}${nav('privacy/', 'プライバシーポリシー')}${nav('tokushoho/', '特定商取引法に基づく表記')}${nav('contact/', 'お問い合わせ・改善要望')}${site.gate.open && filled(site.urls.portalLoginUrl) ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
 <small>${esc(cfg.productName)}</small>
 </footer>
-${checkoutScript ? `<script>${CHECKOUT_ATTRIBUTION_JS}</script>\n` : ''}</body>
+${checkoutScript ? `<script>${CHECKOUT_ATTRIBUTION_JS}</script>\n` : ''}${p.captureSession ? `<script>${SESSION_CAPTURE_JS}</script>\n` : ''}</body>
 </html>
 `;
 }
@@ -621,7 +639,17 @@ export function renderMonitorSite(cfg: MonitorConfig = MONITOR_CONFIG, opts: Ren
     'monitor/privacy/index.html': mk('monitor/privacy/', `プライバシーポリシー｜${cfg.productName}`, `${cfg.productName}のプライバシーポリシー`, renderPrivacy(site, cfg, base)),
     'monitor/tokushoho/index.html': mk('monitor/tokushoho/', `特定商取引法に基づく表記｜${cfg.productName}`, `${cfg.productName}の特定商取引法に基づく表記`, renderTokushoho(site, cfg, base)),
     'monitor/contact/index.html': mk('monitor/contact/', `お問い合わせ・改善要望｜${cfg.productName}`, `${cfg.productName}のお問い合わせ・改善要望`, renderContact(site, cfg)),
-    'monitor/thanks/index.html': page({ site, cfg, base, path: 'monitor/thanks/', title: `お申し込みありがとうございます｜${cfg.productName}`, description: `${cfg.productName}のお申込み完了後のご案内`, body: renderThanks(site, cfg, base), forceNoindex: true }),
+    'monitor/thanks/index.html': page({
+      site,
+      cfg,
+      base,
+      path: 'monitor/thanks/',
+      title: `お申し込みありがとうございます｜${cfg.productName}`,
+      description: `${cfg.productName}のお申込み完了後のご案内`,
+      body: renderThanks(site, cfg, base),
+      forceNoindex: true,
+      captureSession: true,
+    }),
   };
   // 機械可読の状態（個人情報・URLは含めない）。Owner/検証用。
   files['monitor/status.json'] = JSON.stringify({ mode: site.mode, salesOpen: site.gate.open, ownerInfoReady: site.gate.ownerReady, missing: site.gate.missing }, null, 2);

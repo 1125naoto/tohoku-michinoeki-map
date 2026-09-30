@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { STATIONS } from '../data';
 import { MONITOR_CONFIG, TEST_OWNER_DUMMY, type MonitorConfig } from './config';
-import { CHECKOUT_ATTRIBUTION_JS, evaluateSalesGate, jpDate, renderMonitorSite, resolveSite, taxSentence } from './render';
+import {
+  CHECKOUT_ATTRIBUTION_JS,
+  SESSION_CAPTURE_JS,
+  evaluateSalesGate,
+  jpDate,
+  renderMonitorSite,
+  resolveSite,
+  taxSentence,
+} from './render';
 
 const BASE = '/tohoku-michinoeki-map/';
 
@@ -365,10 +373,14 @@ describe('流入元の判別（UTM → Stripe client_reference_id）', () => {
     expect(cls.has('cta-in-view')).toBe(false);
   });
 
-  it('スクリプトは、CTAのある受付中のLPにだけ入り、他のページ・受付準備中のページには入らない', () => {
+  it('CHECKOUT_ATTRIBUTION_JSは、CTAのある受付中のLPにだけ入り、他のページ・受付準備中のページには入らない', () => {
     const open = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
     expect(html(open, 'index')).toContain(`<script>${CHECKOUT_ATTRIBUTION_JS}</script>`);
-    for (const p of ['terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as const) expect(html(open, p), p).not.toContain('<script');
+    // thanksは資格情報保存スクリプト（SESSION_CAPTURE_JS）専用で、CHECKOUT_ATTRIBUTION_JSは入らない
+    for (const p of ['terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as const) {
+      expect(html(open, p), p).not.toContain(CHECKOUT_ATTRIBUTION_JS);
+    }
+    for (const p of ['terms', 'privacy', 'tokushoho', 'contact'] as const) expect(html(open, p), p).not.toContain('<script');
     expect(html(renderMonitorSite(CLOSED_CFG, { mode: 'live', base: BASE }), 'index')).not.toContain('<script');
   });
 
@@ -652,11 +664,18 @@ describe.each([
     expect(all).not.toMatch(/<script[^>]+src=/);
     expect(all).not.toMatch(/<link[^>]+rel="stylesheet"/);
     expect(all).not.toMatch(/<img[^>]+src="https?:/);
-    // 唯一許されるインラインスクリプト（流入元の付与）以外のスクリプトは無く、それはCookie・保存・外部送信をしない
+    // 許されるインラインスクリプトは2つだけ（流入元の付与／決済完了後の資格情報保存）で、
+    // どちらもCookie・外部送信をしない（後者だけ、購入者ゲートのためlocalStorageに1回書く）
     const scripts = [...all.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-    for (const sc of scripts) expect(sc).toBe(CHECKOUT_ATTRIBUTION_JS);
+    for (const sc of scripts) expect([CHECKOUT_ATTRIBUTION_JS, SESSION_CAPTURE_JS]).toContain(sc);
     expect(all.match(/<script/g)?.length ?? 0).toBe(scripts.length);
     expect(CHECKOUT_ATTRIBUTION_JS).not.toMatch(/cookie|localStorage|sessionStorage|fetch|XMLHttpRequest|sendBeacon|gtag|fbq/i);
+    expect(SESSION_CAPTURE_JS).not.toMatch(/cookie|sessionStorage|fetch|XMLHttpRequest|sendBeacon|gtag|fbq/i);
+    // thanksページにだけ資格情報保存スクリプトが入り、他のページには入らない
+    for (const p of PAGES) {
+      const has = html(files, p).includes(SESSION_CAPTURE_JS);
+      expect(has, p).toBe(p === 'thanks');
+    }
   });
 
   it('リンクは Stripe・アプリ・mailto・サイト内のみで、サイト内リンク・画像はすべて生成済みページ／実在ファイルに解決する', () => {
