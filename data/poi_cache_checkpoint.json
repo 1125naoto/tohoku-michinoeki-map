@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-14T18:28:34Z",
+  "updatedAt": "2026-09-27T20:30:38Z",
   "stations": {
     "mne-18904": {
       "status": "ok",
@@ -12053,6 +12053,16 @@
       "endpointsUsed": [
         "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
       ]
+    },
+    "mlit-r64-ishikawa": {
+      "status": "ok",
+      "resultStatus": "partial",
+      "attempts": 1,
+      "lastAttemptAt": "2026-09-20T19:53:47Z",
+      "poiCount": 10,
+      "endpointsUsed": [
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ]
     }
   },
   "endpointStats": {
@@ -12060,22 +12070,22 @@
       "success": 334,
       "http_error": 0,
       "timeout": 0,
-      "network_error": 5245,
-      "retry": 1180
+      "network_error": 5248,
+      "retry": 1181
     },
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter": {
-      "success": 3918,
+      "success": 3919,
       "http_error": 99,
       "timeout": 0,
-      "network_error": 1607,
-      "retry": 1178
+      "network_error": 1609,
+      "retry": 1179
     },
     "https://overpass-api.de/api/interpreter": {
       "success": 159,
-      "http_error": 614,
+      "http_error": 617,
       "timeout": 4728,
       "network_error": 30,
-      "retry": 1177
+      "retry": 1178
     }
   }
 }
