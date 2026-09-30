@@ -41,6 +41,8 @@ jobs:
         run: npm run build
         env:
           DEPLOY_BASE: /tohoku-michinoeki-map/
+          # 月額250円購入者ゲート本番有効化（実決済Golden Path確認済み）
+          VITE_ACCESS_GATE_ENABLED: 'true'
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
