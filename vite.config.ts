@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+import { VitePWA, type ManifestOptions } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -122,6 +122,60 @@ function officialPreviewPlugin(): Plugin {
   };
 }
 
+/** アプリのWeb App Manifest（vite-plugin-pwaが manifest.webmanifest として出力する） */
+const PWA_MANIFEST: Partial<ManifestOptions> = {
+  name: '道の駅ナビ｜全国スタンプラリー＆ルート検索',
+  short_name: '道の駅ナビ',
+  description: '全国の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索アプリ',
+  lang: 'ja',
+  start_url: DEPLOY_BASE,
+  scope: DEPLOY_BASE,
+  display: 'standalone',
+  background_color: '#f7f8f5',
+  theme_color: '#2e7d32',
+  icons: [
+    { src: iconPath('icons/icon-48.png'), sizes: '48x48', type: 'image/png' },
+    { src: iconPath('icons/icon-72.png'), sizes: '72x72', type: 'image/png' },
+    { src: iconPath('icons/icon-96.png'), sizes: '96x96', type: 'image/png' },
+    { src: iconPath('icons/icon-128.png'), sizes: '128x128', type: 'image/png' },
+    { src: iconPath('icons/icon-144.png'), sizes: '144x144', type: 'image/png' },
+    { src: iconPath('icons/icon-152.png'), sizes: '152x152', type: 'image/png' },
+    { src: iconPath('icons/icon-192.png'), sizes: '192x192', type: 'image/png' },
+    { src: iconPath('icons/icon-384.png'), sizes: '384x384', type: 'image/png' },
+    { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png' },
+    {
+      src: iconPath('icons/icon-512-maskable.png'),
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+  ],
+};
+
+/**
+ * iOSのホーム画面追加用の受け渡しmanifest（manifest-handoff.webmanifest）。
+ *
+ * iOSのホーム画面版（standalone）はSafariとlocalStorageを共有しない別コンテナで起動し、
+ * iOS 16.4以降はmanifestのstart_urlから起動する。そのため、Safariで ?activate= により
+ * 有効化しても、通常manifest（start_url=アプリのルート）からホーム画面に追加すると
+ * 資格情報が引き継がれず課金ゲートになる。
+ *
+ * このmanifestはstart_urlを持たない（Web App Manifest仕様により、start_urlは
+ * 「ホーム画面追加時のページURL」になる）。?activate= で開いて有効と確認できたSafariの
+ * タブでだけ、AccessGateがmanifestのリンクをこちらへ差し替える。秘密値はこのファイルにも
+ * ソースにも一切含まれず、その端末のホーム画面アイコンの起動URLにだけ残る。
+ */
+function installHandoffManifestPlugin(): Plugin {
+  return {
+    name: 'michinoeki-install-handoff-manifest',
+    apply: 'build',
+    generateBundle() {
+      const { start_url: _omit, ...handoff } = PWA_MANIFEST;
+      this.emitFile({ type: 'asset', fileName: 'manifest-handoff.webmanifest', source: JSON.stringify(handoff) });
+    },
+  };
+}
+
 export default defineConfig({
   base: DEPLOY_BASE,
   define: {
@@ -137,39 +191,13 @@ export default defineConfig({
     buildInfoPlugin(),
     monitorSitePlugin(),
     officialPreviewPlugin(),
+    installHandoffManifestPlugin(),
     VitePWA({
       // 新しいビルドを検知したら自動更新（古い道の駅データが永久に残らない）
       registerType: 'autoUpdate',
       injectRegister: false, // main.tsx で手動登録
       filename: 'sw.js',
-      manifest: {
-        name: '道の駅ナビ｜全国スタンプラリー＆ルート検索',
-        short_name: '道の駅ナビ',
-        description: '全国の道の駅を記録し、周辺の飲食店・観光・温泉を組み合わせたドライブコースを作れるルート検索アプリ',
-        lang: 'ja',
-        start_url: DEPLOY_BASE,
-        scope: DEPLOY_BASE,
-        display: 'standalone',
-        background_color: '#f7f8f5',
-        theme_color: '#2e7d32',
-        icons: [
-          { src: iconPath('icons/icon-48.png'), sizes: '48x48', type: 'image/png' },
-          { src: iconPath('icons/icon-72.png'), sizes: '72x72', type: 'image/png' },
-          { src: iconPath('icons/icon-96.png'), sizes: '96x96', type: 'image/png' },
-          { src: iconPath('icons/icon-128.png'), sizes: '128x128', type: 'image/png' },
-          { src: iconPath('icons/icon-144.png'), sizes: '144x144', type: 'image/png' },
-          { src: iconPath('icons/icon-152.png'), sizes: '152x152', type: 'image/png' },
-          { src: iconPath('icons/icon-192.png'), sizes: '192x192', type: 'image/png' },
-          { src: iconPath('icons/icon-384.png'), sizes: '384x384', type: 'image/png' },
-          { src: iconPath('icons/icon-512.png'), sizes: '512x512', type: 'image/png' },
-          {
-            src: iconPath('icons/icon-512-maskable.png'),
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
+      manifest: PWA_MANIFEST,
       workbox: {
         // 新しいSWを待機させず即時有効化し、開いているページも即座に制御下へ。
         // 古いprecacheは削除（古いアイコン等が配信され続けるのを防ぐ）

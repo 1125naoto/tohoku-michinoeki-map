@@ -3,6 +3,7 @@ import {
   captureActivationParam,
   checkEntitlement,
   clearStoredCredential,
+  finishActivation,
   type EntitlementCheck,
 } from '../lib/accessCredential';
 
@@ -27,13 +28,14 @@ function LiveGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<EntitlementCheck | 'checking'>('checking');
 
   useEffect(() => {
-    const credential = captureActivationParam();
-    if (!credential) {
+    const captured = captureActivationParam();
+    if (!captured.credential) {
       setState('denied');
       return;
     }
-    checkEntitlement(credential, import.meta.env.BASE_URL).then((result) => {
+    checkEntitlement(captured.credential, import.meta.env.BASE_URL).then((result) => {
       if (result === 'denied') clearStoredCredential();
+      finishActivation(captured, result, import.meta.env.BASE_URL);
       setState(result);
     });
   }, []);
