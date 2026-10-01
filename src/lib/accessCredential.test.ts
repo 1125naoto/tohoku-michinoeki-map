@@ -55,16 +55,14 @@ describe('checkEntitlement (fail-closed)', () => {
   });
 });
 
-describe('?activate= の取り込みとホーム画面追加用の受け渡し', () => {
+describe('?activate= の取り込み', () => {
   let href: string;
   let standalone: boolean;
   let store: Map<string, string>;
-  let manifestLink: { rel: string; href: string };
 
   beforeEach(() => {
     store = new Map();
     standalone = false;
-    manifestLink = { rel: 'manifest', href: '/base/manifest.webmanifest' };
     vi.stubGlobal('location', {
       get href() {
         return href;
@@ -78,7 +76,6 @@ describe('?activate= の取り込みとホーム画面追加用の受け渡し',
     });
     vi.stubGlobal('window', { matchMedia: () => ({ matches: standalone }) });
     vi.stubGlobal('navigator', {});
-    vi.stubGlobal('document', { querySelector: () => manifestLink });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -86,58 +83,31 @@ describe('?activate= の取り込みとホーム画面追加用の受け渡し',
 
   it('Safariのタブ: 保存し、?activate= はURLに残し、LINEの指定だけ消す', () => {
     href = 'https://x.example/base/?activate=code123&openExternalBrowser=1';
-    const c = captureActivationParam();
-    expect(c).toEqual({ credential: 'code123', fromUrl: true });
+    expect(captureActivationParam()).toEqual({ credential: 'code123', fromUrl: true });
     expect(store.get('michinoeki_access_credential')).toBe('code123');
     expect(href).toBe('https://x.example/base/?activate=code123');
   });
 
-  it('Safariのタブで有効と確認できたら、manifestをstart_url無しの受け渡し用へ差し替える', () => {
-    href = 'https://x.example/base/?activate=code123';
-    finishActivation(captureActivationParam(), 'granted', '/base/');
-    expect(manifestLink.href).toBe('/base/manifest-handoff.webmanifest');
-  });
-
-  it('拒否された招待コードはURLから消し、manifestは変えない', () => {
-    href = 'https://x.example/base/?activate=forged';
-    finishActivation(captureActivationParam(), 'denied', '/base/');
-    expect(href).toBe('https://x.example/base/');
-    expect(manifestLink.href).toBe('/base/manifest.webmanifest');
-  });
-
-  it('ホーム画面版（standalone）: 自分のlocalStorageへ保存し、URLから消す。manifestは変えない', () => {
+  it('ホーム画面版（standalone）: 自分のlocalStorageへ保存し、URLから消す', () => {
     standalone = true;
     href = 'https://x.example/base/?activate=code123';
-    const c = captureActivationParam();
-    finishActivation(c, 'granted', '/base/');
+    captureActivationParam();
     expect(store.get('michinoeki_access_credential')).toBe('code123');
     expect(href).toBe('https://x.example/base/');
-    expect(manifestLink.href).toBe('/base/manifest.webmanifest');
   });
 
-  it('?activate= なし（一般ユーザー・有料契約者）: 保存済みの資格情報を使い、manifestは変えない', () => {
+  it('拒否された招待コードはURLから消す', () => {
+    href = 'https://x.example/base/?activate=forged';
+    finishActivation(captureActivationParam(), 'denied');
+    expect(href).toBe('https://x.example/base/');
+  });
+
+  it('?activate= なし（一般ユーザー・有料契約者）: 保存済みの資格情報を使い、URLは変えない', () => {
     store.set('michinoeki_access_credential', 'cs_live_paid');
     href = 'https://x.example/base/';
     const c = captureActivationParam();
     expect(c).toEqual({ credential: 'cs_live_paid', fromUrl: false });
-    finishActivation(c, 'granted', '/base/');
+    finishActivation(c, 'granted');
     expect(href).toBe('https://x.example/base/');
-    expect(manifestLink.href).toBe('/base/manifest.webmanifest');
-  });
-
-  it('保存済みの招待コード（旧SWがURLから消した後など）: Safariのタブなら ?activate= を戻して受け渡し用manifestにする', () => {
-    store.set('michinoeki_access_credential', 'invite_code');
-    href = 'https://x.example/base/';
-    finishActivation(captureActivationParam(), 'granted', '/base/');
-    expect(href).toBe('https://x.example/base/?activate=invite_code');
-    expect(manifestLink.href).toBe('/base/manifest-handoff.webmanifest');
-  });
-
-  it('確認できなかった場合（unavailable）はURLもmanifestも変えない', () => {
-    store.set('michinoeki_access_credential', 'invite_code');
-    href = 'https://x.example/base/';
-    finishActivation(captureActivationParam(), 'unavailable', '/base/');
-    expect(href).toBe('https://x.example/base/');
-    expect(manifestLink.href).toBe('/base/manifest.webmanifest');
   });
 });

@@ -23,8 +23,6 @@ export function readStoredCredential(): string | null {
 
 /** LINEのトーク内リンクをLINE内ブラウザではなく既定のブラウザ（iPhoneならSafari）で開かせるLINE公式の指定 */
 const LINE_EXTERNAL_BROWSER_PARAM = 'openExternalBrowser';
-/** vite.config.ts の installHandoffManifestPlugin が出力する、start_urlを持たないmanifest */
-const INSTALL_HANDOFF_MANIFEST = 'manifest-handoff.webmanifest';
 
 /** ホーム画面から起動したPWA（standalone表示）か */
 export function isStandaloneDisplay(): boolean {
@@ -48,9 +46,9 @@ export interface CapturedCredential {
  * URLに ?activate=<招待コード> があれば保存する（ナミちゃん用の個別リンク）。
  *
  * - ホーム画面版（standalone）: 保存したらURLから消す。
- * - ブラウザのタブ: 確認が済むまでURLに残す。iOSのホーム画面版はSafariとlocalStorageを
- *   共有しないため、このタブからホーム画面に追加したときの起動URLに招待コードを
- *   含める必要がある（finishActivation と manifest-handoff.webmanifest を参照）。
+ * - ブラウザのタブ: URLに残す。iOSのホーム画面版はSafariとlocalStorageを共有しないため、
+ *   ホーム画面版の起動URL（= 招待コード付きの読み込みURL）に含めて引き継ぐ
+ *   （manifestの選択は installManifestSelector.ts がHTML解析中に行う）。
  *   リンク自体に元々含まれている値なので、公開範囲は広がらない。
  *
  * LINEの openExternalBrowser=1 は常にURLから消す（ホーム画面の起動URLに残さない）。
@@ -84,46 +82,9 @@ function removeActivationParamFromUrl(): void {
   }
 }
 
-/** StripeのCheckout Session ID（有料契約者の資格情報）は必ず cs_ で始まる。それ以外はOwner発行の招待コード */
-function isInviteCode(credential: string): boolean {
-  return !credential.startsWith('cs_');
-}
-
-/**
- * ブラウザのタブで招待コードが有効と確認できたときだけ、ホーム画面に追加できる状態にする:
- * URLに ?activate= を（無ければ）戻し、manifestのリンクをstart_urlを持たない受け渡し用manifestへ
- * 差し替える。仕様上start_urlは「ホーム画面追加時のページURL（?activate=付き）」になり、
- * ホーム画面版の初回起動時に captureActivationParam が自分専用のlocalStorageへ保存する
- * （以後の起動も同じURLから始まるため保持され続ける）。
- *
- * 保存済みの招待コードでも行うのは、旧ビルドのService WorkerがURLから ?activate= を
- * 消した後に新ビルドへ再読み込みされた場合や、後から通常URLで開いてホーム画面に
- * 追加した場合にも、ホーム画面版へ確実に引き継ぐため（招待コードを持つ本人の端末でだけ起きる）。
- * 一般ユーザー・有料契約者（cs_）のURLとmanifestは一切変わらない。
- */
-export function finishActivation(captured: CapturedCredential, result: EntitlementCheck, basePath: string): void {
-  if (result === 'denied') {
-    if (captured.fromUrl) removeActivationParamFromUrl();
-    return;
-  }
-  const credential = captured.credential;
-  if (result !== 'granted' || !credential || !isInviteCode(credential) || isStandaloneDisplay()) return;
-  try {
-    const url = new URL(location.href);
-    if (url.searchParams.get(ACTIVATE_PARAM) !== credential) {
-      url.searchParams.set(ACTIVATE_PARAM, credential);
-      history.replaceState(null, '', url.toString());
-    }
-    let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'manifest';
-      document.head.appendChild(link);
-    }
-    link.href = `${basePath}${INSTALL_HANDOFF_MANIFEST}`;
-  } catch {
-    /* no-op */
-  }
+/** 確認結果に応じた後処理: 拒否された招待コードはURLから消す（URLに残さない） */
+export function finishActivation(captured: CapturedCredential, result: EntitlementCheck): void {
+  if (result === 'denied' && captured.fromUrl) removeActivationParamFromUrl();
 }
 
 export function clearStoredCredential(): void {

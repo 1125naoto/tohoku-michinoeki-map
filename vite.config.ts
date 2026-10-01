@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { MONITOR_CONFIG } from './src/monitorSite/config';
 import { renderMonitorSite, type SiteMode } from './src/monitorSite/render';
 import { renderOfficialSite } from './src/officialSite/render';
+import { installManifestSelectorScriptTag } from './src/lib/installManifestSelector';
 
 // GitHub Pages（プロジェクトページ）ではサブパス配信になるため、ビルド時の環境変数で切り替える。
 // ローカルのプレビュー/開発サーバーでは未設定=ルート('/')のまま。
@@ -153,25 +154,34 @@ const PWA_MANIFEST: Partial<ManifestOptions> = {
 };
 
 /**
- * iOSのホーム画面追加用の受け渡しmanifest（manifest-handoff.webmanifest）。
+ * iOSのホーム画面版へ招待コード（ナミちゃん用）を引き継ぐための仕組み
+ * （詳細は src/lib/installManifestSelector.ts）。
  *
- * iOSのホーム画面版（standalone）はSafariとlocalStorageを共有しない別コンテナで起動し、
- * iOS 16.4以降はmanifestのstart_urlから起動する。そのため、Safariで ?activate= により
- * 有効化しても、通常manifest（start_url=アプリのルート）からホーム画面に追加すると
- * 資格情報が引き継がれず課金ゲートになる。
- *
- * このmanifestはstart_urlを持たない（Web App Manifest仕様により、start_urlは
- * 「ホーム画面追加時のページURL」になる）。?activate= で開いて有効と確認できたSafariの
- * タブでだけ、AccessGateがmanifestのリンクをこちらへ差し替える。秘密値はこのファイルにも
- * ソースにも一切含まれず、その端末のホーム画面アイコンの起動URLにだけ残る。
+ * - manifest-handoff.webmanifest: start_urlを持たないmanifest（仕様・WebKit実装とも、
+ *   start_urlは「そのページを読み込んだURL」になる）。秘密値は含まない。
+ * - index.html: vite-plugin-pwaが挿入した <link rel="manifest"> を、HTML解析中に
+ *   通常/受け渡し用のどちらかを選んで挿入する同期インラインscriptに置き換える
+ *   （WebKitは解析中に最初に処理したmanifestをキャッシュし、後からの差し替えは無視するため）。
  */
 function installHandoffManifestPlugin(): Plugin {
+  let base = '/';
   return {
     name: 'michinoeki-install-handoff-manifest',
     apply: 'build',
-    generateBundle() {
+    enforce: 'post',
+    configResolved(resolved) {
+      base = resolved.base;
+    },
+    generateBundle(_options, bundle) {
       const { start_url: _omit, ...handoff } = PWA_MANIFEST;
       this.emitFile({ type: 'asset', fileName: 'manifest-handoff.webmanifest', source: JSON.stringify(handoff) });
+
+      const index = bundle['index.html'];
+      if (!index || index.type !== 'asset') throw new Error('[install-handoff] index.html が見つかりません');
+      const html = String(index.source);
+      const linkTag = /<link rel="manifest" href="[^"]*"[^>]*>/;
+      if (!linkTag.test(html)) throw new Error('[install-handoff] index.html に manifest のlinkがありません');
+      index.source = html.replace(linkTag, installManifestSelectorScriptTag(base));
     },
   };
 }
@@ -210,8 +220,24 @@ export default defineConfig({
         // 販売サイト(/monitor/)は静的HTMLの別ページ。アプリのSPAフォールバックに吸われたり、
         // 古いHTMLがprecacheから配信されたりしないよう、precache対象外＋フォールバック対象外にする。
         globIgnores: ['monitor/**', 'official/**'],
-        navigateFallbackDenylist: [/\/monitor(\/|$)/, /\/official(\/|$)/],
+        // 招待コード付きURL（?activate=）の画面遷移はprecacheのindex.htmlで返さない。
+        // precacheで返すとWebKitでは読み込みURLが .../index.html（招待コードなし）になり、
+        // start_urlを持たない受け渡し用manifestの起動URLから招待コードが落ちるため
+        // （installManifestSelector.ts参照）。下のNetworkFirstで実URLのまま取得する。
+        navigateFallbackDenylist: [/\/monitor(\/|$)/, /\/official(\/|$)/, /[?&]activate=/],
         runtimeCaching: [
+          {
+            // 招待コード付きURLの画面遷移: ネットワーク優先（オフライン時は前回取得分。
+            // ホーム画面版は毎回このURLから起動するため、オフラインでも開ける）
+            urlPattern: ({ request, url }) => request.mode === 'navigate' && url.searchParams.has('activate'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'activation-navigation',
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 2 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           {
             // OSMタイル: 直近に見た範囲だけキャッシュ（オフラインでは表示不可の旨をUIで案内）
             urlPattern: /^https:\/\/tile\.openstreetmap\.org\/.*/,

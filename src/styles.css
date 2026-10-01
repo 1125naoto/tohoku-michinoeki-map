@@ -2133,6 +2133,35 @@ button.trip-stamp-done {
 }
 
 /* ===== 購入者ゲート（Supabase entitlements）===== */
+/* 招待コードで開いたSafariの画面だけに出す、ホーム画面追加の案内（AccessGate.tsx） */
+.install-handoff-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 8px) 12px 8px 16px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.install-handoff-banner span {
+  flex: 1;
+}
+.install-handoff-banner button {
+  flex: none;
+  min-width: 36px;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 20px;
+}
 .access-gate {
   min-height: 100vh;
   display: flex;

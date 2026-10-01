@@ -24,8 +24,23 @@ export default function AccessGate({ children }: { children: React.ReactNode }) 
   return <LiveGate>{children}</LiveGate>;
 }
 
+/**
+ * このページ読み込みで、ホーム画面追加用の受け渡しmanifestが選ばれているか
+ * （installManifestSelector.ts がHTML解析中に選ぶ。招待コード付きURLのSafariのタブだけtrue）。
+ * 旧ビルドのService Workerが表示した画面ではfalseになり、自動更新後の再読み込みでtrueになる。
+ */
+function installHandoffReady(): boolean {
+  try {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    return !!link && link.href.endsWith('/manifest-handoff.webmanifest');
+  } catch {
+    return false;
+  }
+}
+
 function LiveGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<EntitlementCheck | 'checking'>('checking');
+  const [bannerClosed, setBannerClosed] = useState(false);
 
   useEffect(() => {
     const captured = captureActivationParam();
@@ -35,12 +50,25 @@ function LiveGate({ children }: { children: React.ReactNode }) {
     }
     checkEntitlement(captured.credential, import.meta.env.BASE_URL).then((result) => {
       if (result === 'denied') clearStoredCredential();
-      finishActivation(captured, result, import.meta.env.BASE_URL);
+      finishActivation(captured, result);
       setState(result);
     });
   }, []);
 
-  if (state === 'granted') return <>{children}</>;
+  if (state === 'granted') {
+    if (bannerClosed || !installHandoffReady()) return <>{children}</>;
+    return (
+      <>
+        <div className="install-handoff-banner" role="status">
+          <span>この画面のまま、共有ボタン →「ホーム画面に追加」で、ホーム画面からも使えます</span>
+          <button type="button" aria-label="閉じる" onClick={() => setBannerClosed(true)}>
+            ×
+          </button>
+        </div>
+        {children}
+      </>
+    );
+  }
 
   if (state === 'checking') {
     return (
