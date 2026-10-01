@@ -2,7 +2,7 @@
  * 「道の駅ナビ 全国版」公式ホームページ＋販売LP（縦長・画像中心のスマホ向け1ページ）の静的HTML生成（純関数）。
  *
  * - 画像はすべて本物のアプリ画面（Productionを実機相当の幅で撮影→切り出し・縮小のみ）。AI生成の画面は使わない。
- * - 購入ボタンは既存のStripe Payment Link（MONITOR_CONFIG.live.paymentLink）だけを使う。新しい商品・価格・リンクは作らない。
+ * - 購入ボタンは MONITOR_CONFIG.live の月額・年間のStripe Payment Linkだけを使う。料金の文言は monitorSite/pricing.ts から生成する。
  * - 販売可否は monitorSite の evaluateSalesGate（受付中でなければ購入ボタンを一切出さない）。
  * - LINEのCTAは config.lineUrl が実在形式で設定されている場合だけ出す（未設定=ページに一切出ない）。
  * - `live=false`（ドメイン稼働前のプレビュー）は noindex・canonicalはプレビュー自身・robots.txt/sitemap.xmlは出さない。
@@ -10,6 +10,7 @@
  * - 外部リソース・Cookie・解析ツールなし。JavaScriptは流入元の付与とスティッキーCTAの出し分けだけ。
  */
 import { MONITOR_CONFIG, type MonitorConfig } from '../monitorSite/config';
+import { pricingText, type PricingText } from '../monitorSite/pricing';
 import { CHECKOUT_ATTRIBUTION_JS, evaluateSalesGate, resolveSite, taxSentence } from '../monitorSite/render';
 import { OFFICIAL_CONFIG, isValidLineUrl, type OfficialConfig } from './config';
 
@@ -29,7 +30,6 @@ const esc = (s: string): string =>
 
 /** 文節ごとに折り返す（日本語の語の途中で改行しない）。`|` が文節の区切り。文字列は静的でエスケープ不要なものだけ */
 const ph = (t: string): string => t.split('|').map((x) => `<span class="nb">${x}</span>`).join('');
-const yen = (n: number): string => `${n}円`;
 const fmt = (n: number): string => n.toLocaleString('en-US');
 const withSlash = (s: string): string => (s.endsWith('/') ? s : `${s}/`);
 
@@ -91,6 +91,9 @@ p{margin:.55em 0}
 .pricebox .now{font-size:2.5rem;font-weight:900;line-height:1.25;color:#1b5e20;margin:.15em 0}
 .pricebox .now small{font-size:1rem;font-weight:800}
 .pricebox .formal{font-size:.95rem;color:#3a4a3a;margin:.2em 0 0}
+.pricebox .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px dashed #cfd8cb;padding:4px 2px}
+.pricebox .row b{font-size:1.6rem;font-weight:900;color:#1b5e20;white-space:nowrap}
+.pricebox .row b small{font-size:.85rem}
 .faq{text-align:left;margin-top:14px}
 details{background:#fff;border:1px solid #dfe6dc;border-radius:12px;padding:8px 14px;margin:8px 0}
 summary{font-weight:700;cursor:pointer}
@@ -128,6 +131,8 @@ interface Ctx {
   assetBase: string;
   open: boolean;
   payUrl: string;
+  annualPayUrl: string;
+  price: PricingText;
   portalUrl: string;
   line: string | null;
   live: boolean;
@@ -143,7 +148,10 @@ const phone = (c: Ctx, k: ImgKey, alt: string, lazy = true): string => `<div cla
 
 /** 購入CTA（Payment Link）。受付中でなければ出さない。`data-checkout` は流入元の付与に使う */
 const cta = (c: Ctx, where: string): string =>
-  c.open ? `<a class="btn" data-checkout data-cta="${where}" href="${esc(c.payUrl)}" rel="noopener">月額${yen(c.cfg.monitorPriceYen)}で始める</a>` : '';
+  c.open ? `<a class="btn" data-checkout data-plan="monthly" data-cta="${where}" href="${esc(c.payUrl)}" rel="noopener">月額プランで始める（${c.price.introPeriod} ${c.price.introPerMonth}）</a>` : '';
+/** 年間プランの購入CTA（最後の料金パネルにだけ出す） */
+const annualCta = (c: Ctx, where: string): string =>
+  c.open ? `<a class="btn ghost" data-checkout data-plan="annual" data-cta="${where}" href="${esc(c.annualPayUrl)}" rel="noopener">年間プランで始める（${c.price.annualPerYear}）</a>` : '';
 
 /** LINE CTA。友だち追加URLが確定するまでは何も出さない（架空のURLは公開しない） */
 const lineCta = (c: Ctx, where: string): string =>
@@ -151,8 +159,7 @@ const lineCta = (c: Ctx, where: string): string =>
 
 function panels(c: Ctx): string[] {
   const n = fmt(c.cfg.stationCount);
-  const price = yen(c.cfg.monitorPriceYen);
-  const formal = yen(c.cfg.plannedFullPriceYen);
+  const pt = c.price;
   const tax = c.taxNote ? '（税込）' : '';
   const p: string[] = [];
 
@@ -161,12 +168,12 @@ function panels(c: Ctx): string[] {
 <div class="brandline"><img src="${c.base}img/${IMG.icon.f}" width="40" height="40" alt=""><span>${esc(c.cfg.productName)}</span></div>
 <h1 id="h-top">${ph('次の道の駅、|どこ行こう？')}</h1>
 <p class="sub">${ph(`${esc(c.cfg.productName)}は、|探す・記録する・巡る、|道の駅ドライブが|これひとつでできる|スマホのアプリです。`)}</p>
-<ul class="badges"><li>全国${n}施設を収録</li><li class="mon"><span class="nb">新リリース・モニター</span> <span class="nb">月額${price}${tax}</span></li></ul>
+<ul class="badges"><li>全国${n}施設を収録</li><li class="mon"><span class="nb">${pt.introPeriod}</span> <span class="nb">${pt.introPerMonth}${tax}</span></li></ul>
 ${phone(c, 'national', '全国の道の駅が地図に並ぶ「道の駅ナビ 全国版」の実際の画面', false)}
 <p class="cap">${ph('実際のアプリ画面|（全国表示）')}</p>
 ${cta(c, 'hero')}
 ${lineCta(c, 'hero')}
-<p class="mini">${c.open ? '毎月自動更新・いつでも解約できます' : '現在、新リリース・モニターのお申込みは準備中です'}</p>
+<p class="mini">${c.open ? `${pt.regularPeriod}は${pt.regularPerMonth}${tax}・いつでも解約できます。年間プラン ${pt.annualPerYear}${tax}もあります` : '現在、お申込みは準備中です'}</p>
 </section>`);
 
   // 02 お悩み
@@ -257,13 +264,18 @@ ${phone(c, 'trip', '出発後に次の道の駅とGoogleマップへのボタン
 <span class="num">10</span>
 <h2 id="h-cta">${ph('道の駅巡りを、|もっと簡単に。|もっと楽しく。')}</h2>
 <div class="pricebox">
-<span class="plan">${esc(c.cfg.planName.replace('価格', ''))}</span>
-<p class="now">月額${price}<small>${tax}</small></p>
-<p class="formal">正式版の予定価格 月額${formal}（税込）</p>
+<span class="plan">月額プラン</span>
+<p class="row"><span>${pt.introPeriod}</span><b>${pt.introPerMonth}<small>${tax}</small></b></p>
+<p class="row"><span>${pt.regularPeriod}</span><b>${pt.regularPerMonth}<small>${tax}</small></b></p>
 </div>
 ${cta(c, 'final')}
+<div class="pricebox">
+<span class="plan">年間プラン</span>
+<p class="row"><span>1年ごと</span><b>${pt.annualPerYear}<small>${tax}</small></b></p>
+</div>
+${annualCta(c, 'final')}
 ${lineCta(c, 'final')}
-<p class="mini">毎月自動更新・いつでも解約できます。お申込み前に<a href="${c.cfg.appUrl}monitor/terms/">利用規約</a>・<a href="${c.cfg.appUrl}monitor/tokushoho/">特定商取引法に基づく表記</a>をご確認ください。</p>
+<p class="mini">${esc(pt.monthlyTransition)}自動更新・いつでも解約できます。${esc(pt.annualComparison)}お申込み前に<a href="${c.cfg.appUrl}monitor/terms/">利用規約</a>・<a href="${c.cfg.appUrl}monitor/tokushoho/">特定商取引法に基づく表記</a>をご確認ください。</p>
 </section>`);
 
   return p;
@@ -272,7 +284,8 @@ ${lineCta(c, 'final')}
 function faq(c: Ctx): string {
   const items: Array<[string, string]> = [
     ['いくつの道の駅が入っていますか？', `全国${fmt(c.cfg.stationCount)}施設を収録しています。`],
-    ['料金はいくらですか？', `新リリース・モニターは月額${yen(c.cfg.monitorPriceYen)}（税込）です。正式版の予定価格は月額${yen(c.cfg.plannedFullPriceYen)}（税込）です。`],
+    ['料金はいくらですか？', `${esc(c.price.monthlySummary)}です。${esc(c.price.annualSummary)}もお選びいただけます。`],
+    ['3か月目から、申し込み直しが必要ですか？', `不要です。${esc(c.price.monthlyTransition)}`],
     ['解約はできますか？', `いつでも解約できます。解約後は次回以降の請求は発生しません。`],
     ['お支払い画面に「お宝ファインダー」と表示されるのはなぜですか？', `運営者が、お支払いの受付に使うStripeのアカウントを、別のサービス「お宝ファインダー」と共通で使っているためです。この販売の事業者は<a href="${c.cfg.appUrl}monitor/tokushoho/">特定商取引法に基づく表記</a>のとおりです。`],
     ['スマホで使えますか？', `スマホのブラウザで使えます。ホーム画面に追加すると、アプリのように起動できます。`],
@@ -298,14 +311,17 @@ function jsonLd(c: Ctx): string {
       url: site,
       inLanguage: 'ja',
       description: `全国${fmt(c.cfg.stationCount)}施設を収録。道の駅を地図で探し、訪問やスタンプを記録し、周辺スポットを見ながらドライブコースを作れるアプリ。`,
-      offers: { '@type': 'Offer', price: String(c.cfg.monitorPriceYen), priceCurrency: 'JPY', url: c.payUrl, availability: 'https://schema.org/InStock', description: '新リリース・モニター価格（月額・税込）' },
+      offers: [
+        { '@type': 'Offer', price: String(c.cfg.pricing.monthly.introPriceYen), priceCurrency: 'JPY', url: c.payUrl, availability: 'https://schema.org/InStock', description: `月額プラン（${c.price.introPeriod} ${c.price.introPerMonth}、${c.price.regularPeriod} ${c.price.regularPerMonth}・税込）` },
+        { '@type': 'Offer', price: String(c.cfg.pricing.annual.priceYen), priceCurrency: 'JPY', url: c.annualPayUrl, availability: 'https://schema.org/InStock', description: `年間プラン（${c.price.annualPerYear}・税込）` },
+      ],
     },
     {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       mainEntity: [
         ['いくつの道の駅が入っていますか？', `全国${fmt(c.cfg.stationCount)}施設を収録しています。`],
-        ['料金はいくらですか？', `新リリース・モニターは月額${yen(c.cfg.monitorPriceYen)}（税込）です。正式版の予定価格は月額${yen(c.cfg.plannedFullPriceYen)}（税込）です。`],
+        ['料金はいくらですか？', `${c.price.monthlySummary}です。${c.price.annualSummary}もお選びいただけます。`],
         ['解約はできますか？', 'いつでも解約できます。解約後は次回以降の請求は発生しません。'],
       ].map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
     },
@@ -316,7 +332,7 @@ function jsonLd(c: Ctx): string {
 
 export const OFFICIAL_TITLE = (cfg: MonitorConfig): string => `${cfg.productName}｜全国${fmt(cfg.stationCount)}施設の道の駅を地図で探す・スタンプ記録・ルート作成`;
 export const OFFICIAL_DESCRIPTION = (cfg: MonitorConfig): string =>
-  `全国${fmt(cfg.stationCount)}施設を収録した「${cfg.productName}」（道ナビ）。道の駅を地図で探し、訪問・スタンプを記録し、周辺スポットを見ながらドライブコースを作れます。新リリース・モニターは月額${yen(cfg.monitorPriceYen)}（税込）。`;
+  `全国${fmt(cfg.stationCount)}施設を収録した「${cfg.productName}」（道ナビ）。道の駅を地図で探し、訪問・スタンプを記録し、周辺スポットを見ながらドライブコースを作れます。${pricingText(cfg.pricing, true).monthlySummary}。${pricingText(cfg.pricing, true).annualSummary}。`;
 
 export function renderOfficialSite(
   opts: OfficialRenderOptions,
@@ -337,7 +353,9 @@ export function renderOfficialSite(
     base,
     assetBase,
     open: gate.open,
-    payUrl: site.urls.paymentLink ?? '',
+    payUrl: site.urls.monthlyPaymentLink ?? '',
+    annualPayUrl: site.urls.annualPaymentLink ?? '',
+    price: pricingText(cfg.pricing, site.gate.ownerReady ? site.owner.priceTaxInclusive : null),
     portalUrl: site.urls.portalLoginUrl ?? '',
     line: isValidLineUrl(off.lineUrl) ? off.lineUrl : null,
     live,
@@ -352,11 +370,11 @@ export function renderOfficialSite(
   const bodyPanels = panels(ctx).join('\n');
   const legal = (path: string, label: string) => `<a href="${cfg.appUrl}monitor/${path}">${label}</a>`;
   const footer = `<footer>
-<nav aria-label="運営情報">${legal('', '新リリース・モニター募集')}${legal('terms/', '利用規約')}${legal('privacy/', 'プライバシーポリシー')}${legal('tokushoho/', '特定商取引法に基づく表記')}${legal('contact/', 'お問い合わせ・改善要望')}${ctx.open && ctx.portalUrl ? `<a href="${esc(ctx.portalUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
+<nav aria-label="運営情報">${legal('', '料金・お申込み')}${legal('terms/', '利用規約')}${legal('privacy/', 'プライバシーポリシー')}${legal('tokushoho/', '特定商取引法に基づく表記')}${legal('contact/', 'お問い合わせ・改善要望')}${ctx.open && ctx.portalUrl ? `<a href="${esc(ctx.portalUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
 <small>${esc(cfg.productName)}（道ナビ）｜画面は、記録の例を入れた実際のアプリ画面です。</small>
 </footer>`;
   const stickyCta = hasSticky
-    ? `<div class="sticky-cta"><a class="btn" data-checkout data-cta="sticky" href="${esc(ctx.payUrl)}" rel="noopener">月額${yen(cfg.monitorPriceYen)}で始める</a></div>\n`
+    ? `<div class="sticky-cta"><a class="btn" data-checkout data-cta="sticky" href="${esc(ctx.payUrl)}" data-plan="monthly" rel="noopener">月額プランで始める（${ctx.price.introPeriod} ${ctx.price.introPerMonth}）</a></div>\n`
     : '';
   const banner = live ? '' : '<div class="banner">公開前の確認用プレビューです（検索エンジンには表示されません）</div>\n';
   const sourceJs = `(function(){try{var m={${Object.entries(off.sources).map(([k, v]) => `${k}:'${v}'`).join(',')}},s=new URLSearchParams(location.search).get('s');if(s&&m[s]&&!new URLSearchParams(location.search).get('utm_source')){var as=document.querySelectorAll('a[data-checkout]'),ref=m[s]+'_lp';for(var i=0;i<as.length;i++){var u=new URL(as[i].href);u.searchParams.set('client_reference_id',ref);as[i].href=u.toString()}}}catch(e){}})();`;

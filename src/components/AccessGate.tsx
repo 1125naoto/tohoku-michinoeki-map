@@ -8,12 +8,17 @@ import {
   type EntitlementCheck,
 } from '../lib/accessCredential';
 
+import { MONITOR_CONFIG } from '../monitorSite/config';
+import { pricingText } from '../monitorSite/pricing';
+
 const OFFICIAL_SITE_URL = 'https://michinoekinavi.jp/';
-/** src/monitorSite/config.ts の live.paymentLink と一致させること（render.test.tsで検証済み） */
-const PAYMENT_LINK_URL = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+/** 購入URL・料金は販売サイトと同じ設定から取る（公開URLで秘密ではない） */
+const MONTHLY_PAYMENT_LINK_URL = MONITOR_CONFIG.live.monthlyPaymentLink ?? OFFICIAL_SITE_URL;
+const ANNUAL_PAYMENT_LINK_URL = MONITOR_CONFIG.live.annualPaymentLink ?? OFFICIAL_SITE_URL;
+const PRICE = pricingText(MONITOR_CONFIG.pricing, MONITOR_CONFIG.owner.priceTaxInclusive);
 
 /**
- * 月額250円の有効な購入者だけが全国版アプリ本体を利用できるようにするゲート。
+ * 有効な契約者（月額プラン・年間プラン）と招待コードの持ち主だけが全国版アプリ本体を利用できるようにするゲート。
  * fail-closed: 資格情報が無い／確認できない場合は必ず非表示側に倒す。
  *
  * VITE_ACCESS_GATE_ENABLED='true' が注入されたビルドでのみ有効になる。
@@ -124,9 +129,17 @@ function LiveGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="access-gate">
       <h2>道の駅ナビ 全国版</h2>
-      <p>月額250円のご契約中の方だけご利用いただけます。</p>
-      <a className="btn-primary btn-link" href={PAYMENT_LINK_URL} rel="noopener">
-        月額250円で申し込む
+      <p>ご契約中の方だけご利用いただけます。</p>
+      <p className="access-gate-price">
+        {PRICE.monthlySummary}
+        <br />
+        {PRICE.annualSummary}
+      </p>
+      <a className="btn-primary btn-link" href={MONTHLY_PAYMENT_LINK_URL} rel="noopener">
+        月額プランで申し込む（{PRICE.introPeriod} {PRICE.introPerMonth}）
+      </a>
+      <a className="btn-link" href={ANNUAL_PAYMENT_LINK_URL} rel="noopener">
+        年間プランで申し込む（{PRICE.annualPerYear}）
       </a>
       <a className="btn-link" href={OFFICIAL_SITE_URL}>
         公式サイトで詳しく見る

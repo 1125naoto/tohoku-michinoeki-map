@@ -4,7 +4,10 @@ import { MONITOR_CONFIG, type MonitorConfig } from '../monitorSite/config';
 import { OFFICIAL_CONFIG, isValidLineUrl, type OfficialConfig } from './config';
 import { OFFICIAL_DESCRIPTION, OFFICIAL_TITLE, renderOfficialSite } from './render';
 
-const PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+const MONTHLY_LINK = 'https://buy.stripe.com/bJe00kbKNgYW6PQ95W7Zu09';
+const ANNUAL_LINK = 'https://buy.stripe.com/9B6fZi5mp9wu7TU4PG7Zu08';
+const LEGACY_250_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+const PORTAL = 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00';
 const PREVIEW = { base: '/tohoku-michinoeki-map/official/', assetBase: '/tohoku-michinoeki-map/', standalone: false, live: false } as const;
 const DOMAIN = { base: '/', assetBase: '/', standalone: true } as const;
 
@@ -20,13 +23,17 @@ describe('公式サイト: 内容の正しさ', () => {
     expect(MONITOR_CONFIG.stationCount).toBe(STATIONS.length);
   });
 
-  it('必須の文言が入っている（次の道の駅、どこ行こう？／全国1,237施設を収録／月額250円（税込）／正式版の予定価格）', () => {
+  it('必須の文言が入っている（次の道の駅、どこ行こう？／全国1,237施設を収録／月額プラン2段・年間プラン）', () => {
     const h = html(PREVIEW);
     const text = h.replace(/<[^>]+>/g, '');
     expect(text).toContain('次の道の駅、どこ行こう？');
     expect(h).toContain('全国1,237施設を収録');
-    expect(text).toContain('新リリース・モニター 月額250円（税込）');
-    expect(h).toContain('正式版の予定価格 月額500円（税込）');
+    expect(text).toContain('最初の2か月 250円/月（税込）');
+    const flat = text.replace(/\s/g, '');
+    expect(flat).toContain('月額プラン最初の2か月250円/月（税込）3か月目以降500円/月（税込）');
+    expect(flat).toContain('年間プラン1年ごと4,980円/年（税込）');
+    expect(text).toContain('500円/月で12か月分（6,000円）と比べて1,020円お得です。なお、月額プランの初年度のお支払い合計は5,500円');
+    for (const w of ['モニター', '正式版', '予定価格', '% OFF']) expect(text, w).not.toContain(w);
     expect(h.replace(/<[^>]+>/g, '')).toContain('道の駅巡りを、もっと簡単に。もっと楽しく。');
   });
 
@@ -73,18 +80,26 @@ describe('公式サイト: 内容の正しさ', () => {
 });
 
 describe('公式サイト: 購入CTA（既存のStripe Payment Linkだけ）', () => {
-  it('CTAは3つ以上（ヒーロー・中盤・最終＋スティッキー）で、すべて既存のPayment Link', () => {
+  it('月額CTAは3つ以上（ヒーロー・中盤・最終＋スティッキー）で月額のPayment Link、年間CTAは年間のPayment Link', () => {
     const h = html(PREVIEW);
-    const links = [...h.matchAll(/<a [^>]*data-checkout[^>]*>/g)].map((m) => /href="([^"]+)"/.exec(m[0])![1]);
-    expect(links.length).toBeGreaterThanOrEqual(3);
-    for (const l of links) expect(l).toBe(PAYMENT_LINK);
-    expect(h).toContain('月額250円で始める');
+    const tags = [...h.matchAll(/<a [^>]*data-checkout[^>]*>/g)].map((m) => m[0]);
+    const hrefOf = (t: string) => /href="([^"]+)"/.exec(t)![1];
+    const monthly = tags.filter((t) => t.includes('data-plan="monthly"'));
+    const annual = tags.filter((t) => t.includes('data-plan="annual"'));
+    expect(monthly.length).toBeGreaterThanOrEqual(3);
+    expect(annual.length).toBeGreaterThanOrEqual(1);
+    expect(monthly.length + annual.length).toBe(tags.length);
+    for (const t of monthly) expect(hrefOf(t)).toBe(MONTHLY_LINK);
+    for (const t of annual) expect(hrefOf(t)).toBe(ANNUAL_LINK);
+    expect(h).toContain('月額プランで始める（最初の2か月 250円/月）');
+    expect(h).toContain('年間プランで始める（4,980円/年）');
   });
 
   it('Stripe以外へ課金する導線・新しいStripeリンクがない', () => {
     const h = html(PREVIEW);
     const stripe = [...h.matchAll(/https:\/\/(?:buy|billing)\.stripe\.com\/[^"'\s<]+/g)].map((m) => m[0]);
-    for (const u of stripe) expect([PAYMENT_LINK, 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00']).toContain(u);
+    for (const u of stripe) expect([MONTHLY_LINK, ANNUAL_LINK, PORTAL]).toContain(u);
+    expect(h).not.toContain(LEGACY_250_LINK);
   });
 
   it('販売受付中でなければ購入ボタン・スティッキーを出さない（承認スイッチ）', () => {
@@ -157,16 +172,19 @@ describe('公式サイト: SEO（プレビュー／公式ドメイン稼働の�
     expect(h).toContain('<meta name="twitter:card" content="summary_large_image">');
     for (const t of ['"@type":"WebSite"', '"@type":"SoftwareApplication"', '"@type":"FAQPage"']) expect(h).toContain(t);
     expect(h).toContain('"price":"250","priceCurrency":"JPY"');
+    expect(h).toContain('"price":"4980","priceCurrency":"JPY"');
   });
 
-  it('JSON-LDは正しいJSONで、画面の内容（250円・1,237施設）と一致する', () => {
+  it('JSON-LDは正しいJSONで、画面の内容（月額プラン・年間プラン・1,237施設）と一致する', () => {
     const h = html({ ...DOMAIN, live: true });
     const blocks = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
     expect(blocks.length).toBe(3);
     const app = blocks.find((b) => b['@type'] === 'SoftwareApplication');
-    expect(app.offers.price).toBe('250');
+    expect(app.offers).toHaveLength(2);
+    expect(app.offers[0]).toMatchObject({ price: '250', url: MONTHLY_LINK });
+    expect(app.offers[0].description).toContain('3か月目以降 500円/月');
+    expect(app.offers[1]).toMatchObject({ price: '4980', url: ANNUAL_LINK });
     expect(app.description).toContain('1,237');
-    expect(app.offers.url).toBe(PAYMENT_LINK);
   });
 
   it('title / description は道ナビ・道の駅ナビ・スタンプ・地図・ルートを自然に含み、詰め込みすぎない', () => {

@@ -18,8 +18,11 @@ const PUBLIC_IMAGES = Object.keys(import.meta.glob('../../public/monitor/img/*.j
 const imageExists = (rel: string) => PUBLIC_IMAGES.includes(rel);
 const PAGES = ['index', 'terms', 'privacy', 'tokushoho', 'contact', 'thanks'] as const;
 
-/** Ownerが本番で作成済みのPayment Link（config.tsの値と一致していること＝リンクミスの検出） */
-const OWNER_PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+/** 本番のPayment Link（config.tsの値と一致していること＝リンクミスの検出） */
+const OWNER_MONTHLY_LINK = 'https://buy.stripe.com/bJe00kbKNgYW6PQ95W7Zu09';
+const OWNER_ANNUAL_LINK = 'https://buy.stripe.com/9B6fZi5mp9wu7TU4PG7Zu08';
+/** 旧・月額250円固定のPayment Link（新規販売の導線に出してはいけない） */
+const LEGACY_250_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
 /** Ownerが確認した、Customer Portalの公開ログインURL */
 const OWNER_PORTAL_URL = 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00';
 
@@ -34,13 +37,14 @@ const OPEN_CFG: MonitorConfig = {
     phoneDisclosure: 'on_request',
     phone: null,
     supportEmail: 'support@example.invalid',
-    monitorPriceTaxInclusive: true,
+    priceTaxInclusive: true,
     refundPolicy: '決済後の返金は行いません。',
     effectiveDate: '2026-10-01',
     responseTimeNote: null,
   },
   live: {
-    paymentLink: 'https://buy.stripe.com/liveFakeLink123',
+    monthlyPaymentLink: 'https://buy.stripe.com/liveFakeMonthly123',
+    annualPaymentLink: 'https://buy.stripe.com/liveFakeAnnual789',
     portalLoginUrl: 'https://billing.stripe.com/p/login/liveFakePortal456',
   },
 };
@@ -49,14 +53,14 @@ const OPEN_CFG: MonitorConfig = {
 const LIVE_CFG: MonitorConfig = { ...MONITOR_CONFIG, salesLaunchApproved: true };
 
 /** 販売開始は承認済みだが、Payment Link / Customer Portalが無い設定（受付準備中） */
-const CLOSED_CFG: MonitorConfig = { ...MONITOR_CONFIG, salesLaunchApproved: true, live: { paymentLink: null, portalLoginUrl: null } };
+const CLOSED_CFG: MonitorConfig = { ...MONITOR_CONFIG, salesLaunchApproved: true, live: { monthlyPaymentLink: null, annualPaymentLink: null, portalLoginUrl: null } };
 
 /** 事業者情報が未確認（全項目null）の設定: 捏造せず「受付開始時に掲載します」を出すことを検証する */
 const UNCONFIRMED_CFG: MonitorConfig = {
   ...MONITOR_CONFIG,
   owner: {
     sellerName: null, addressDisclosure: null, address: null, phoneDisclosure: null, phone: null,
-    supportEmail: null, monitorPriceTaxInclusive: null, refundPolicy: null, effectiveDate: null, responseTimeNote: null,
+    supportEmail: null, priceTaxInclusive: null, refundPolicy: null, effectiveDate: null, responseTimeNote: null,
   },
 };
 
@@ -64,7 +68,7 @@ const html = (files: Record<string, string>, page: (typeof PAGES)[number]) =>
   files[page === 'index' ? 'monitor/index.html' : `monitor/${page}/index.html`];
 const allHtml = (files: Record<string, string>) => PAGES.map((p) => html(files, p)).join('\n');
 const text = (h: string) => h.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-const h2s = (h: string) => [...h.matchAll(/<h2>([\s\S]*?)<\/h2>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
+const h2s = (h: string) => [...h.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('販売ゲート（evaluateSalesGate）', () => {
@@ -75,8 +79,10 @@ describe('販売ゲート（evaluateSalesGate）', () => {
     expect(g.open).toBe(MONITOR_CONFIG.salesLaunchApproved);
   });
 
-  it('リポジトリの実設定: Payment Link と Customer Portal は、Ownerが指定したURLと1文字も違わない', () => {
-    expect(MONITOR_CONFIG.live.paymentLink).toBe(OWNER_PAYMENT_LINK);
+  it('リポジトリの実設定: 月額・年間のPayment Link と Customer Portal は、本番のURLと1文字も違わない（旧250円固定リンクは使わない）', () => {
+    expect(MONITOR_CONFIG.live.monthlyPaymentLink).toBe(OWNER_MONTHLY_LINK);
+    expect(MONITOR_CONFIG.live.annualPaymentLink).toBe(OWNER_ANNUAL_LINK);
+    expect(JSON.stringify(MONITOR_CONFIG.live)).not.toContain(LEGACY_250_LINK);
     expect(MONITOR_CONFIG.live.portalLoginUrl).toBe(OWNER_PORTAL_URL);
   });
 
@@ -86,7 +92,8 @@ describe('販売ゲート（evaluateSalesGate）', () => {
     expect(o.phoneDisclosure).toBe('on_request');
     expect(o.address).toBeNull();
     expect(o.phone).toBeNull();
-    expect(MONITOR_CONFIG.live.paymentLink).toMatch(/^https:\/\/buy\.stripe\.com\/(?!test_)[A-Za-z0-9]+$/);
+    expect(MONITOR_CONFIG.live.monthlyPaymentLink).toMatch(/^https:\/\/buy\.stripe\.com\/(?!test_)[A-Za-z0-9]+$/);
+    expect(MONITOR_CONFIG.live.annualPaymentLink).toMatch(/^https:\/\/buy\.stripe\.com\/(?!test_)[A-Za-z0-9]+$/);
     expect(MONITOR_CONFIG.live.portalLoginUrl).toMatch(/^https:\/\/billing\.stripe\.com\/p\/login\/(?!test_)[A-Za-z0-9]+$/);
     expect(JSON.stringify(MONITOR_CONFIG)).not.toMatch(/sk_(live|test)_|rk_(live|test)_|whsec_|pk_(live|test)_/);
   });
@@ -95,11 +102,13 @@ describe('販売ゲート（evaluateSalesGate）', () => {
     const g = evaluateSalesGate(CLOSED_CFG, 'live');
     expect(g.ownerReady).toBe(true);
     expect(g.open).toBe(false);
-    expect(g.missing).toEqual(['Live Payment Link', 'Live Customer Portal']);
-    const noPortal: MonitorConfig = { ...LIVE_CFG, live: { paymentLink: OWNER_PAYMENT_LINK, portalLoginUrl: null } };
+    expect(g.missing).toEqual(['Live Payment Link（月額）', 'Live Payment Link（年間）', 'Live Customer Portal']);
+    const noPortal: MonitorConfig = { ...LIVE_CFG, live: { ...LIVE_CFG.live, portalLoginUrl: null } };
     expect(evaluateSalesGate(noPortal, 'live').missing).toEqual(['Live Customer Portal']);
-    const noLink: MonitorConfig = { ...LIVE_CFG, live: { paymentLink: null, portalLoginUrl: OWNER_PORTAL_URL } };
-    expect(evaluateSalesGate(noLink, 'live').missing).toEqual(['Live Payment Link']);
+    const noMonthly: MonitorConfig = { ...LIVE_CFG, live: { ...LIVE_CFG.live, monthlyPaymentLink: null } };
+    expect(evaluateSalesGate(noMonthly, 'live').missing).toEqual(['Live Payment Link（月額）']);
+    const noAnnual: MonitorConfig = { ...LIVE_CFG, live: { ...LIVE_CFG.live, annualPaymentLink: null } };
+    expect(evaluateSalesGate(noAnnual, 'live').missing).toEqual(['Live Payment Link（年間）']);
   });
 
   it('事業者情報が未確認なら、ownerReadyもopenもfalse（捏造しない）', () => {
@@ -115,7 +124,7 @@ describe('販売ゲート（evaluateSalesGate）', () => {
     expect(evaluateSalesGate(OPEN_CFG, 'live').open).toBe(true);
     expect(evaluateSalesGate(LIVE_CFG, 'live').open).toBe(true);
     for (const bad of ['https://example.com/portal', 'http://billing.stripe.com/p/login/abc', 'https://billing.stripe.com/p/login/test_abc', 'https://billing.stripe.com/p/session/abc']) {
-      const cfg: MonitorConfig = { ...OPEN_CFG, live: { paymentLink: OPEN_CFG.live.paymentLink, portalLoginUrl: bad } };
+      const cfg: MonitorConfig = { ...OPEN_CFG, live: { ...OPEN_CFG.live, portalLoginUrl: bad } };
       const g = evaluateSalesGate(cfg, 'live');
       expect(g.open, bad).toBe(false);
       expect(g.missing, bad).toEqual(['Live Customer Portal']);
@@ -123,17 +132,17 @@ describe('販売ゲート（evaluateSalesGate）', () => {
   });
 
   it('Test modeのURLはLiveとして受け付けない（本番への混入防止）', () => {
-    const cfg: MonitorConfig = { ...OPEN_CFG, live: { paymentLink: MONITOR_CONFIG.test.paymentLink, portalLoginUrl: MONITOR_CONFIG.test.portalLoginUrl } };
+    const cfg: MonitorConfig = { ...OPEN_CFG, live: { ...MONITOR_CONFIG.test } };
     const g = evaluateSalesGate(cfg, 'live');
     expect(g.open).toBe(false);
-    expect(g.missing).toEqual(expect.arrayContaining(['Live Payment Link']));
+    expect(g.missing).toEqual(expect.arrayContaining(['Live Payment Link（月額）', 'Live Payment Link（年間）']));
     expect(g.missing.join()).toContain('Customer Portal');
   });
 
   it('Stripe以外・http・パス違いのURL、不正なメール・日付は受け付けない', () => {
-    const withLink = (paymentLink: string): MonitorConfig => ({ ...OPEN_CFG, live: { paymentLink, portalLoginUrl: OPEN_CFG.live.portalLoginUrl } });
+    const withLink = (monthlyPaymentLink: string): MonitorConfig => ({ ...OPEN_CFG, live: { ...OPEN_CFG.live, monthlyPaymentLink } });
     for (const bad of ['https://example.com/x', 'http://buy.stripe.com/abc', 'https://buy.stripe.com/abc/def', 'https://buy.stripe.com.evil.com/abc', 'https://buy.stripe.com/']) {
-      expect(evaluateSalesGate(withLink(bad), 'live').missing, bad).toEqual(['Live Payment Link']);
+      expect(evaluateSalesGate(withLink(bad), 'live').missing, bad).toEqual(['Live Payment Link（月額）']);
     }
     expect(evaluateSalesGate({ ...OPEN_CFG, owner: { ...OPEN_CFG.owner, supportEmail: 'not-an-email' } }, 'live').missing).toContain('お問い合わせメール');
     expect(evaluateSalesGate({ ...OPEN_CFG, owner: { ...OPEN_CFG.owner, effectiveDate: '2026/10/01' } }, 'live').missing).toContain('制定日');
@@ -168,7 +177,8 @@ describe('LP（リポジトリの実設定・受付中）', () => {
     expect(hero).toContain('全国1,237施設を収録');
     expect(hero).toContain('「道の駅ナビ 全国版」');
     expect(hero).toContain('探す・記録する・巡る。道の駅ドライブをこれひとつで。');
-    expect(hero).toContain('>月額250円で始める</a>');
+    expect(hero).toContain('>月額プランで始める（最初の2か月 250円/月）</a>');
+    expect(text(hero)).toContain('3か月目以降は500円/月（税込）');
   });
 
   it('「全国1,237施設を収録」はアプリの収録データ件数と一致する（「登録道の駅」とは書かない）', () => {
@@ -186,7 +196,7 @@ describe('LP（リポジトリの実設定・受付中）', () => {
       '全国1,237施設を収録',
       'ドライブがもっと楽しく',
       '料金',
-      '新リリース・モニターについて',
+      '料金について',
       'よくある質問',
       '次のドライブを、もっと楽しく。',
     ]);
@@ -206,46 +216,51 @@ describe('LP（リポジトリの実設定・受付中）', () => {
     expect(plain).toContain('すべての店舗・施設を網羅するものではありません');
   });
 
-  it('料金: 正式版の予定価格を取り消し線、モニター価格月額250円（税込）と50% OFFを目立たせる', () => {
-    const box = lp.slice(lp.indexOf('class="pricebox"'), lp.indexOf('<h2>新リリース・モニターについて</h2>'));
-    expect(box).toContain('<s>月額500円（税込）</s>');
-    expect(box).toContain('正式版の予定価格');
-    expect(box).toContain('新リリース・モニター価格');
-    expect(box).toContain('月額250円<small>（税込）</small>');
-    expect(box).toContain('50% OFF');
-    expect(box).toContain('data-checkout');
+  it('料金: 主表示は「月額プラン 最初の2か月 250円/月・3か月目以降 500円/月」「年間プラン 4,980円/年」（税込）', () => {
+    const table = lp.slice(lp.indexOf('<h2 id="price">料金</h2>'), lp.indexOf('<h2>料金について</h2>'));
+    expect(table).toContain('<p class="plan-name">月額プラン</p>');
+    expect(table).toContain('<span class="when">最初の2か月</span><span class="amt">250円/月<small>（税込）</small></span>');
+    expect(table).toContain('<span class="when">3か月目以降</span><span class="amt">500円/月<small>（税込）</small></span>');
+    expect(table).toContain('<p class="plan-name">年間プラン</p>');
+    expect(table).toContain('<span class="amt">4,980円/年<small>（税込）</small></span>');
+    expect(table).toContain('data-plan="monthly"');
+    expect(table).toContain('data-plan="annual"');
   });
 
-  it('500円は必ず「予定」と一緒に出る（将来の価格を確定価格のように見せない）', () => {
-    for (const sentence of plain.split(/[。！]/).filter((s) => s.includes('500円'))) expect(sentence, sentence).toContain('予定');
+  it('二重価格表示・旧方式の表現を使わない（モニター価格・正式版の予定価格・取り消し線・○% OFF）', () => {
+    const all = allHtml(files);
+    for (const banned of ['モニター', '正式版', '予定価格', '% OFF', '%OFF', '<s>']) expect(all, banned).not.toContain(banned);
   });
 
-  it('モニターは有料であり、無料モニターと誤認させない。フィードバックの依頼に触れる', () => {
-    const sec = plain.slice(plain.indexOf('新リリース・モニターについて'), plain.indexOf('よくある質問'));
-    expect(sec).toContain('有料のモニター募集');
-    expect(sec).toContain('無料ではありません');
-    expect(sec).toContain('フィードバック');
-    expect(sec).toContain('料金を変更する場合は、事前にお知らせします');
-    expect(plain).not.toContain('無料モニター');
+  it('500円は必ず「3か月目以降」または比較の基準（12か月分・10か月）と一緒に出る（最初から500円と誤認させない）', () => {
+    for (const sentence of plain.split(/[。！]/).filter((s) => s.includes('500円'))) {
+      expect(sentence, sentence).toMatch(/3か月目以降|3回目のお支払い|12か月|10か月/);
+    }
   });
 
-  it('500円は「通常価格」と断定しない（販売実績が無いため、「正式版の予定価格」として示す）', () => {
-    expect(plain).toContain('正式版の予定価格');
+  it('500円を「通常価格」等と表現しない', () => {
     for (const banned of ['通常価格', '通常料金', '通常月額', '元値', '今だけ', '期間限定', '限定価格', '大幅', '激安']) expect(plain, banned).not.toContain(banned);
     expect(plain).not.toMatch(/通常[\s　]*(価格|料金|月額)?[^。]{0,6}500円/);
   });
 
-  it('料金の自動変更（一定期間後に500円へ）を約束・示唆しない', () => {
-    expect(plain).not.toMatch(/(か月|ヶ月|カ月|年|期間|日)(後|経過|以降)[^。]{0,20}500円/);
-    expect(plain).not.toMatch(/自動的に(月額)?500円/);
+  it('3か月目からの500円への切替は自動で、再申込み不要と明記する（実際にStripeのスケジュールで自動で切り替わる）', () => {
+    expect(plain).toContain('3か月目以降（3回目のお支払いから）は自動で500円/月になります');
+    expect(plain).toContain('切り替えのための再度のお申込みは不要です');
+  });
+
+  it('年間プランの「1,020円お得」は、比較の基準（500円/月×12か月=6,000円）と月額プランの初年度実額（5,500円）を併記した文にだけ出る', () => {
+    const sentences = plain.split('。').filter((s) => s.includes('1,020円'));
+    expect(sentences.length).toBeGreaterThan(0);
+    for (const s of sentences) expect(s).toContain('500円/月で12か月分（6,000円）と比べて');
+    expect(plain).toContain('月額プランの初年度のお支払い合計は5,500円（250円×2か月＋500円×10か月）です');
   });
 
   it('FAQ: 料金・解約・スマホ・iPhone/Android・インストール（PWA）・保存・支払い・個人情報', () => {
     const faq = lp.slice(lp.indexOf('<h2>よくある質問</h2>'), lp.indexOf('class="final"'));
-    for (const q of ['月額料金はいくらですか？', '解約できますか？', 'スマートフォンで使えますか？', 'iPhone / Androidで使えますか？', 'アプリのインストールは必要ですか？', '記録したデータはどこに保存されますか？', 'お支払い方法は？', 'お支払い画面に「お宝ファインダー」と表示されるのはなぜですか？', '個人情報の扱いは？']) {
+    for (const q of ['料金はいくらですか？', '3か月目から、申し込み直しが必要ですか？', '解約できますか？', 'スマートフォンで使えますか？', 'iPhone / Androidで使えますか？', 'アプリのインストールは必要ですか？', '記録したデータはどこに保存されますか？', 'お支払い方法は？', 'お支払い画面に「お宝ファインダー」と表示されるのはなぜですか？', '個人情報の扱いは？']) {
       expect(faq, q).toContain(`<summary>${q}</summary>`);
     }
-    expect(text(faq)).toContain('新リリース・モニター価格として、月額250円（税込）です。');
+    expect(text(faq)).toContain('月額プラン：最初の2か月 250円/月、3か月目以降 500円/月（税込）です。年間プラン：4,980円/年（税込）もお選びいただけます。');
     expect(text(faq)).toContain('App StoreやGoogle Playからのインストールは不要');
     expect(text(faq)).toContain('ホーム画面に追加');
   });
@@ -254,8 +269,10 @@ describe('LP（リポジトリの実設定・受付中）', () => {
     const fin = lp.slice(lp.indexOf('class="final"'));
     expect(fin).toContain('次のドライブを、もっと楽しく。');
     expect(fin).toContain('「道の駅ナビ 全国版」');
-    expect(text(fin)).toContain('新リリース・モニター価格 月額250円（税込）');
-    expect(fin).toContain('data-checkout');
+    expect(text(fin)).toMatch(/月額プラン 最初の2か月 250円\/月 （税込） 3か月目以降 500円\/月 （税込）/);
+    expect(text(fin)).toMatch(/年間プラン 1年ごと 4,980円\/年 （税込）/);
+    expect(fin).toContain('data-plan="monthly"');
+    expect(fin).toContain('data-plan="annual"');
   });
 
   it('実画面のスクリーンショット（3枚）は、リポジトリに実在し、代替テキストと寸法を持つ', () => {
@@ -275,26 +292,34 @@ describe('LP（リポジトリの実設定・受付中）', () => {
 describe('購入CTA（Stripe Payment Linkへの接続）', () => {
   const files = renderMonitorSite(LIVE_CFG, { mode: 'live', base: BASE });
   const lp = html(files, 'index');
-  const ctas = [...lp.matchAll(/<a class="btn cta[^"]*" data-checkout href="([^"]+)" rel="([^"]+)">([^<]+)<\/a>/g)];
+  const ctas = [...lp.matchAll(/<a class="btn cta[^"]*" data-checkout data-plan="(monthly|annual)" href="([^"]+)" rel="([^"]+)">([^<]+)<\/a>/g)];
+  const monthly = ctas.filter((m) => m[1] === 'monthly');
+  const annual = ctas.filter((m) => m[1] === 'annual');
 
-  it('すべての購入CTAは、Ownerが作成したPayment Linkと完全に一致するURLへ向き、文言は「月額250円で始める」', () => {
-    expect(ctas.length).toBeGreaterThanOrEqual(4); // HERO・料金・FINAL・スティッキー
-    for (const m of ctas) {
-      expect(m[1]).toBe(OWNER_PAYMENT_LINK);
-      expect(m[2]).toContain('noopener');
-      expect(m[3]).toBe('月額250円で始める');
+  it('月額CTAは月額のPayment Link、年間CTAは年間のPayment Linkへ、文言とURLが完全に一致する', () => {
+    expect(monthly.length).toBeGreaterThanOrEqual(4); // HERO・料金・FINAL・スティッキー
+    expect(annual.length).toBeGreaterThanOrEqual(2); // 料金・FINAL
+    for (const m of monthly) {
+      expect(m[2]).toBe(OWNER_MONTHLY_LINK);
+      expect(m[3]).toContain('noopener');
+      expect(m[4]).toBe('月額プランで始める（最初の2か月 250円/月）');
+    }
+    for (const m of annual) {
+      expect(m[2]).toBe(OWNER_ANNUAL_LINK);
+      expect(m[4]).toBe('年間プランで始める（4,980円/年）');
     }
   });
 
-  it('LP内のStripe向けリンクは、Payment Link以外に存在しない（別URL・Test URLの混入なし）', () => {
+  it('LP内のStripe向けリンクは、2つのPayment LinkとCustomer Portal以外に存在しない（旧250円固定リンク・Test URLの混入なし）', () => {
     const stripe = [...lp.matchAll(/href="(https:\/\/[^"]*stripe\.com[^"]*)"/g)].map((m) => m[1]);
     const buy = stripe.filter((u) => u.startsWith('https://buy.stripe.com/'));
     const portal = stripe.filter((u) => u.startsWith('https://billing.stripe.com/'));
     expect(buy.length).toBe(ctas.length); // 購入リンクは、購入CTAだけ
-    for (const u of buy) expect(u).toBe(OWNER_PAYMENT_LINK);
+    for (const u of buy) expect([OWNER_MONTHLY_LINK, OWNER_ANNUAL_LINK]).toContain(u);
     expect(portal.length).toBeGreaterThanOrEqual(2); // FAQとフッターの解約導線
     for (const u of portal) expect(u).toBe(OWNER_PORTAL_URL);
     expect(stripe.length).toBe(buy.length + portal.length); // それ以外のStripe向けリンクは無い
+    expect(lp).not.toContain(LEGACY_250_LINK);
     expect(lp).not.toContain('test_');
   });
 
@@ -312,7 +337,7 @@ describe('購入CTA（Stripe Payment Linkへの接続）', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('流入元の判別（UTM → Stripe client_reference_id）', () => {
-  const run = (search: string, href = OWNER_PAYMENT_LINK) => {
+  const run = (search: string, href = OWNER_MONTHLY_LINK) => {
     const anchors = [{ href }, { href }];
     const fn = new Function('location', 'document', `${CHECKOUT_ATTRIBUTION_JS}`);
     fn({ search }, { querySelectorAll: () => anchors }); // window なし（IntersectionObserver非対応環境）でも流入元の付与は動く
@@ -321,14 +346,14 @@ describe('流入元の判別（UTM → Stripe client_reference_id）', () => {
 
   it('utm_source / utm_campaign を、client_reference_id に付与する（Stripeへの遷移先URL自体は変えない）', () => {
     for (const u of run('?utm_source=x&utm_medium=social&utm_campaign=launch1')) {
-      expect(u.origin + u.pathname).toBe(OWNER_PAYMENT_LINK);
+      expect(u.origin + u.pathname).toBe(OWNER_MONTHLY_LINK);
       expect(u.searchParams.get('client_reference_id')).toBe('x_social_launch1');
     }
   });
 
   it('UTMが無ければ何も変えない', () => {
-    for (const u of run('')) expect(u.toString()).toBe(OWNER_PAYMENT_LINK);
-    for (const u of run('?foo=bar')) expect(u.toString()).toBe(OWNER_PAYMENT_LINK);
+    for (const u of run('')) expect(u.toString()).toBe(OWNER_MONTHLY_LINK);
+    for (const u of run('?foo=bar')) expect(u.toString()).toBe(OWNER_MONTHLY_LINK);
   });
 
   it('Stripeが受け付ける文字（英数字・-・_）だけにし、長さを制限する', () => {
@@ -340,7 +365,7 @@ describe('流入元の判別（UTM → Stripe client_reference_id）', () => {
   });
 
   it('リンクに既にあるクエリを壊さない', () => {
-    const u = run('?utm_source=youtube', `${OWNER_PAYMENT_LINK}?prefilled_promo_code=X`)[0];
+    const u = run('?utm_source=youtube', `${OWNER_MONTHLY_LINK}?prefilled_promo_code=X`)[0];
     expect(u.searchParams.get('prefilled_promo_code')).toBe('X');
     expect(u.searchParams.get('client_reference_id')).toBe('youtube');
   });
@@ -511,13 +536,16 @@ describe('暫定方針（返金・解約・税・制定日）と、事業者情�
     for (const p of ['terms', 'privacy', 'tokushoho'] as const) expect(text(html(files, p)), p).toContain('2026年9月19日');
   });
 
-  it('商品名・料金の表記が、規約・特商法でも「道の駅ナビ 全国版」「新リリース・モニター価格」に統一されている', () => {
+  it('商品名・料金の表記が、規約・特商法でもLPと同じ（月額プラン2段・年間プラン）', () => {
     const tok = text(html(files, 'tokushoho'));
     expect(tok).toContain('道の駅ナビ 全国版');
-    expect(tok).toContain('新リリース・モニター価格 月額250円');
-    expect(tok).toContain('新リリース・モニター価格（月額250円）は税込です。');
-    expect(text(html(files, 'terms'))).toContain('新リリース・モニター価格は、月額250円です。');
-    expect(allHtml(files)).not.toContain('先行モニター');
+    expect(tok).toContain('月額プラン：最初の2か月 250円/月、3か月目以降 500円/月（3か月目以降の料金へは自動で切り替わります）。年間プラン：4,980円/年。');
+    expect(tok).toContain('表示価格（月額プラン・年間プラン）は税込です。');
+    expect(tok).toContain('月額プランは毎月、年間プランは1年ごとに');
+    const terms = text(html(files, 'terms'));
+    expect(terms).toContain('（1）月額プラン：最初の2か月は250円/月、3か月目以降は500円/月 （2）年間プラン：4,980円/年');
+    expect(terms).toContain('切り替えのための再度のお申込みは不要です');
+    expect(allHtml(files)).not.toContain('モニター');
   });
 
   it('サービス提供時期: 手作業の利用案内メールを約束せず、お支払い完了後すぐに使える旨を記載する', () => {
@@ -558,9 +586,9 @@ describe('ヘルパー', () => {
     expect(jpDate('2026-09-19')).toBe('2026年9月19日');
     expect(jpDate('bad')).toBe('');
     expect(jpDate(null)).toBe('');
-    expect(taxSentence(MONITOR_CONFIG, MONITOR_CONFIG.owner)).toBe('新リリース・モニター価格（月額250円）は税込です。');
-    expect(taxSentence(MONITOR_CONFIG, { ...MONITOR_CONFIG.owner, monitorPriceTaxInclusive: false })).toContain('税別');
-    expect(taxSentence(MONITOR_CONFIG, { ...MONITOR_CONFIG.owner, monitorPriceTaxInclusive: null })).toBeNull();
+    expect(taxSentence(MONITOR_CONFIG, MONITOR_CONFIG.owner)).toBe('表示価格（月額プラン・年間プラン）は税込です。');
+    expect(taxSentence(MONITOR_CONFIG, { ...MONITOR_CONFIG.owner, priceTaxInclusive: false })).toContain('税別');
+    expect(taxSentence(MONITOR_CONFIG, { ...MONITOR_CONFIG.owner, priceTaxInclusive: null })).toBeNull();
   });
 });
 
@@ -570,10 +598,11 @@ describe('お支払い完了後のご案内ページ（/monitor/thanks/）', () 
   const th = html(files, 'thanks');
   const t = text(th);
 
-  it('お礼・商品名・250円モニターへの参加・アプリを開く・使い方・問い合わせ・解約', () => {
+  it('お礼・商品名・アプリを開く・使い方・問い合わせ・解約', () => {
     expect(th).toContain('<h1><span class="nb">お申し込み</span><span class="nb">ありがとうございます</span></h1>');
     expect(t).toContain('道の駅ナビ 全国版');
-    expect(t).toContain('月額250円の新リリース・モニターに、ご参加いただきありがとうございます');
+    expect(t).toContain('「道の駅ナビ 全国版」をお申し込みいただき、ありがとうございます');
+    expect(t).not.toContain('モニター');
     expect(th).toContain(`href="${MONITOR_CONFIG.appUrl}" rel="noopener">道の駅ナビを開く</a>`);
     expect(t).toContain('かんたんな使い方');
     expect(th).toContain('href="mailto:');
@@ -617,8 +646,9 @@ describe('testモード（公開しないQA用ビルド）と、公開前プレ�
     const lp = html(files, 'index');
     expect(lp).toContain('TEST BUILD');
     expect(lp).toContain('name="robots" content="noindex,nofollow"');
-    expect(lp).toContain(`href="${MONITOR_CONFIG.test.paymentLink}"`);
-    expect(lp).not.toContain(OWNER_PAYMENT_LINK);
+    expect(lp).toContain(`href="${MONITOR_CONFIG.test.monthlyPaymentLink}"`);
+    expect(lp).not.toContain(OWNER_MONTHLY_LINK);
+    expect(lp).not.toContain(OWNER_ANNUAL_LINK);
     expect(text(html(files, 'tokushoho'))).toContain('テスト用ダミー');
   });
 
@@ -653,11 +683,12 @@ describe.each([
     }
   });
 
-  it('アプリは現在ログイン不要で公開されている事実を、LP・規約・特商法で隠さない', () => {
+  it('購入者ゲート導入後の事実と一致: 「ログイン不要で誰でも使える・機能制限なし」という旧表記を残さず、契約期間中に利用できると書く', () => {
     for (const p of ['index', 'terms', 'tokushoho'] as const) {
-      expect(text(html(files, p)), p).toContain('ログイン不要');
-      expect(text(html(files, p)), p).toMatch(/機能制限(は|も)設けていません/);
+      expect(text(html(files, p)), p).not.toMatch(/機能制限(は|も)設けていません|ログイン不要のウェブアプリとして公開/);
     }
+    expect(text(html(files, 'terms'))).toContain('ご契約期間中');
+    expect(text(html(files, 'tokushoho'))).toContain('ご契約期間中');
   });
 
   it('外部リソースを読み込まない（外部CSS・外部スクリプト・外部画像なし。Cookie/解析なし）', () => {
@@ -685,6 +716,10 @@ describe.each([
       if (h.startsWith('mailto:') || h.startsWith('https://buy.stripe.com/') || h.startsWith('https://billing.stripe.com/')) continue;
       if (h === cfg.appUrl || h.startsWith(cfg.appUrl)) continue; // アプリ・canonical
       if (h.startsWith(`${BASE}icons/`)) continue;
+      if (h.startsWith('#')) {
+        expect(all, h).toContain(`id="${h.slice(1)}"`); // ページ内リンクは実在する見出しへ
+        continue;
+      }
       expect(internal.has(h), h).toBe(true);
     }
     for (const m of all.matchAll(/<img src="([^"]+)"/g)) {

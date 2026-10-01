@@ -1,5 +1,5 @@
 /**
- * 「道の駅ナビ 全国版」新リリース・モニター販売サイトの静的HTML生成（純関数）。
+ * 「道の駅ナビ 全国版」販売サイト（月額プラン・年間プラン）の静的HTML生成（純関数）。
  *
  * - 出力は静的HTML（外部リソース読み込み・Cookie・解析ツールなし）。JavaScriptは、受付中のLPにだけ入る
  *   小さなインラインスクリプト1つ（URLのutm_*をStripe決済リンクのclient_reference_idへ引き継ぎ、
@@ -11,6 +11,7 @@
  *   作れないため、アクセス制御があるかのような表現は一切しない。
  */
 import { MONITOR_CONFIG, TEST_OWNER_DUMMY, type MonitorConfig, type OwnerLegalInfo, type StripeUrls } from './config';
+import { pricingText, type PricingText } from './pricing';
 
 export type SiteMode = 'live' | 'test';
 
@@ -49,13 +50,14 @@ export function resolveSite(cfg: MonitorConfig, mode: SiteMode): ResolvedSite {
   if (owner.phoneDisclosure === null) ownerMissing.push('電話番号の開示方法');
   else if (owner.phoneDisclosure === 'published' && !filled(owner.phone)) ownerMissing.push('電話番号');
   if (!filled(owner.supportEmail) || !EMAIL_RE.test(owner.supportEmail)) ownerMissing.push('お問い合わせメール');
-  if (owner.monitorPriceTaxInclusive === null) ownerMissing.push('税込・税別の別');
+  if (owner.priceTaxInclusive === null) ownerMissing.push('税込・税別の別');
   if (!filled(owner.refundPolicy)) ownerMissing.push('返金・キャンセル条件');
   if (!filled(owner.effectiveDate) || !DATE_RE.test(owner.effectiveDate)) ownerMissing.push('制定日');
   const urlMissing: string[] = [];
   const linkRe = mode === 'test' ? TEST_PAYMENT_LINK_RE : LIVE_PAYMENT_LINK_RE;
   const portalRe = mode === 'test' ? TEST_PORTAL_RE : LIVE_PORTAL_RE;
-  if (!filled(urls.paymentLink) || !linkRe.test(urls.paymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link' : 'Live Payment Link');
+  if (!filled(urls.monthlyPaymentLink) || !linkRe.test(urls.monthlyPaymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link（月額）' : 'Live Payment Link（月額）');
+  if (!filled(urls.annualPaymentLink) || !linkRe.test(urls.annualPaymentLink)) urlMissing.push(mode === 'test' ? 'Test Payment Link（年間）' : 'Live Payment Link（年間）');
   if (!filled(urls.portalLoginUrl) || !portalRe.test(urls.portalLoginUrl)) urlMissing.push(mode === 'test' ? 'Test Customer Portal' : 'Live Customer Portal');
   //: Liveでは、Ownerの「販売開始」承認があるまで受付中にしない（testモード=公開しないQAビルドは対象外）
   const launchMissing = mode === 'live' && !cfg.salesLaunchApproved ? ['Ownerの販売開始承認'] : [];
@@ -70,7 +72,6 @@ export function evaluateSalesGate(cfg: MonitorConfig, mode: SiteMode): SalesGate
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-const yen = (n: number): string => `${n}円`;
 
 /** 'YYYY-MM-DD' → 'YYYY年M月D日'（形式が不正なら空文字） */
 export function jpDate(d: string | null): string {
@@ -78,12 +79,15 @@ export function jpDate(d: string | null): string {
   return m ? `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日` : '';
 }
 
-/** 新リリース・モニター価格の税の扱い（Owner確認済みの構造化された値から生成。自由記述にしない） */
-export function taxSentence(cfg: MonitorConfig, owner: OwnerLegalInfo): string | null {
-  if (owner.monitorPriceTaxInclusive === null) return null;
-  return owner.monitorPriceTaxInclusive
-    ? `新リリース・モニター価格（月額${yen(cfg.monitorPriceYen)}）は税込です。`
-    : `新リリース・モニター価格（月額${yen(cfg.monitorPriceYen)}）は税別です（別途、消費税がかかります）。`;
+/** 販売価格の税の扱い（Owner確認済みの構造化された値から生成。自由記述にしない） */
+export function taxSentence(_cfg: MonitorConfig, owner: OwnerLegalInfo): string | null {
+  if (owner.priceTaxInclusive === null) return null;
+  return owner.priceTaxInclusive ? '表示価格（月額プラン・年間プラン）は税込です。' : '表示価格（月額プラン・年間プラン）は税別です（別途、消費税がかかります）。';
+}
+
+/** このサイトの料金表示（税込/税別は事業者情報が確認済みのときだけ付ける） */
+function priceOf(site: ResolvedSite, cfg: MonitorConfig): PricingText {
+  return pricingText(cfg.pricing, site.gate.ownerReady ? site.owner.priceTaxInclusive : null);
 }
 
 const CSS = `
@@ -148,14 +152,14 @@ h1,h2,.lead,.cards li{text-wrap:balance;word-break:auto-phrase}
 .checks li::before{content:"✓";position:absolute;left:14px;top:12px;color:#2e7d32;font-weight:800}
 .chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:.8em 0}
 .chips li{background:#e8f5e9;color:#1b5e20;border-radius:999px;padding:6px 16px;font-weight:700;margin:0}
-.pricebox{background:#fff;border:3px solid #2e7d32;border-radius:16px;padding:18px 16px;text-align:center}
-.pricebox p{margin:.3em 0}
-.pricebox .old{color:#5a6a5a;font-size:1rem}
-.pricebox .old s{font-size:1.15rem}
-.pricebox .planname{display:inline-block;background:#2e7d32;color:#fff;border-radius:999px;padding:2px 14px;font-weight:700;font-size:.95rem}
-.pricebox .now{font-size:2.6rem;font-weight:900;line-height:1.2;color:#1b5e20}
-.pricebox .now small{font-size:1rem;font-weight:700}
-.pricebox .off span{display:inline-block;background:#c62828;color:#fff;border-radius:8px;padding:2px 14px;font-weight:900;font-size:1.15rem}
+.plans{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0}
+.plan-card{background:#fff;border:3px solid #2e7d32;border-radius:16px;padding:14px 16px 16px}
+.plan-card p{margin:.3em 0}
+.plan-name{display:inline-block;background:#2e7d32;color:#fff;border-radius:999px;padding:2px 14px;font-weight:700;font-size:.95rem}
+.plan-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px dashed #cfd8cb;padding:4px 0}
+.plan-row .when{font-weight:700;color:#4a5a4a}
+.plan-row .amt{font-size:1.6rem;font-weight:900;color:#1b5e20;white-space:nowrap}
+.plan-row .amt small{font-size:.85rem;font-weight:700}
 .final{background:#fff;border:1px solid #dfe6dc;border-radius:16px;padding:8px 16px 18px;margin-top:28px;text-align:center}
 .final h2{border-left:0;padding-left:0;text-align:center}
 .final .big{font-size:1.6rem;color:#1b5e20}
@@ -163,7 +167,7 @@ h1,h2,.lead,.cards li{text-wrap:balance;word-break:auto-phrase}
 .sticky-cta{transition:transform .2s ease,visibility 0s}
 body.cta-in-view .sticky-cta{transform:translateY(110%);visibility:hidden;transition:transform .2s ease,visibility 0s .2s}
 .sticky-cta .btn{margin:0;max-width:520px;margin-inline:auto}
-@media(min-width:640px){.price{grid-template-columns:1fr 1fr}.cards{grid-template-columns:1fr 1fr}.btn{display:inline-block;padding:14px 28px}.btn.cta{display:block;max-width:420px;margin-inline:auto}.sticky-cta{display:none}body.has-sticky{padding-bottom:0}h1{font-size:2.1rem}}
+@media(min-width:640px){.price{grid-template-columns:1fr 1fr}.plans{grid-template-columns:1fr 1fr}.cards{grid-template-columns:1fr 1fr}.btn{display:inline-block;padding:14px 28px}.btn.cta{display:block;max-width:420px;margin-inline:auto}.sticky-cta{display:none}body.has-sticky{padding-bottom:0}h1{font-size:2.1rem}}
 `;
 
 /**
@@ -194,7 +198,7 @@ export const CHECKOUT_ATTRIBUTION_JS =
  * 決済完了直後のThanksページにだけ入る小さなインラインスクリプト。
  * StripeのPayment Link redirect URLに付与された ?session_id=（Checkout Session ID、
  * 高エントロピーでStripe以外には推測不可能）を、このドメイン（アプリ本体と同一オリジン）の
- * localStorageへ1回だけ保存する。これが「月額250円の有効な購入者だけアプリを開ける」
+ * localStorageへ1回だけ保存する。これが「有効な契約者（月額プラン・年間プラン）だけアプリを開ける」
  * ゲート（src/lib/accessCredential.ts）の資格情報になる。キー名は両者で一致させる必要がある。
  * 保存後はURLから消す（ブラウザ履歴・共有リンクに残さない）。Cookie・外部送信は行わない。
  */
@@ -234,7 +238,7 @@ function page(p: PageInput): string {
     site.mode === 'test'
       ? '<div class="banner test">TEST BUILD（Stripe Test mode・ダミー事業者情報）— 公開・販売には使用しないでください</div>'
       : !site.gate.open
-        ? `<div class="banner closed">${site.gate.ownerReady ? 'お申込みの受付を準備中です（受付開始までお待ちください）' : '現在、新リリース・モニターの受付準備中です（受付開始前のため、掲載内容は準備中の項目を含みます）'}</div>`
+        ? `<div class="banner closed">${site.gate.ownerReady ? 'お申込みの受付を準備中です（受付開始までお待ちください）' : '現在、お申込みの受付準備中です（受付開始前のため、掲載内容は準備中の項目を含みます）'}</div>`
         : isPreview
           ? '<div class="banner test">公開前の確認用プレビューです（検索エンジンには表示されません）</div>'
           : '';
@@ -269,7 +273,7 @@ ${banner}
 ${p.body}
 </main>
 <footer>
-<nav aria-label="運営情報">${nav('', '新リリース・モニター募集')}${nav('terms/', '利用規約')}${nav('privacy/', 'プライバシーポリシー')}${nav('tokushoho/', '特定商取引法に基づく表記')}${nav('contact/', 'お問い合わせ・改善要望')}${site.gate.open && filled(site.urls.portalLoginUrl) ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
+<nav aria-label="運営情報">${nav('', '料金・お申込み')}${nav('terms/', '利用規約')}${nav('privacy/', 'プライバシーポリシー')}${nav('tokushoho/', '特定商取引法に基づく表記')}${nav('contact/', 'お問い合わせ・改善要望')}${site.gate.open && filled(site.urls.portalLoginUrl) ? `<a href="${esc(site.urls.portalLoginUrl)}" rel="noopener">契約内容の確認・解約</a>` : ''}</nav>
 <small>${esc(cfg.productName)}</small>
 </footer>
 ${checkoutScript ? `<script>${CHECKOUT_ATTRIBUTION_JS}</script>\n` : ''}${p.captureSession ? `<script>${SESSION_CAPTURE_JS}</script>\n` : ''}</body>
@@ -295,9 +299,30 @@ function mailto(email: string, subject: string, bodyText: string): string {
 // ── 共通部品 ─────────────────────────────────────────────────────────
 
 /** 購入CTA。受付中でなければ出さない（デッドリンクを公開しない）。`data-checkout` は流入元の付与に使う */
-function checkoutButton(site: ResolvedSite, cfg: MonitorConfig, extraClass = ''): string {
-  if (!site.gate.open || !filled(site.urls.paymentLink)) return '';
-  return `<a class="btn cta${extraClass ? ` ${extraClass}` : ''}" data-checkout href="${esc(site.urls.paymentLink)}" rel="noopener">月額${yen(cfg.monitorPriceYen)}で始める</a>`;
+function checkoutButton(site: ResolvedSite, cfg: MonitorConfig, plan: 'monthly' | 'annual' = 'monthly'): string {
+  const url = plan === 'monthly' ? site.urls.monthlyPaymentLink : site.urls.annualPaymentLink;
+  if (!site.gate.open || !filled(url)) return '';
+  const t = priceOf(site, cfg);
+  const label = plan === 'monthly' ? `月額プランで始める（${t.introPeriod} ${t.introPerMonth}）` : `年間プランで始める（${t.annualPerYear}）`;
+  return `<a class="btn cta${plan === 'annual' ? ' sub' : ''}" data-checkout data-plan="${plan}" href="${esc(url)}" rel="noopener">${label}</a>`;
+}
+
+/** 料金表（LPの「料金」と最後のまとめで使う）。主表示は月額2段・年間1段だけ */
+function priceTable(site: ResolvedSite, cfg: MonitorConfig, withButtons: boolean): string {
+  const t = priceOf(site, cfg);
+  return `<div class="plans">
+<div class="plan-card">
+<p class="plan-name">月額プラン</p>
+<p class="plan-row"><span class="when">${t.introPeriod}</span><span class="amt">${t.introPerMonth}<small>${t.tax}</small></span></p>
+<p class="plan-row"><span class="when">${t.regularPeriod}</span><span class="amt">${t.regularPerMonth}<small>${t.tax}</small></span></p>
+${withButtons ? checkoutButton(site, cfg, 'monthly') : ''}
+</div>
+<div class="plan-card">
+<p class="plan-name">年間プラン</p>
+<p class="plan-row"><span class="when">1年ごと</span><span class="amt">${t.annualPerYear}<small>${t.tax}</small></span></p>
+${withButtons ? checkoutButton(site, cfg, 'annual') : ''}
+</div>
+</div>`;
 }
 
 /** Customer Portal（Stripeの管理ページ）へのリンク文言。Portalで実際にできること（契約内容・お支払い方法の確認と解約）だけを書く */
@@ -319,20 +344,19 @@ const fig = (base: string, file: string, alt: string, caption: string): string =
 // ── LP ────────────────────────────────────────────────────────────────
 
 function renderLanding(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
-  const ready = site.gate.ownerReady && site.owner.monitorPriceTaxInclusive !== null;
-  const tax = ready ? (site.owner.monitorPriceTaxInclusive ? '（税込）' : '（税別）') : '';
+  const t = priceOf(site, cfg);
   const stations = cfg.stationCount.toLocaleString('en-US');
-  const cta = checkoutButton(site, cfg);
-  const closed = site.gate.open ? '' : `<div class="notice">現在、${esc(cfg.planName)}の受付準備中です。受付を開始するまで、しばらくお待ちください。</div>`;
+  const cta = checkoutButton(site, cfg, 'monthly');
+  const closed = site.gate.open ? '' : '<div class="notice">現在、お申込みの受付準備中です。受付を開始するまで、しばらくお待ちください。</div>';
   const cancel = cancelMethod(site);
   return `
 <section class="hero">
-<span class="eyebrow">${esc(cfg.planName)}｜月額${yen(cfg.monitorPriceYen)}${tax}</span>
+<span class="eyebrow">月額プラン｜${t.introPeriod} ${t.introPerMonth}${t.tax}</span>
 <h1><span class="nb">道の駅巡りを、</span><span class="nb">もっと楽しく！</span></h1>
 <p class="lead"><b>全国${stations}施設を収録</b><br>「${esc(cfg.productName)}」</p>
 <p>探す・記録する・巡る。道の駅ドライブをこれひとつで。</p>
 ${cta}${closed}
-${site.gate.open ? `<p class="mini">月額${yen(cfg.monitorPriceYen)}${tax}・毎月自動更新・いつでも解約できます</p>` : ''}
+${site.gate.open ? `<p class="mini">${t.regularPeriod}は${t.regularPerMonth}${t.tax}・いつでも解約できます。<a href="#price">年間プラン ${t.annualPerYear}${t.tax}</a>もあります。</p>` : ''}
 ${fig(base, '01-map.jpg', `${cfg.appName}の地図画面。全国の道の駅が地図上のマークで表示されている`, '地図で道の駅を探せます（実際の画面）')}
 </section>
 
@@ -366,32 +390,28 @@ ${fig(base, '02-station.jpg', `${cfg.appName}の駅の詳細画面。道の駅�
 ${fig(base, '03-trip.jpg', `${cfg.appName}の旅行中の画面。次に向かう道の駅と、Googleマップで案内を開くボタンが表示されている`, 'ルートに沿って、次の道の駅へ（実際の画面）')}
 <p class="small">周辺スポットはOpenStreetMapのデータに基づく表示で、すべての店舗・施設を網羅するものではありません。</p>
 
-<h2>料金</h2>
-<div class="pricebox">
-<p class="old">正式版の予定価格　<s>月額${yen(cfg.plannedFullPriceYen)}${tax}</s></p>
-<p class="planname">${esc(cfg.planName)}</p>
-<p class="now">月額${yen(cfg.monitorPriceYen)}<small>${tax}</small></p>
-<p class="off"><span>50% OFF</span></p>
-${cta}
-<p class="mini">毎月自動更新・いつでも解約できます。お申込み前に<a href="${base}monitor/terms/">利用規約</a>・<a href="${base}monitor/tokushoho/">特定商取引法に基づく表記</a>をご確認ください。</p>
-</div>
+<h2 id="price">料金</h2>
+${priceTable(site, cfg, true)}
+<p class="mini">自動更新・いつでも解約できます。お申込み前に<a href="${base}monitor/terms/">利用規約</a>・<a href="${base}monitor/tokushoho/">特定商取引法に基づく表記</a>をご確認ください。</p>
 
-<h2>新リリース・モニターについて</h2>
-<p>この月額${yen(cfg.monitorPriceYen)}のプランは、新リリースにあわせた<b>有料のモニター募集</b>です（無料ではありません）。モニター価格でご利用いただき、使ってみた感想や改善してほしい点について、フィードバックをお願いすることがあります。</p>
+<h2>料金について</h2>
 <ul>
-<li>お申込み後は、月額${yen(cfg.monitorPriceYen)}${tax}でご利用いただけます。料金を変更する場合は、事前にお知らせします。</li>
-<li>いただいたご要望を、必ず実装するお約束はできません。</li>
+<li>${esc(t.monthlyTransition)}</li>
+<li>年間プランは、1年ごとに${t.annualPerYear}${t.tax}で自動更新されます。</li>
+<li>どちらのプランも、${cancel}いつでも解約できます。解約後は、次回以降の請求は発生しません。</li>
 </ul>
+<p class="small">${esc(t.annualComparison)}</p>
 <div class="note">
 <b>ご確認いただきたいこと</b>
 <ul>
-<li>アプリ本体はログイン不要のウェブアプリとして公開されており、モニター専用の機能制限は設けていません。</li>
+<li>お申込み後、お支払い完了のご案内ページからアプリを開くと、その端末のブラウザで全国版をご利用いただけます。ご契約が終了すると、ご利用いただけなくなります。</li>
 <li>営業時間・施設情報・ルートの所要時間は目安です。現地の案内や道路状況を優先してください。</li>
 </ul>
 </div>
 
 <h2>よくある質問</h2>
-<details><summary>月額料金はいくらですか？</summary><p>${esc(cfg.planName)}として、月額${yen(cfg.monitorPriceYen)}${tax}です。</p></details>
+<details><summary>料金はいくらですか？</summary><p>${esc(t.monthlySummary)}です。${esc(t.annualSummary)}もお選びいただけます。</p></details>
+<details><summary>3か月目から、申し込み直しが必要ですか？</summary><p>不要です。${esc(t.monthlyTransition)}</p></details>
 <details><summary>解約できますか？</summary><p>${cancel}、いつでも解約できます。解約後は、次回以降の請求は発生しません。${PORTAL_HOWTO}</p></details>
 <details><summary>スマートフォンで使えますか？</summary><p>はい。スマートフォンの画面に合わせて作っています。パソコンでもご利用いただけます。</p></details>
 <details><summary>iPhone / Androidで使えますか？</summary><p>iPhone（Safari）、Android（Chrome）などの最新のブラウザでご利用いただけます。</p></details>
@@ -404,16 +424,16 @@ ${cta}
 <section class="final">
 <h2>次のドライブを、もっと楽しく。</h2>
 <p class="lead">「${esc(cfg.productName)}」</p>
-<p>${esc(cfg.planName)}<br><b class="big">月額${yen(cfg.monitorPriceYen)}${tax}</b></p>
-${cta}
+${priceTable(site, cfg, true)}
 </section>
-${site.gate.open ? `<div class="sticky-cta">${checkoutButton(site, cfg)}</div>` : ''}
+${site.gate.open ? `<div class="sticky-cta">${checkoutButton(site, cfg, 'monthly')}</div>` : ''}
 `;
 }
 
 // ── 利用規約 ────────────────────────────────────────────────────────
 
 function renderTerms(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
+  const t = priceOf(site, cfg);
   const taxText = site.gate.ownerReady ? taxSentence(cfg, site.owner) : null;
   const tax = taxText ? `<p>${esc(taxText)}</p>` : '<p>税の表示は受付開始時に掲載します。</p>';
   const refund = site.gate.ownerReady && filled(site.owner.refundPolicy) ? `<p>${esc(site.owner.refundPolicy)}</p>` : '<p>返金・キャンセル条件は受付開始時に掲載します。</p>';
@@ -424,23 +444,23 @@ function renderTerms(site: ResolvedSite, cfg: MonitorConfig, base: string): stri
 
 <h2>第1条（本サービスの内容）</h2>
 <ol>
-<li>本サービスは、次の内容で構成されます。（1）全国版「${esc(cfg.appName)}」（ウェブアプリ）の利用　（2）新リリース・モニターとしての参加　（3）改善要望・フィードバックの送信　（4）今後の改善・アップデートに対して意見を反映する機会</li>
-<li>アプリ本体は、この規約の制定時点で、ログイン不要のウェブアプリとして公開されています。本サービスの利用にアカウント登録は必要なく、新リリース・モニター専用の機能制限も設けていません。</li>
+<li>本サービスは、全国版「${esc(cfg.appName)}」（ウェブアプリ）を、ご契約期間中にご利用いただけるサービスです。改善要望・フィードバックをお送りいただくこともできます。</li>
+<li>本サービスの利用にアカウント登録は必要ありません。お支払い完了のご案内ページからアプリを開いた端末のブラウザで、ご契約期間中ご利用いただけます。</li>
 <li>運営者は、送信された改善要望を実装する義務を負いません。要望の採否や時期は、運営者が判断します。</li>
 </ol>
 
 <h2>第2条（料金・お支払い）</h2>
 <ol>
-<li>新リリース・モニター価格は、月額${yen(cfg.monitorPriceYen)}です。</li>
-<li>正式版の価格として月額${yen(cfg.plannedFullPriceYen)}を予定していますが、これは予定であり、正式版の内容・価格は変更される場合があります。</li>
-<li>料金は毎月自動更新で、お申込み日を基準に、Stripeを通じてクレジットカード等で請求されます。お支払い情報はStripeが取り扱い、運営者はカード番号を保有しません。</li>
+<li>料金は、次のとおりです。（1）月額プラン：${t.introPeriod}は${t.introPerMonth}、${t.regularPeriod}は${t.regularPerMonth}　（2）年間プラン：${t.annualPerYear}</li>
+<li>${esc(t.monthlyTransition)}</li>
+<li>月額プランは毎月、年間プランは1年ごとに、お申込み日を基準に自動更新され、Stripeを通じてクレジットカード等で請求されます。お支払い情報はStripeが取り扱い、運営者はカード番号を保有しません。</li>
 <li>料金を変更する場合は、変更の前にお知らせします。</li>
 </ol>
 ${tax}
 
 <h2>第3条（解約）</h2>
 <ol>
-<li>新リリース・モニターは、${cancel}、いつでも解約できます。</li>
+<li>月額プラン・年間プランとも、${cancel}、いつでも解約できます。</li>
 <li>解約後は、次回以降の請求は発生しません。</li>
 </ol>
 
@@ -464,7 +484,7 @@ ${refund}
 </ol>
 
 <h2>第7条（サービスの変更・終了）</h2>
-<p>運営者は、新リリース・モニターの募集や本サービスの内容を、お知らせのうえで変更または終了することがあります。</p>
+<p>運営者は、本サービスの内容を、お知らせのうえで変更または終了することがあります。</p>
 
 <h2>第8条（データの出典）</h2>
 <p>地図・周辺スポットのデータには、© OpenStreetMap contributors（ODbL）などを利用しています。</p>
@@ -529,6 +549,7 @@ function renderPrivacy(site: ResolvedSite, cfg: MonitorConfig, base: string): st
 
 function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): string {
   const ownerReady = site.gate.ownerReady;
+  const t = priceOf(site, cfg);
   const cancel = `${cancelMethod(site)}、いつでも解約できます。解約後は、次回以降の請求は発生しません。${PORTAL_HOWTO}`;
   const email = ownerReady && filled(site.owner.supportEmail) ? esc(site.owner.supportEmail) : '受付開始時に掲載します';
   const timing = 'お支払い完了後、すぐにご利用いただけます（お支払い完了後のご案内ページから、アプリを開けます）。';
@@ -541,11 +562,11 @@ function renderTokushoho(site: ResolvedSite, cfg: MonitorConfig, base: string): 
 <dt>電話番号</dt><dd>${disclosure(site, site.owner.phoneDisclosure, site.owner.phone)}</dd>
 <dt>メールアドレス</dt><dd>${email}</dd>
 <dt>サービス名</dt><dd>${esc(cfg.productName)}</dd>
-<dt>サービスの内容</dt><dd>全国版「${esc(cfg.appName)}」（ウェブアプリ）の利用、新リリース・モニターとしての参加、改善要望・フィードバックの送信、今後の改善・アップデートに意見を反映する機会。アプリ本体は現時点でログイン不要のウェブアプリとして公開されており、新リリース・モニター専用の機能制限は設けていません。</dd>
-<dt>販売価格</dt><dd>新リリース・モニター価格 月額${yen(cfg.monitorPriceYen)}。正式版は月額${yen(cfg.plannedFullPriceYen)}を予定しています（予定であり、変更される場合があります）。${site.gate.ownerReady && taxSentence(cfg, site.owner) ? esc(taxSentence(cfg, site.owner) ?? '') : '税の表示は受付開始時に掲載します。'}</dd>
+<dt>サービスの内容</dt><dd>全国版「${esc(cfg.appName)}」（ウェブアプリ）を、ご契約期間中にご利用いただけるサービス（改善要望・フィードバックの送信を含みます）。</dd>
+<dt>販売価格</dt><dd>月額プラン：${t.introPeriod} ${t.introPerMonth}、${t.regularPeriod} ${t.regularPerMonth}（${t.regularPeriod}の料金へは自動で切り替わります）。年間プラン：${t.annualPerYear}。${site.gate.ownerReady && taxSentence(cfg, site.owner) ? esc(taxSentence(cfg, site.owner) ?? '') : '税の表示は受付開始時に掲載します。'}</dd>
 <dt>販売価格以外の必要料金</dt><dd>インターネット接続にかかる通信料等は、お客様のご負担となります。</dd>
 <dt>お支払い方法</dt><dd>Stripeの決済ページに表示されるお支払い方法（クレジットカード等）。</dd>
-<dt>お支払い時期</dt><dd>お申込み時に初回のお支払いが発生し、以降は毎月、お申込み日を基準に自動更新されます。</dd>
+<dt>お支払い時期</dt><dd>お申込み時に初回のお支払いが発生し、以降は、月額プランは毎月、年間プランは1年ごとに、お申込み日を基準に自動更新されます。</dd>
 <dt>サービス提供時期</dt><dd>${timing}</dd>
 <dt>解約</dt><dd>${cancel}</dd>
 <dt>返金・キャンセル</dt><dd>${ownerValue(site, site.owner.refundPolicy, '受付開始時に掲載します')}</dd>
@@ -562,14 +583,14 @@ function renderContact(site: ResolvedSite, cfg: MonitorConfig): string {
   if (!site.gate.ownerReady || !filled(site.owner.supportEmail)) {
     return `
 <h1>お問い合わせ・改善要望</h1>
-<div class="notice">お問い合わせ窓口は、新リリース・モニターの受付開始時に掲載します。</div>
+<div class="notice">お問い合わせ窓口は、受付開始時に掲載します。</div>
 `;
   }
   const email = site.owner.supportEmail;
   const template = '■ご要望・不具合の内容:\n\n\n■使っていた画面・操作:\n\n\n■お使いの端末・ブラウザ:\n';
   return `
 <h1>お問い合わせ・改善要望</h1>
-<p>新リリース・モニターの改善要望・不具合のご報告、ご契約やお支払いに関するお問い合わせは、メールでお送りください。</p>
+<p>改善要望・不具合のご報告、ご契約やお支払いに関するお問い合わせは、メールでお送りください。</p>
 <p><a class="btn" href="${esc(mailto(email, `【${cfg.productName}】改善要望`, template))}">改善要望をメールで送る</a></p>
 <p><a class="btn sub" href="${esc(mailto(email, `【${cfg.productName}】不具合のご報告`, template))}">不具合をメールで報告する</a></p>
 <p><a class="btn sub" href="${esc(mailto(email, `【${cfg.productName}】お問い合わせ`, ''))}">その他のお問い合わせ</a></p>
@@ -592,7 +613,8 @@ function renderThanks(site: ResolvedSite, cfg: MonitorConfig, base: string): str
   return `
 <h1><span class="nb">お申し込み</span><span class="nb">ありがとうございます</span></h1>
 <p class="lead"><b>${esc(cfg.productName)}</b></p>
-<p>月額${yen(cfg.monitorPriceYen)}の${esc(cfg.planName.replace('価格', ''))}に、ご参加いただきありがとうございます。お支払いが完了した方へのご案内です。</p>
+<p>「${esc(cfg.productName)}」をお申し込みいただき、ありがとうございます。お支払いが完了した方へのご案内です。</p>
+<p class="small">アプリは、このページの「${esc(cfg.appName)}を開く」から開いてください（このページを開いた端末のブラウザでご利用いただけます）。</p>
 
 <p><a class="btn cta" href="${esc(cfg.appUrl)}" rel="noopener">${esc(cfg.appName)}を開く</a></p>
 <p class="small">アカウント登録は不要です。記録はお使いの端末に保存されます。</p>
@@ -626,14 +648,15 @@ export interface RenderOptions {
 
 export function renderMonitorSite(cfg: MonitorConfig = MONITOR_CONFIG, opts: RenderOptions): Record<string, string> {
   const site = resolveSite(cfg, opts.mode);
+  const lpPrice = priceOf(site, cfg);
   const base = opts.base.endsWith('/') ? opts.base : `${opts.base}/`;
   const mk = (path: string, title: string, description: string, body: string) =>
     page({ site, cfg, base, path, title, description, body });
   const files: Record<string, string> = {
     'monitor/index.html': mk(
       'monitor/',
-      `${cfg.productName}｜全国${cfg.stationCount.toLocaleString('en-US')}施設を収録・月額${yen(cfg.monitorPriceYen)}で始める`,
-      `全国${cfg.stationCount.toLocaleString('en-US')}施設を収録した「${cfg.productName}」。探す・記録する・巡る、道の駅ドライブがこれひとつで。${cfg.planName}は月額${yen(cfg.monitorPriceYen)}${site.gate.ownerReady && site.owner.monitorPriceTaxInclusive ? '（税込）' : ''}。`,
+      `${cfg.productName}｜全国${cfg.stationCount.toLocaleString('en-US')}施設を収録・${lpPrice.introPeriod} ${lpPrice.introPerMonth}`,
+      `全国${cfg.stationCount.toLocaleString('en-US')}施設を収録した「${cfg.productName}」。探す・記録する・巡る、道の駅ドライブがこれひとつで。${lpPrice.monthlySummary}。${lpPrice.annualSummary}。`,
       renderLanding(site, cfg, base),
     ),
     'monitor/terms/index.html': mk('monitor/terms/', `利用規約｜${cfg.productName}`, `${cfg.productName}の利用規約`, renderTerms(site, cfg, base)),

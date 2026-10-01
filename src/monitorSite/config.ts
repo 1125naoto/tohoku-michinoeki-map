@@ -1,12 +1,12 @@
 /**
- * 「道の駅ナビ 全国版」新リリース・モニター販売サイトの設定（月額250円・Stripe Payment Linkで決済）。
+ * 「道の駅ナビ 全国版」販売サイトの設定（月額プラン・年間プラン。Stripe Payment Linkで決済）。
  *
  * このファイルは**公開リポジトリ**にコミットされる。したがって:
  *  - 事業者情報は、Ownerが既に公開している特商法表記と同一の事実だけを入れる（住所・電話は請求開示方式のため保持しない）。
  *    未確認の個人情報を推測で入れない。
  *  - Stripeの秘密鍵・Webhook秘密は絶対に入れない。Payment Link / Customer Portal のURLは
  *    公開前提のURLで秘密ではない。
- *  - `owner` の必須項目と `live.paymentLink` が揃うまで、販売サイトは「受付準備中」表示のままになり、
+ *  - `owner` の必須項目と `live` の購入URL（月額・年間のPayment Link）が揃うまで、販売サイトは「受付準備中」表示のままになり、
  *    申込ボタンは出ない（evaluateSalesGate）。テスト用URLが本番ビルドへ混入することもない。
  *    `live.portalLoginUrl`（解約・お支払い管理ページ）は任意。未設定の間は、解約はお問い合わせメールで受け付ける旨を表示する。
  */
@@ -21,8 +21,8 @@ export interface OwnerLegalInfo {
   phone: string | null;
   /** 購入者サポート・フィードバックの受付メール */
   supportEmail: string | null;
-  /** 先行モニター価格（月額250円）が税込か。true=税込 / false=税別 / null=未確認。Owner確認が必要 */
-  monitorPriceTaxInclusive: boolean | null;
+  /** 販売価格（月額プラン・年間プランとも）が税込か。true=税込 / false=税別 / null=未確認。Owner確認が必要 */
+  priceTaxInclusive: boolean | null;
   /** 返金・キャンセル条件（特商法の必須記載）。Owner確認が必要 */
   refundPolicy: string | null;
   /** 制定・施行日 YYYY-MM-DD */
@@ -32,24 +32,37 @@ export interface OwnerLegalInfo {
 }
 
 export interface StripeUrls {
-  /** Stripe Payment Link（購入ページ） */
-  paymentLink: string | null;
+  /** 月額プランのStripe Payment Link（導入価格のPrice。3か月目からの切替は scripts/apply-intro-schedules.mjs） */
+  monthlyPaymentLink: string | null;
+  /** 年間プランのStripe Payment Link */
+  annualPaymentLink: string | null;
   /** Stripe Customer Portal のログインページ（解約・お支払い管理）。任意（未設定なら、解約はメールで受け付ける表示になる） */
   portalLoginUrl: string | null;
+}
+
+export interface PricingConfig {
+  monthly: {
+    /** 最初の introMonths か月（= 最初の introMonths 回のお支払い）の月額 */
+    introPriceYen: number;
+    introMonths: number;
+    /** introMonths+1 か月目以降の月額（Stripeのサブスクリプションスケジュールで自動的に切り替わる） */
+    regularPriceYen: number;
+  };
+  annual: {
+    priceYen: number;
+  };
 }
 
 export interface MonitorConfig {
   appName: string;
   /** 商品名（Stripe商品名・特商法のサービス名と一致させる） */
   productName: string;
-  /** 月額250円のプランの呼称（「無料モニター」と誤認させない） */
-  planName: string;
   /** 「全国○○施設を収録」の施設数。アプリのデータ件数と一致することをテストで保証する */
   stationCount: number;
   /** 公開アプリ本体のURL（販売LPには載せず、決済後のご案内ページにのみ載せる） */
   appUrl: string;
-  monitorPriceYen: number;
-  plannedFullPriceYen: number;
+  /** 料金（税込/税別は owner.priceTaxInclusive）。文言はすべて pricing.ts がここから生成する */
+  pricing: PricingConfig;
   /**
    * Ownerが「販売開始」を承認したか。falseの間は、Live URLや事業者情報が揃っていても購入ボタンを出さず
    * 「受付準備中」のまま（誤って実課金の導線を公開しないための最後のスイッチ）。
@@ -65,11 +78,13 @@ export interface MonitorConfig {
 export const MONITOR_CONFIG: MonitorConfig = {
   appName: '道の駅ナビ',
   productName: '道の駅ナビ 全国版',
-  planName: '新リリース・モニター価格',
   stationCount: 1237,
   appUrl: 'https://1125naoto.github.io/tohoku-michinoeki-map/',
-  monitorPriceYen: 250,
-  plannedFullPriceYen: 500,
+  //: 2026-10-01 Owner決定の料金体系（「先行モニター／正式版予定価格」方式は終了）
+  pricing: {
+    monthly: { introPriceYen: 250, introMonths: 2, regularPriceYen: 500 },
+    annual: { priceYen: 4980 },
+  },
   //: 2026-09-20: Ownerの本番公開指示（Production公開→Payment CTA・Customer Portal CTAの本番確認→Stripe「リンクを更新する」）
   //: をもって販売開始を承認。誤って戻したい場合はfalseにする（購入ボタンとStripeへのリンクが全ページから消え、noindexの受付準備中に戻る）。
   salesLaunchApproved: true,
@@ -83,23 +98,28 @@ export const MONITOR_CONFIG: MonitorConfig = {
     phoneDisclosure: 'on_request',
     phone: null,
     supportEmail: 'otakarafinder.info@gmail.com',
-    monitorPriceTaxInclusive: true,
+    priceTaxInclusive: true,
     refundPolicy: 'デジタルサービス（月額サービス）の性質上、お支払い済みの期間については、原則として返金いたしません。ただし、法令上必要な場合、重複してご請求した場合、運営者側の決済上の事故があった場合などは、この限りではありません。その場合は、お問い合わせください。',
     effectiveDate: '2026-09-19',
     responseTimeNote: null,
   },
-  //: Stripe Live: 販売に使うのは、Ownerが Dashboard で作成した Payment Link（商品「道の駅ナビ 全国版」・￥250/月）と、
-  //: その Customer Portal。公開URLで秘密ではない。
+  //: Stripe Live（商品「道の駅ナビ 全国版」prod_VHqkd8f4kNSm2y）。公開URLで秘密ではない。
+  //: 月額: plink_1ULl7HICXxuNXmZyoI24UDAL（price_1ULl7FICXxuNXmZymoNS8hQH ¥250/月。3か月目から
+  //:   price_1ULkA5ICXxuNXmZyTAcQqpvZ ¥500/月へ scripts/apply-intro-schedules.mjs が自動で切り替える）
+  //: 年間: plink_1ULkBFICXxuNXmZyW4nGOkkm（price_1ULkA7ICXxuNXmZybRGXYs1h ¥4,980/年）
+  //: 旧・月額250円固定のPayment Link（plink_1UHH4S…, https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00）は新規販売に使わない。
   live: {
-    // Ownerが本番（Live）で作成済みのPayment Link（商品「道の駅ナビ 全国版」・￥250/月）。公開URLで秘密ではない。
-    paymentLink: 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00',
+    monthlyPaymentLink: 'https://buy.stripe.com/bJe00kbKNgYW6PQ95W7Zu09',
+    annualPaymentLink: 'https://buy.stripe.com/9B6fZi5mp9wu7TU4PG7Zu08',
     // 同じStripe Live上のCustomer Portal公開ログインURL（購入者が契約内容・お支払い方法の確認と解約を行う）。公開URLで秘密ではない。
     portalLoginUrl: 'https://billing.stripe.com/p/login/bJe5kE3eheQO8XYaa07Zu00',
   },
   test: {
     // Stripe Test mode（実課金は発生しない）: prod_VHnEmi8owLfA7e / price_1UHDe0EtgcvJ6JiZ0hg8uRsq /
     // plink_1UHDeEEtgcvJ6JiZDk1SLopC / bpc_1UHDeSEtgcvJ6JiZOBvG8giu
-    paymentLink: 'https://buy.stripe.com/test_eVq7sL3sL2KKaq1f5n0RG00',
+    // 新料金のTest mode用オブジェクトは無い（Live CLIにTest modeの権限が無い）ため、QAビルドでは両プランとも既存のTest用リンクを使う。
+    monthlyPaymentLink: 'https://buy.stripe.com/test_eVq7sL3sL2KKaq1f5n0RG00',
+    annualPaymentLink: 'https://buy.stripe.com/test_eVq7sL3sL2KKaq1f5n0RG00',
     portalLoginUrl: 'https://billing.stripe.com/p/login/test_eVq7sL3sL2KKaq1f5n0RG00',
   },
 };
@@ -112,7 +132,7 @@ export const TEST_OWNER_DUMMY: OwnerLegalInfo = {
   phoneDisclosure: 'on_request',
   phone: null,
   supportEmail: 'test-dummy@example.invalid',
-  monitorPriceTaxInclusive: true,
+  priceTaxInclusive: true,
   refundPolicy: '（テスト用ダミー）返金条件',
   effectiveDate: '2000-01-01',
   responseTimeNote: null,

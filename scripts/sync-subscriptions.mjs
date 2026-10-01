@@ -3,8 +3,8 @@
  * 道の駅ナビ全国版の購入者ゲート同期スクリプト。GitHub Actions（推奨・スケジュール実行）と
  * ローカル実行の両方で動く、状態を持たない（stateless）設計。
  *
- * `stripe` CLIだけを使い、道の駅ナビの正式Payment Link（PAYMENT_LINK）に紐づく
- * Checkout Session／対象Price（PRICE_ID）のSubscriptionだけを読み取る
+ * `stripe` CLIだけを使い、道の駅ナビのPayment Link（PAYMENT_LINKS）に紐づく
+ * Checkout Session／対象Price（PRICE_IDS）のSubscriptionだけを読み取る
  * （他プロダクトのデータには一切アクセスしない）。
  *
  * 認証: GitHub Actions実行時は環境変数 STRIPE_API_KEY（GitHub Secretsに保存された、
@@ -30,8 +30,19 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const PAYMENT_LINK = 'plink_1UHH4SICXxuNXmZyihmdzOho';
-const PRICE_ID = 'price_1UHH2vICXxuNXmZyr0tSquxk';
+// 購入に使われる（使われた）Payment Link。旧リンクの購入者も解約・失効まで有効なまま扱う
+const PAYMENT_LINKS = [
+  'plink_1UHH4SICXxuNXmZyihmdzOho', // 旧: 月額250円固定（新規販売には使わない）
+  'plink_1ULl7HICXxuNXmZyoI24UDAL', // 月額プラン（最初の2か月 250円/月 → 3か月目以降 500円/月）
+  'plink_1ULkBFICXxuNXmZyW4nGOkkm', // 年間プラン（4,980円/年）
+];
+// 有効な契約として数えるPrice。月額プランは3か月目から500円のPriceへ切り替わるため、両方を含める
+const PRICE_IDS = [
+  'price_1UHH2vICXxuNXmZyr0tSquxk', // 旧: 月額250円固定
+  'price_1ULl7FICXxuNXmZymoNS8hQH', // 月額プラン 最初の2か月 250円/月
+  'price_1ULkA5ICXxuNXmZyTAcQqpvZ', // 月額プラン 3か月目以降 500円/月
+  'price_1ULkA7ICXxuNXmZybRGXYs1h', // 年間プラン 4,980円/年
+];
 const MANUAL_GRANTS_PATH = join(ROOT, 'data/access-control/manual-grants.local.json');
 const ACTIVE_JSON_PATH = join(ROOT, 'public/access-control/active.json');
 const IN_CI = process.env.GITHUB_ACTIONS === 'true';
@@ -83,22 +94,26 @@ function listAll(fetchPage) {
 }
 
 function fetchSessionToSubscriptionMap() {
-  const sessions = listAll((startingAfter) => {
-    const args = ['checkout', 'sessions', 'list', '--payment-link', PAYMENT_LINK, '--status', 'complete', '--limit', '100'];
-    if (startingAfter) args.push('--starting-after', startingAfter);
-    return stripe(args);
-  });
+  const sessions = PAYMENT_LINKS.flatMap((link) =>
+    listAll((startingAfter) => {
+      const args = ['checkout', 'sessions', 'list', '--payment-link', link, '--status', 'complete', '--limit', '100'];
+      if (startingAfter) args.push('--starting-after', startingAfter);
+      return stripe(args);
+    }),
+  );
   const map = {};
   for (const s of sessions) if (typeof s.subscription === 'string') map[s.id] = s.subscription;
   return map;
 }
 
 function fetchActiveSubscriptionIds() {
-  const subs = listAll((startingAfter) => {
-    const args = ['subscriptions', 'list', '--price', PRICE_ID, '--status', 'active', '--limit', '100'];
-    if (startingAfter) args.push('--starting-after', startingAfter);
-    return stripe(args);
-  });
+  const subs = PRICE_IDS.flatMap((price) =>
+    listAll((startingAfter) => {
+      const args = ['subscriptions', 'list', '--price', price, '--status', 'active', '--limit', '100'];
+      if (startingAfter) args.push('--starting-after', startingAfter);
+      return stripe(args);
+    }),
+  );
   return new Set(subs.map((s) => s.id));
 }
 
