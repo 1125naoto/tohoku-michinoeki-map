@@ -84,21 +84,36 @@ function removeActivationParamFromUrl(): void {
   }
 }
 
+/** StripeのCheckout Session ID（有料契約者の資格情報）は必ず cs_ で始まる。それ以外はOwner発行の招待コード */
+function isInviteCode(credential: string): boolean {
+  return !credential.startsWith('cs_');
+}
+
 /**
- * ブラウザのタブで ?activate= の資格情報が有効と確認できたときだけ、manifestのリンクを
- * start_urlを持たない受け渡し用manifestへ差し替える。仕様上start_urlは「ホーム画面追加時の
- * ページURL（?activate=付き）」になり、ホーム画面版の初回起動時に captureActivationParam が
- * 自分専用のlocalStorageへ保存する（以後の起動も同じURLから始まるため保持され続ける）。
- * 一般ユーザー・有料契約者（?activate= なし）のmanifestは一切変わらない。
+ * ブラウザのタブで招待コードが有効と確認できたときだけ、ホーム画面に追加できる状態にする:
+ * URLに ?activate= を（無ければ）戻し、manifestのリンクをstart_urlを持たない受け渡し用manifestへ
+ * 差し替える。仕様上start_urlは「ホーム画面追加時のページURL（?activate=付き）」になり、
+ * ホーム画面版の初回起動時に captureActivationParam が自分専用のlocalStorageへ保存する
+ * （以後の起動も同じURLから始まるため保持され続ける）。
+ *
+ * 保存済みの招待コードでも行うのは、旧ビルドのService WorkerがURLから ?activate= を
+ * 消した後に新ビルドへ再読み込みされた場合や、後から通常URLで開いてホーム画面に
+ * 追加した場合にも、ホーム画面版へ確実に引き継ぐため（招待コードを持つ本人の端末でだけ起きる）。
+ * 一般ユーザー・有料契約者（cs_）のURLとmanifestは一切変わらない。
  */
 export function finishActivation(captured: CapturedCredential, result: EntitlementCheck, basePath: string): void {
-  if (!captured.fromUrl) return;
   if (result === 'denied') {
-    removeActivationParamFromUrl();
+    if (captured.fromUrl) removeActivationParamFromUrl();
     return;
   }
-  if (result !== 'granted' || isStandaloneDisplay()) return;
+  const credential = captured.credential;
+  if (result !== 'granted' || !credential || !isInviteCode(credential) || isStandaloneDisplay()) return;
   try {
+    const url = new URL(location.href);
+    if (url.searchParams.get(ACTIVATE_PARAM) !== credential) {
+      url.searchParams.set(ACTIVATE_PARAM, credential);
+      history.replaceState(null, '', url.toString());
+    }
     let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (!link) {
       link = document.createElement('link');

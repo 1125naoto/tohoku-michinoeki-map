@@ -121,6 +121,23 @@ describe('?activate= の取り込みとホーム画面追加用の受け渡し',
     const c = captureActivationParam();
     expect(c).toEqual({ credential: 'cs_live_paid', fromUrl: false });
     finishActivation(c, 'granted', '/base/');
+    expect(href).toBe('https://x.example/base/');
+    expect(manifestLink.href).toBe('/base/manifest.webmanifest');
+  });
+
+  it('保存済みの招待コード（旧SWがURLから消した後など）: Safariのタブなら ?activate= を戻して受け渡し用manifestにする', () => {
+    store.set('michinoeki_access_credential', 'invite_code');
+    href = 'https://x.example/base/';
+    finishActivation(captureActivationParam(), 'granted', '/base/');
+    expect(href).toBe('https://x.example/base/?activate=invite_code');
+    expect(manifestLink.href).toBe('/base/manifest-handoff.webmanifest');
+  });
+
+  it('確認できなかった場合（unavailable）はURLもmanifestも変えない', () => {
+    store.set('michinoeki_access_credential', 'invite_code');
+    href = 'https://x.example/base/';
+    finishActivation(captureActivationParam(), 'unavailable', '/base/');
+    expect(href).toBe('https://x.example/base/');
     expect(manifestLink.href).toBe('/base/manifest.webmanifest');
   });
 });
