@@ -1,0 +1,35 @@
+name: 道の駅ナビ 料金切替キーの権限チェック（手動）
+
+# secrets.STRIPE_BILLING_WRITE_KEY（月額プランの3か月目以降の料金切替に使う制限付きキー）が
+# 実際に Subscription Schedule を書き込めるかを確認する。何も作らない:
+#  1) 存在しない契約IDでスケジュール作成を呼ぶ → 「No such subscription」なら書き込み権限あり
+#  2) 月額プラン（導入価格）の契約を一覧して、設定が必要なものを処理する（同期ジョブと同じ処理・冪等）
+# キーの値はログに出さない（スクリプトがマスクする）。
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Stripe CLI
+        run: |
+          version=$(curl -fsSL https://api.github.com/repos/stripe/stripe-cli/releases/latest | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).tag_name.replace(/^v/, "")')
+          curl -fsSL "https://github.com/stripe/stripe-cli/releases/download/v${version}/stripe_${version}_linux_x86_64.tar.gz" -o stripe.tar.gz
+          tar -xzf stripe.tar.gz
+          sudo mv stripe /usr/local/bin/stripe
+      - name: 権限チェック（何も作らない）
+        env:
+          STRIPE_API_KEY: ${{ secrets.STRIPE_BILLING_WRITE_KEY }}
+        run: |
+          INTRO_SCHEDULE_PROBE=1 node scripts/apply-intro-schedules.mjs
+          node scripts/apply-intro-schedules.mjs
