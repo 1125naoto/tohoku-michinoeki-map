@@ -15,6 +15,7 @@ function Write-Log([string]$msg) {
   Add-Content -Path $log -Value $line -Encoding UTF8
 }
 
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
 try {
   git -C $repo fetch -q origin main 2>&1 | Out-Null
   git -C $repo reset -q --hard origin/main 2>&1 | Out-Null
