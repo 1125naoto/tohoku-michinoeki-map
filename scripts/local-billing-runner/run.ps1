@@ -1,4 +1,4 @@
-# 道の駅ナビ: 月額プランの3か月目からの料金切替（Stripe Subscription Schedule）を、このPCのStripe CLIのログインで設定する。
+﻿# 道の駅ナビ: 月額プランの3か月目からの料金切替（Stripe Subscription Schedule）を、このPCのStripe CLIのログインで設定する。
 # Windowsのタスク「MichinoekiNavi Billing Runner」が約10分ごとに run-hidden.vbs 経由で実行する（install.ps1 で登録）。
 # - 実行のたびに専用フォルダ（このリポジトリのクローン）を origin/main に合わせ、最新のスクリプトを使う
 # - キーやトークンは扱わない（Stripe CLIがOSの資格情報ストアから自分で読む）。ログに秘密値は出ない
