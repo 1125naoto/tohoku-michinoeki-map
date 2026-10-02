@@ -69,6 +69,8 @@ jobs:
           STRIPE_BILLING_WRITE_KEY: ${{ secrets.STRIPE_BILLING_WRITE_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 書き込みキーの権限を各実行の最初に1回だけ自己診断（何も作らない）
+          STRIPE_API_KEY="$STRIPE_BILLING_WRITE_KEY" INTRO_SCHEDULE_PROBE=1 node scripts/apply-intro-schedules.mjs || echo "::warning::intro schedule permission probe failed"
           end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
           while [ "$(date +%s)" -lt "$end" ]; do
             started=$(date +%s)

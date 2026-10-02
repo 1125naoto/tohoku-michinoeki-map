@@ -61,9 +61,31 @@ function configure(sub, scheduleId) {
   return 'configured';
 }
 
+/**
+ * 権限の自己診断（INTRO_SCHEDULE_PROBE=1 のときだけ。ワークフローの各実行の最初に1回）。
+ * 存在しない契約IDでスケジュール作成を呼ぶ: 何も作られない。「No such subscription」なら書き込み権限あり、
+ * 権限不足ならStripeのエラー本文に必要な権限名が出る（キーの値は出さない）。
+ */
+function probe() {
+  try {
+    stripe(['subscription_schedules', 'create', '-d', 'from_subscription=sub_permissionprobe000']);
+    console.log('[intro-schedules] probe: unexpected success');
+  } catch (err) {
+    if (/No such subscription/.test(err.message)) console.log('[intro-schedules] probe: OK（Subscription Schedule の書き込み権限あり）');
+    else {
+      console.error('[intro-schedules] probe: NG:', err.message);
+      process.exitCode = 1;
+    }
+  }
+}
+
 function main() {
   if (!process.env.STRIPE_API_KEY) {
     console.log('[intro-schedules] STRIPE_BILLING_WRITE_KEY が未設定のため何もしません（月額プランの3か月目以降の切替は未設定のまま）。');
+    return;
+  }
+  if (process.env.INTRO_SCHEDULE_PROBE === '1') {
+    probe();
     return;
   }
   let subs;
