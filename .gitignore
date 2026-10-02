@@ -8,6 +8,8 @@ test-results/
 *.local
 .env
 .env.*
+# 秘密値を含まない環境変数の一覧（復旧資料）だけはコミットする
+!.env.example
 Thumbs.db
 Desktop.ini
 __pycache__/
