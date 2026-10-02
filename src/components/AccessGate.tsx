@@ -4,6 +4,7 @@ import {
   checkEntitlement,
   clearStoredCredential,
   finishActivation,
+  isAwaitingPaymentConfirmation,
   type EntitlementCheck,
 } from '../lib/accessCredential';
 
@@ -38,21 +39,41 @@ function installHandoffReady(): boolean {
   }
 }
 
+/** 決済直後の「確認中」で、購入者一覧を再確認する間隔 */
+const CONFIRMATION_RETRY_MS = 15 * 1000;
+
 function LiveGate({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<EntitlementCheck | 'checking'>('checking');
+  const [state, setState] = useState<EntitlementCheck | 'checking' | 'confirming'>('checking');
   const [bannerClosed, setBannerClosed] = useState(false);
 
   useEffect(() => {
     const captured = captureActivationParam();
-    if (!captured.credential) {
+    const credential = captured.credential;
+    if (!credential) {
       setState('denied');
       return;
     }
-    checkEntitlement(captured.credential, import.meta.env.BASE_URL).then((result) => {
-      if (result === 'denied') clearStoredCredential();
-      finishActivation(captured, result);
-      setState(result);
-    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    const check = () => {
+      checkEntitlement(credential, import.meta.env.BASE_URL).then((result) => {
+        if (stopped) return;
+        // 決済直後: 一覧への反映（通常1〜3分）を待つ間は、課金画面ではなく「確認中」にして自動で再確認する
+        if (result !== 'granted' && isAwaitingPaymentConfirmation(credential)) {
+          setState('confirming');
+          timer = setTimeout(check, CONFIRMATION_RETRY_MS);
+          return;
+        }
+        if (result === 'denied') clearStoredCredential();
+        finishActivation(captured, result);
+        setState(result);
+      });
+    };
+    check();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   if (state === 'granted') {
@@ -67,6 +88,16 @@ function LiveGate({ children }: { children: React.ReactNode }) {
         </div>
         {children}
       </>
+    );
+  }
+
+  if (state === 'confirming') {
+    return (
+      <div className="access-gate">
+        <h2>お支払いを確認しています</h2>
+        <p>ご購入ありがとうございます。お支払いの反映を確認しています（通常1〜3分ほどです）。</p>
+        <p>このままお待ちください。確認でき次第、自動で開きます。</p>
+      </div>
     );
   }
 

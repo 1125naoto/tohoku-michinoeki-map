@@ -1,24 +1,28 @@
 name: 道の駅ナビ全国版 購入者ゲートの同期
 
-# scripts/sync-subscriptions.mjs を実行し、道の駅ナビの正式Payment Link
-# （plink_1UHH4SICXxuNXmZyihmdzOho）に紐づく有効な契約者だけの一覧
+# scripts/sync-subscriptions.mjs を実行し、道の駅ナビのPayment Linkに紐づく有効な契約者だけの一覧
 # （public/access-control/active.json、SHA-256ハッシュのみ）を再生成する。
 # お宝ファインダー等、他プロダクトのデータには一切アクセスしない
 # （Payment Link/Price IDでスコープしている）。
 #
 # secrets.STRIPE_API_KEY が未設定の間は何もせず正常終了する（fail-closed。
 # 既に発行済みのアクセスを誤って剥奪しない。ただし新規購入の反映・解約の失効も
-# 進まない）。このRepository Secretは、Stripeダッシュボードで作成する
-# 読み取り専用（Subscriptions/Checkout Sessions: Read）のrestricted keyを
-# Owner自身がGitHub側（Settings > Secrets and variables > Actions）で直接設定する
-# 想定（このワークフロー・Claude Codeのどちらも生のキー値を扱わない）。
+# 進まない）。このRepository Secretは読み取り専用（Subscriptions/Checkout Sessions: Read）の
+# restricted key（このワークフロー・Claude Codeのどちらも生のキー値を扱わない）。
+#
+# 決済後すぐに使えるようにするための構成（cronだけでは実測3〜7時間間隔になるため）:
+#  - 1回の実行の中で約55分間、1分ごとに同期する。終わる前に自分自身を workflow_dispatch で
+#    起動し直す（GITHUB_TOKEN からの workflow_dispatch は新しい実行を作れる、GitHub Actions の仕様）。
+#    → 決済からアクセス有効化まで、通常は同期1分以内＋デプロイ約1〜2分。
+#  - cron は、連鎖が何かの理由で途切れたときの再始動（ウォッチドッグ）として残す。
+#  - concurrency で同時に動くのは1つだけ（重なった起動は待機し、待機分は最新の1つにまとまる）。
 #
 # 既定のGITHUB_TOKENによるpushはdeploy.ymlのon:pushを起動しないため
 # （refresh-poi-cache.ymlと同じ既知の挙動）、変更があれば明示的にdeploy.ymlを起動する。
 
 on:
   schedule:
-    # 10分ごと。GitHub Actions側の負荷により多少前後することがある
+    # ウォッチドッグ（GitHub側の負荷で数時間遅れることがある。通常は自己再起動の連鎖で動く）
     - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
@@ -26,10 +30,17 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: sync-subscriptions
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 65
+    env:
+      LOOP_MINUTES: '55'
+      INTERVAL_SECONDS: '60'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,9 +58,23 @@ jobs:
           sudo mv stripe /usr/local/bin/stripe
           stripe --version
 
-      - name: 購入者ゲートを同期
+      - name: 購入者ゲートを同期（1分ごと・約55分間）
         env:
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
           NAMI_ACCESS_CODE: ${{ secrets.NAMI_ACCESS_CODE }}
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/sync-subscriptions.mjs
+        run: |
+          end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            started=$(date +%s)
+            # 他のpush（デプロイ等）で main が進んでいても、毎回最新に合わせてから同期する（pushの衝突を防ぐ）
+            git fetch -q origin main && git reset -q --hard origin/main
+            node scripts/sync-subscriptions.mjs || echo "::warning::sync failed (次の周期で再試行)"
+            sleep $(( INTERVAL_SECONDS - ( $(date +%s) - started ) > 5 ? INTERVAL_SECONDS - ( $(date +%s) - started ) : 5 ))
+          done
+
+      - name: 次の同期を起動（自己再起動の連鎖）
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run sync-subscriptions.yml --ref main

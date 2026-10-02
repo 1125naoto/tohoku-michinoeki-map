@@ -202,6 +202,7 @@ export const SESSION_CAPTURE_JS =
   "(function(){" +
   "try{var m=location.search.match(/(?:^\\?|&)session_id=([^&]+)/);if(!m)return;" +
   "localStorage.setItem('michinoeki_access_credential',decodeURIComponent(m[1]));" +
+  "localStorage.setItem('michinoeki_access_credential_at',String(Date.now()));" +
   "var u=new URL(location.href);u.searchParams.delete('session_id');history.replaceState(null,'',u.toString());" +
   "}catch(e){}" +
   "})();";

@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureActivationParam, checkEntitlement, finishActivation, sha256Hex } from './accessCredential';
+import {
+  PAYMENT_CONFIRMATION_WINDOW_MS,
+  captureActivationParam,
+  checkEntitlement,
+  finishActivation,
+  isAwaitingPaymentConfirmation,
+  sha256Hex,
+} from './accessCredential';
 
 describe('sha256Hex', () => {
   it('既知のSHA-256値と一致する', async () => {
@@ -109,5 +116,42 @@ describe('?activate= の取り込み', () => {
     expect(c).toEqual({ credential: 'cs_live_paid', fromUrl: false });
     finishActivation(c, 'granted');
     expect(href).toBe('https://x.example/base/');
+  });
+});
+
+describe('決済直後の「確認中」（購入者一覧への反映待ち）', () => {
+  let store: Map<string, string>;
+  beforeEach(() => {
+    store = new Map();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  const NOW = 1_800_000_000_000;
+
+  it('Thanksページで30分以内に保存されたCheckout Session ID（cs_）だけが確認中になる', () => {
+    store.set('michinoeki_access_credential_at', String(NOW - 60_000));
+    expect(isAwaitingPaymentConfirmation('cs_live_abc', NOW)).toBe(true);
+    expect(isAwaitingPaymentConfirmation('invite_code', NOW)).toBe(false); // 招待コードは対象外
+  });
+
+  it('30分を過ぎた・時刻が無い・未来の時刻は確認中にしない（いつまでも待たせない／課金画面に戻す）', () => {
+    store.set('michinoeki_access_credential_at', String(NOW - PAYMENT_CONFIRMATION_WINDOW_MS));
+    expect(isAwaitingPaymentConfirmation('cs_live_abc', NOW)).toBe(false);
+    store.delete('michinoeki_access_credential_at');
+    expect(isAwaitingPaymentConfirmation('cs_live_abc', NOW)).toBe(false);
+    store.set('michinoeki_access_credential_at', String(NOW + 60_000));
+    expect(isAwaitingPaymentConfirmation('cs_live_abc', NOW)).toBe(false);
+  });
+});
+
+describe('購入者一覧の取得はCDNキャッシュを避ける', () => {
+  it('毎回クエリ付きのURLで取得する（GitHub PagesのCDNは10分キャッシュするため）', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal('fetch', fetchMock);
+    await checkEntitlement('x', '/base/');
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/^\/base\/access-control\/active\.json\?t=\d+$/);
+    vi.unstubAllGlobals();
   });
 });

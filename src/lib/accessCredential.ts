@@ -87,6 +87,26 @@ export function finishActivation(captured: CapturedCredential, result: Entitleme
   if (result === 'denied' && captured.fromUrl) removeActivationParamFromUrl();
 }
 
+/** Thanksページが資格情報と一緒に保存する、決済完了の時刻（ミリ秒）。render.ts の SESSION_CAPTURE_JS と一致させる */
+const CAPTURED_AT_KEY = 'michinoeki_access_credential_at';
+/** 決済完了からこの時間内は、一覧への反映待ち（確認中）として扱う。アクセスは許可しない */
+export const PAYMENT_CONFIRMATION_WINDOW_MS = 30 * 60 * 1000;
+
+/**
+ * 決済直後で、購入者一覧への反映を待っている状態か。
+ * StripeのCheckout Session ID（cs_）が、Thanksページで30分以内に保存されたものだけ。
+ * この間は課金画面ではなく「確認中」を出して再確認するだけで、アプリは開かない（無料にはならない）。
+ */
+export function isAwaitingPaymentConfirmation(credential: string, now = Date.now()): boolean {
+  if (!credential.startsWith('cs_')) return false;
+  try {
+    const at = Number(localStorage.getItem(CAPTURED_AT_KEY));
+    return Number.isFinite(at) && at > 0 && now - at >= 0 && now - at < PAYMENT_CONFIRMATION_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
 export function clearStoredCredential(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -114,7 +134,8 @@ export type EntitlementCheck = 'granted' | 'denied' | 'unavailable';
 export async function checkEntitlement(credential: string, basePath: string): Promise<EntitlementCheck> {
   let list: unknown;
   try {
-    const res = await fetch(`${basePath}access-control/active.json`, { cache: 'no-store' });
+    // GitHub Pages のCDNは10分キャッシュするため、毎回クエリを変えて最新の一覧を取る（決済直後の反映を待たせない）
+    const res = await fetch(`${basePath}access-control/active.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return 'unavailable';
     list = await res.json();
   } catch {
