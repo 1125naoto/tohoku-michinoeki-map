@@ -1,0 +1,159 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index ee7e33a..d1b3b4c 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -16,7 +16,7 @@ import { STATIONS, getStation } from './data';
+ import { computeStats } from './lib/stats';
+ import { planCourses } from './lib/planner';
+ import { osrmProvider } from './lib/routing';
+-import { navToPointUrl, navToStationUrl } from './lib/gmaps';
++import { categoryDetailSearchUrl, navToPointUrl, navToStationUrl } from './lib/gmaps';
+ import {
+   filterSummary,
+   filterStations,
+@@ -42,7 +42,7 @@ import {
+ } from './lib/storage';
+ import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
+ import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
+-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
++import { CATEGORY_LABEL, DEFAULT_STAY_MIN, GOOGLE_DETAIL_KEYWORD, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
+ import {
+   peekCachedPois,
+   DEFAULT_RADIUS_M,
+@@ -1505,6 +1505,11 @@ export default function App() {
+                 const near = searchOrigin ? `${searchOrigin.lat},${searchOrigin.lng}` : '';
+                 openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
+               }}
++              onGoogleDetailSearch={() => {
++                if (!searchOrigin) return;
++                const keyword = poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット';
++                openExternal(categoryDetailSearchUrl(keyword, searchOrigin));
++              }}
+               onClose={closePoiSearch}
+               results={sortedPoiResults}
+               sort={poiSort}
+diff --git a/src/components/PoiSearchPanel.tsx b/src/components/PoiSearchPanel.tsx
+index 7db5603..210f0dc 100644
+--- a/src/components/PoiSearchPanel.tsx
++++ b/src/components/PoiSearchPanel.tsx
+@@ -1,5 +1,5 @@
+ import { useState } from 'react';
+-import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
++import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, GOOGLE_DETAIL_KEYWORD, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+ import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
+ import { PREFECTURES, type Prefecture, type Station } from '../types';
+ import { isDiagnosticsHost } from '../lib/geolocation';
+@@ -90,6 +90,8 @@ interface Props {
+   otherIncomplete: boolean;
+   onRetry: () => void;
+   onGoogleFallback: () => void;
++  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる） */
++  onGoogleDetailSearch: () => void;
+   onClose: () => void;
+   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
+   results: Poi[];
+@@ -141,6 +143,7 @@ export default function PoiSearchPanel({
+   otherIncomplete,
+   onRetry,
+   onGoogleFallback,
++  onGoogleDetailSearch,
+   onClose,
+   results,
+   sort,
+@@ -295,7 +298,34 @@ export default function PoiSearchPanel({
+         </button>
+       </div>
+ 
+-      {category && (
++      {/*
++        道の駅ナビ＝発見・車旅・旅程作成、Googleマップ＝網羅的な詳細探索・口コミ・
++        写真・営業時間・ナビ、という役割分担のCTA。大分類を押した瞬間にGoogleマップへ
++        飛ばすのではなく、アプリ内候補（下の一覧）とは別に「さらに探したい場合は
++        こちら」という二段構造にする。検索を実行していなくても、検索地点さえ決まって
++        いれば押せる（Overpass通信には依存しない）。
++      */}
++      {origin && (
++        <button
++          style={{ width: '100%', marginTop: 6 }}
++          onClick={onGoogleDetailSearch}
++          data-testid="poi-google-detail-search"
++        >
++          🔍 Googleマップでもっと{category ? GOOGLE_DETAIL_KEYWORD[category] : '周辺スポット'}を探す
++        </button>
++      )}
++
++      {/*
++        食べる(food)の細分類（ラーメン/食堂/洋食/寿司/焼肉等）は、一般ユーザーUIから
++        原則撤去する（公開前UX整理）。「このボタンを押せば周辺の該当店舗が網羅的に
++        表示される」という誤解を生むため。OSMデータの登録・タグ品質・網羅率には
++        構造上Google Maps相当の網羅性を期待できず、そこを埋めようとはしない方針
++        （道の駅ナビの目的は発見・車旅・ルート作成であり、全国グルメDBではない）。
++        内部classificationロジック・POIデータ自体は変更しない（一覧の各行には
++        引き続きジャンルをテキストで表示する）。他カテゴリ(観光/温泉/宿泊)の
++        細分類は従来どおり残す。
++      */}
++      {category && category !== 'food' && (
+         <div className="poi-subcats" data-testid="poi-subcategory-chips">
+           <button className={subcategory === 'all' ? 'active' : ''} onClick={() => onChangeSubcategory('all')}>
+             すべて
+@@ -454,7 +484,7 @@ export default function PoiSearchPanel({
+             )}
+             {fromCache
+               ? '前回取得した周辺スポットを表示しています。'
+-              : `周辺スポットを${resultCount}件見つけました。`}
++              : `周辺の主なスポットを${resultCount}件見つけました。`}
+             地図のマークまたは下の一覧をタップすると詳しく見られます。
+             {revalidating && (
+               <>
+diff --git a/src/lib/gmaps.ts b/src/lib/gmaps.ts
+index 0764076..2b8f716 100644
+--- a/src/lib/gmaps.ts
++++ b/src/lib/gmaps.ts
+@@ -11,6 +11,24 @@ export function stationSearchUrl(st: Station): string {
+   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+ }
+ 
++/**
++ * 「Googleマップでもっと探す」CTA用の検索URL。
++ * アプリ内のOSM/Overpass由来POIは、道の駅ナビの主目的（道の駅発見・車旅・
++ * 周辺スポット発見・旅行ルート作成）に沿った「周辺に何がありそうか」の
++ * 発見用途であり、Google Mapsと同等の店舗網羅性は構造上保証できない
++ * （OSMの登録・タグ品質・網羅率に依存するため）。そのため大分類ボタンを
++ * 押した瞬間にGoogleマップへ飛ばすのではなく、アプリ内候補表示とは別に、
++ * 「さらに探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
++ *
++ * Google Maps URLs公式仕様（`/maps/search/?api=1&query=`）の範囲のみを使用。
++ * 検索半径を直接渡す公式パラメータは存在しないため、中心座標をqueryに含める
++ * （Google側が実際の検索範囲を決める）。Google Places API・有料APIは使わない。
++ */
++export function categoryDetailSearchUrl(keyword: string, origin: LatLng): string {
++  const q = `${keyword} ${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`;
++  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
++}
++
+ /**
+  * 道路の希望 → Google Maps URLs の avoid パラメータ。
+  * - highway_ok（おまかせ・早いルート）: 指定なし（Googleマップに任せる）
+diff --git a/src/lib/poi.ts b/src/lib/poi.ts
+index 2da662e..bef7a62 100644
+--- a/src/lib/poi.ts
++++ b/src/lib/poi.ts
+@@ -101,6 +101,18 @@ export const CATEGORY_LABEL: Record<PoiCategory, string> = {
+   lodging: '宿泊',
+ };
+ 
++/**
++ * 「Googleマップでもっと探す」CTAの検索語（内部カテゴリ名(CATEGORY_LABEL)より
++ * Google検索クエリとして自然な日本語を使う。道の駅ナビ＝発見・車旅・旅程作成、
++ * Googleマップ＝網羅的な詳細探索、という役割分担のためのCTA）。
++ */
++export const GOOGLE_DETAIL_KEYWORD: Record<PoiCategory, string> = {
++  food: '飲食店',
++  tourism: '観光スポット',
++  onsen: '温泉',
++  lodging: '宿泊施設',
++};
++
+ export const SUBCATEGORY_LABEL: Record<PoiSubcategory, string> = {
+   ramen: 'ラーメン',
+   shokudo: '食堂',

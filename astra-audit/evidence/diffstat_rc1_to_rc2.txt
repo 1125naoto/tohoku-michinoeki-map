@@ -1,0 +1,22 @@
+ README.md                              |   3 +
+ e2e/app.spec.ts                        |   8 +-
+ e2e/back-nav-origin.spec.ts            | 419 ++++++++++++++++++++++++++++++
+ e2e/custom-stop.spec.ts                |   4 +
+ e2e/manual-route.spec.ts               |  40 +++
+ src/App.tsx                            |   6 +-
+ src/components/BackBar.tsx             |  22 ++
+ src/components/CourseModePicker.tsx    |   7 +-
+ src/components/CustomStopForm.tsx      |  60 ++++-
+ src/components/ManualRouteBuilder.tsx  |   8 +-
+ src/components/OriginPicker.tsx        |  57 ++---
+ src/components/PlaceSearchBox.tsx      | 130 ++++++++++
+ src/components/PlannerForm.tsx         |  18 +-
+ src/components/PoiSearchPanel.tsx      |   2 +
+ src/components/RouteResults.tsx        |   7 +
+ src/components/RouteSelectionSheet.tsx |   7 +
+ src/components/StationNearbySearch.tsx |  79 ++++++
+ src/lib/nominatim.ts                   | 135 ++++++++++
+ src/lib/placeSearch.test.ts            | 452 +++++++++++++++++++++++++++++++++
+ src/lib/placeSearch.ts                 | 310 ++++++++++++++++++++++
+ src/styles.css                         |  74 ++++++
+ 21 files changed, 1789 insertions(+), 59 deletions(-)

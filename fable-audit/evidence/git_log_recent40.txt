@@ -1,0 +1,40 @@
+3d64084 ルート作成に「↻ 最初からやり直す」の逃げ道を追加
+ca840e2 実旅行対応 Route Planner V2 + Google Maps分割ナビ修正
+aa7ac1b 飲食カテゴリ分類監査: 洋食/居酒屋/食堂/イタリアンの店名判定を追加（POI_SCHEMA_VERSION v4）
+f5c1055 Owner一括起動batをQA固定URLフローに更新
+fc6816d Owner実機QA用の固定URL配信スクリプトを追加（QA専用リポジトリへpush）
+f201815 QA/staging用のlocalStorage originすみ分け + ビルド識別情報にenvironmentを追加
+471651a 全国POI truncation backfill完了 + E2E marker-clickレース根本修正
+a34a173 Astra監査後Public Release Readiness Gate: 確認済みP1を根本修正
+e0d1dea Phase 12-G: 沖縄県10駅+関東残り56駅を生成 → 全国1,235 eligible駅のPOI static cache完成
+52f6f59 Phase 12-F: 九州7県(福岡・佐賀・長崎・熊本・大分・宮崎・鹿児島)145駅のPOI static cacheを100%生成
+ce2562f Phase 12-E: 四国4県(徳島・香川・愛媛・高知)91駅のPOI static cacheを100%生成
+696d1bd Phase 12-D2: 中国地方②(広島・山口)45駅のPOI static cacheを100%生成 → 中国地方5県完了
+db636eb Phase 12-D1: 中国地方①(鳥取・島根・岡山)63駅のPOI static cacheを100%生成
+c6d61a2 実機QA修正: 都道府県フィルターの複数選択を実UIで自由に操作できるようにする
+220daf3 UX改善: 都道府県フィルターを単一選択から「全国＋複数県選択」へ変更
+65d01fd Phase 12-C2: 近畿②(兵庫・奈良・和歌山)92駅のPOI static cacheを100%生成
+17e489b Phase 12-C1: 近畿①(三重・滋賀・京都・大阪)66駅のPOI static cacheを100%生成
+e235e68 Phase 12-B2: 中部②(静岡・愛知)47駅のPOI static cacheを100%生成
+a204cd1 Phase 12-B1: 中部①(山梨・長野・岐阜)131駅のPOI static cacheを100%生成
+2cf6844 Phase 12-A: 北陸105駅のPOI static cacheを100%生成
+2d8e933 Phase 11: 全国POI static cache生成基盤を構築し、北海道・東北・関東の一部を実データ生成
+5168367 販売版全国横断Phase10: 全国1,237施設のfacility(RVパーク・温泉)監査を確定
+b0f3bcf 販売版全国展開Phase9: 沖縄10駅を追加し全国再突合を実施、47都道府県・10地域・1,237施設の全国最新版データを確定
+def52c0 販売版全国展開Phase8: 九州146駅を追加、9地域(北海道・東北・関東・北陸・中部・近畿・中国・四国・九州)共存へ拡張
+49983d4 販売版全国展開Phase7: 四国91駅を追加、8地域(北海道・東北・関東・北陸・中部・近畿・中国・四国)共存へ拡張
+a5e9ceb 販売版全国展開Phase6 最終QA: iPhone e2eが収録駅数の増加で破綻する3件を修正（アプリコードは無変更）
+079f69d 販売版全国展開Phase6: 中国地方108駅を追加、7地域(北海道・東北・関東・北陸・中部・近畿・中国)共存へ拡張
+12c6a03 販売版全国展開Phase5: 近畿158駅を追加、6地域(北海道・東北・関東・北陸・中部・近畿)共存へ拡張
+6e44c5b 販売版全国展開Phase4: 中部178駅を追加、5地域(北海道・東北・関東・北陸・中部)共存へ拡張
+b10af2d 販売版全国展開Phase3: 北陸105駅を追加、4地域(北海道・東北・関東・北陸)共存へ拡張
+49350b8 販売版全国展開Phase2: 関東130駅を追加、北海道・東北・関東3地域共存へ拡張
+87e4260 販売版全国展開Phase1: 北海道128駅を追加、東北182駅と共存する多地域アーキテクチャへ拡張
+8eafdfb 統合仕上げ: 全国化Station変換にRVパーク・温泉の実データを反映、staging/診断/localStorage方針を明記
+d21476c 統合: fix/pretest-ux(NAMI版, 2fb04a9)をproduct/main Phase1基盤へ統合
+2fb04a9 fix: RVパーク三滝堂(RVパークライト)を追加、relation分類を導入
+46fa7f0 fix: RVパーク施設データを全件再監査（ページネーション未確認により2件取りこぼしていた）
+264c635 feat: 道の駅の施設条件フィルター（RVパーク・温泉）を追加
+ae817c4 fix: 現在地検索でfood(飲食)とother(観光等)を別クエリに分離し80件共有上限を廃止
+d69334c fix: 現在地取得の2段階リトライ化とラーメン分類の実データ監査による拡充
+bc41c33 BUILD IDのdirty判定をビルドに影響する範囲に限定（ルート直下の作業用ファイルで+dirtyにならないように）

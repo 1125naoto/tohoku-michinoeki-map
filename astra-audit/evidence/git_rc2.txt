@@ -1,0 +1,25 @@
+# Git evidence for RC2
+## HEAD
+272d30466a1839057db75b193e2a8f91ff419d7e
+## branch
+feat/nationwide-poi-cache
+## tags at HEAD
+v1.1.0-rc2
+## v1.1.0-rc2 -> commit
+272d30466a1839057db75b193e2a8f91ff419d7e
+## v1.1.0-rc1 -> commit (不変)
+da8b232a107e66660ff5044a5bc36aefe23ac314
+## worktree status (tracked)
+(empty = clean)
+## origin refs
+272d30466a1839057db75b193e2a8f91ff419d7e	refs/heads/feat/nationwide-poi-cache
+13715e6c35500aa08d9afd2fe1c738c751b0ed45	refs/tags/v1.0.0-nami
+1e6e56b39651e009426b4110c770355ea37f583f	refs/tags/v1.0.1-nami
+6b53b92b73410b48e42006399d7fbe06e05ba2c4	refs/tags/v1.0.2-nami
+52f900026bbd75ac33086845afeee0e679ab189b	refs/tags/v1.0.3-nami
+8e25a75b31bfa7770e0bd19cd89247042ce60ced	refs/tags/v1.1.0-rc1
+6586318c159ff4ccad072ec80962878b3dfe26a2	refs/tags/v1.1.0-rc2
+## origin/main (Production, 未反映の確認)
+d55939accba67090c65181da571d9662f64eca5d	refs/heads/main
+## NAMI remote (独立・未変更の確認)
+f1e84b02a23dcad433d46532e760f5c6e1780845	refs/heads/main

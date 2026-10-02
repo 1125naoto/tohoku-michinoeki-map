@@ -1,0 +1,662 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/user/Documents/DEV/道の駅[39m
+
+ [32m✓[39m src/lib/poi.test.ts [2m([22m[2m60 tests[22m[2m)[22m[33m 669[2mms[22m[39m
+ [32m✓[39m src/lib/ui.test.ts [2m([22m[2m37 tests[22m[2m)[22m[90m 176[2mms[22m[39m
+ [32m✓[39m src/lib/backup.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 228[2mms[22m[39m
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m通信エラー時は例外を投げず failed:true を返す（アプリを落とさない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: network down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:167:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:104:5)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m接続先が1回目だけ失敗しても、同じ接続先の2回目以降(=別レースからの呼び出し)や次の接続先で成功できる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:44:60
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m全接続先が失敗した場合はfailed:trueで打ち切る（無限リトライしない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:186:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2mHTTPエラーステータスもfailed扱いになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2mHTTPエラーステータスもfailed扱いになる
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 504
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 504
+[overpass] https://overpass-api.de/api/interpreter → HTTP 504
+[overpass] https://overpass-api.de/api/interpreter → HTTP 504
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m1つ目の接続先が429の場合、2つ目の接続先へ切り替えて成功できる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m1つ目の接続先が504の場合、2つ目の接続先へ切り替えて成功できる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m1つ目の接続先がタイムアウト（通信エラー）の場合、2つ目の接続先へ切り替えて成功できる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:44:60
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:44:60
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m全接続先が失敗した場合はfailed:trueになる（同一接続先への無制限リトライはしない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m全接続先が失敗した場合はfailed:trueになる（同一接続先への無制限リトライはしない）
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass-api.de/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass-api.de/api/interpreter → HTTP 429 (rate limited)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m接続先の優先順は private.coffee → maps.mail.ru(VK Maps) → overpass-api.de（旧kumi.systemsは含まれない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m障害時のふるまい[2m > [22m[2m接続先の優先順は private.coffee → maps.mail.ru(VK Maps) → overpass-api.de（旧kumi.systemsは含まれない）
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m前回成功結果の劣化フォールバック（全接続先失敗時）[2m > [22m[2m過去に成功していれば、全接続先失敗時でも前回の結果をfromCache:trueで返す
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 503
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 503
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 503
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 503
+[overpass] https://overpass-api.de/api/interpreter → HTTP 503
+[overpass] https://overpass-api.de/api/interpreter → HTTP 503
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m前回成功結果の劣化フォールバック（全接続先失敗時）[2m > [22m[2m過去に一度も成功していなければ、全接続先失敗時は素直にfailed:trueになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m前回成功結果の劣化フォールバック（全接続先失敗時）[2m > [22m[2m過去に一度も成功していなければ、全接続先失敗時は素直にfailed:trueになる
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m診断ログ（attemptLog）[2m > [22m[2m成功時は成功した接続先のログ(outcome:ok, status, elementCount)を含む
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m診断ログ（attemptLog）[2m > [22m[2mタイムアウトはoutcome:timeoutとして記録される
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → timeout: DOMException [AbortError]: Aborted
+[90m    at new DOMException (node:internal/per_context/domexception:76:18)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:473:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:538:9)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m検索範囲の自動拡張（searchNearbyPoisAuto）[2m > [22m[2m通信が失敗した場合は範囲を広げずに失敗を返す（無意味な再試行をしない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m検索範囲の自動拡張（searchNearbyPoisAuto）[2m > [22m[2m通信が失敗した場合は範囲を広げずに失敗を返す（無意味な再試行をしない）
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mfoodだけ全滅してもotherが成功していれば部分的な結果を返す（failed:trueにしない）
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food query down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:603:31
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mfoodだけ全滅してもotherが成功していれば部分的な結果を返す（failed:trueにしない）
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food query down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:603:31
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food query down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:603:31
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mfood/other両方が全滅した場合のみfailed:trueになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mfood/other両方が全滅した場合のみfailed:trueになる
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:614:49
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:146:14
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:11
+    at runWithTimeout [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:17[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mfoodIncomplete/otherIncompleteが完全成功では両方false、food全滅では foodIncomplete:true のみになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:664:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:664:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:664:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mキャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:677:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mキャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:677:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2mキャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[22m[39m[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:677:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2m部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:721:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+    at runOne [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:352:5[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2m部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:721:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2m部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[22m[39m[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:721:85
+    at mockCall [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/spy[24m/dist/index.js:61:17[90m)[39m
+    at spy [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4mtinyspy[24m/dist/index.js:45:80[90m)[39m
+    at tryEndpoint [90m(C:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:282:23[90m)[39m
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.ts:351:14
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2mfood/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正）[2m > [22m[2m部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at [90mC:\Users\user\Documents\DEV\道の駅\[39msrc\lib\overpass.test.ts:734:54
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at listOnTimeout (node:internal/timers:567:9)[39m
+[90m    at processTimers (node:internal/timers:541:7)[39m
+    at [90mfile:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:533:5
+    at runTest [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1271:3[90m)[39m
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mHTTP 200でもremarkフィールドがあれば成功とみなさず、全滅時はfailed:trueになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mHTTP 200でもremarkフィールドがあれば成功とみなさず、全滅時はfailed:trueになる
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mHTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://overpass.private.coffee/api/interpreter → elements配列が無い不正な応答 {}
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mHTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://overpass-api.de/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://overpass-api.de/api/interpreter → elements配列が無い不正な応答 {}
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mfoodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる
+[22m[39m[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mfoodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる
+[22m[39m[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error
+
+[90mstderr[2m | src/lib/overpass.test.ts[2m > [22m[2m応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする）[2m > [22m[2mfoodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる
+[22m[39m[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error
+
+ [32m✓[39m src/lib/overpass.test.ts [2m([22m[2m50 tests[22m[2m)[22m[33m 3323[2mms[22m[39m
+   [33m[2m✓[22m[39m 障害時のふるまい[2m > [22m通信エラー時は例外を投げず failed:true を返す（アプリを落とさない） [33m316[2mms[22m[39m
+ [32m✓[39m src/lib/routeDraft.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 131[2mms[22m[39m
+ [32m✓[39m src/lib/poiProvider.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 118[2mms[22m[39m
+ [32m✓[39m src/lib/poiStaticCache.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 553[2mms[22m[39m
+ [32m✓[39m src/lib/gmaps.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 232[2mms[22m[39m
+ [32m✓[39m src/lib/manualRoute.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 771[2mms[22m[39m
+ [32m✓[39m src/lib/planner.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 2291[2mms[22m[39m
+   [33m[2m✓[22m[39m 時間計算[2m > [22m2時間・4時間・6時間・任意(5時間)のどのコースも設定時間を超えない [33m798[2mms[22m[39m
+ [32m✓[39m src/lib/storage.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 67[2mms[22m[39m
+ [32m✓[39m src/lib/routeOrder.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 114[2mms[22m[39m
+ [32m✓[39m src/lib/geolocation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 151[2mms[22m[39m
+ [32m✓[39m src/lib/hours.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 620[2mms[22m[39m
+   [33m[2m✓[22m[39m 到着時刻判定とデータ網羅[2m > [22m東北6県182施設にデータ行があり、区分件数が一致する（北海道・関東は今回営業時間データ未収録） [33m563[2mms[22m[39m
+ [32m✓[39m src/product/station/nationwideStation.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1056[2mms[22m[39m
+   [33m[2m✓[22m[39m toNationwideStation[2m > [22m実データ182施設すべてを例外なく変換できる（既存データとの互換性の実証） [33m894[2mms[22m[39m
+ [32m✓[39m src/product/user/migration.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 87[2mms[22m[39m
+ [32m✓[39m src/lib/routing.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 149[2mms[22m[39m
+ [32m✓[39m src/data/stations.test.ts [2m([22m[2m122 tests[22m[2m)[22m[33m 12690[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m道の駅名が空ではない [33m384[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m都道府県が収録対象都道府県のいずれか [33m560[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m住所が空ではなく都道府県名で始まる [33m447[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m緯度・経度が数値として妥当 [33m802[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m登録地方から明らかに外れた座標がない（都道府県ごとの想定範囲でチェック） [33m1030[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m同一施設の重複登録がない（近接150m以内、または同一都道府県内の同名駅なし） [33m1592[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22mGoogleマップURLを生成できる [33m336[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22mダミー・TODO・仮データ・placeholderが残っていない [33m401[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22m開業前施設はルート候補から除外される [33m344[2mms[22m[39m
+   [33m[2m✓[22m[39m 道の駅マスターデータ[2m > [22mデータ確認日と情報源が記録されている [33m605[2mms[22m[39m
+   [33m[2m✓[22m[39m 北陸追加（販売版・全国展開Phase 3）[2m > [22m全駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない） [33m384[2mms[22m[39m
+   [33m[2m✓[22m[39m 中部追加（販売版・全国展開Phase 4）[2m > [22m中部の駅は全国化アダプタ(product/station)でも例外なく変換でき、地方(region)が正しく解決される [33m312[2mms[22m[39m
+   [33m[2m✓[22m[39m 近畿追加（販売版・全国展開Phase 5）[2m > [22m全駅で駅IDが衝突しない・座標が重複しない（近畿追加後も6地域共存で成立） [33m302[2mms[22m[39m
+   [33m[2m✓[22m[39m 沖縄追加と全国最新版突合（販売版・全国展開Phase 9）[2m > [22mURLに前後の空白が混入していない（福井「若狭熊川宿」で実際に発生していた） [33m549[2mms[22m[39m
+   [33m[2m✓[22m[39m 全国facility監査（販売版・全国横断Phase 10）[2m > [22m全1237施設がfacility監査レコードを持ち、値はyes/no/unknownのいずれか [33m897[2mms[22m[39m
+ [32m✓[39m src/product/region/regions.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 95[2mms[22m[39m
+ [32m✓[39m src/lib/mapSettings.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 89[2mms[22m[39m
+ [32m✓[39m src/lib/routeSelection.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32m✓[39m src/product/schema/version.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 115[2mms[22m[39m
+ [32m✓[39m src/product/featureFlags/featureFlags.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m src/product/entitlement/entitlement.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32m✓[39m src/product/config/productConfig.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+ [32m✓[39m src/components/PoiSearchPanel.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 137[2mms[22m[39m
+ [32m✓[39m src/lib/storageNamespace.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 138[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m27 passed[39m[22m[90m (27)[39m
+[2m      Tests [22m [1m[32m511 passed[39m[22m[90m (511)[39m
+[2m   Start at [22m 16:57:05
+[2m   Duration [22m 47.98s[2m (transform 58.86s, setup 0ms, collect 117.43s, tests 24.10s, environment 32ms, prepare 54.30s)[22m
+
+VITEST_EXIT=0

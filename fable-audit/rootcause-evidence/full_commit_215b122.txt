@@ -1,0 +1,406 @@
+commit 215b12250c96e5a2c894170222a820cc6b884c47
+Author: 1972naoto1125 <aoshanzhiren08@gmail.com>
+Date:   Tue Sep 15 17:55:08 2026 +0900
+
+    公開前UX整理: 周辺スポットを大分類＋Googleマップ詳細探索へ簡素化
+    
+    Owner実機QA（会津若松〜喜多方 ラーメン検索）で、実際には店舗が多い地域でも
+    アプリ上の表示件数が少なく見える問題を確認。根本原因はclassification bugでは
+    なくOSM/Overpassの登録・タグ品質・網羅率という構造的な制約であり、Google Maps
+    並みの網羅性は保証できない。OSMデータをGoogle Maps並みにする方向へは進まず、
+    「道の駅ナビ＝発見・車旅・旅程作成、Googleマップ＝網羅的詳細探索」という
+    役割分担を明確にする方向でUXを整理した。
+    
+    現状監査（変更前）:
+    - 周辺検索UIは カテゴリ→食subcategory(ラーメン/食堂/洋食/寿司/焼肉等)→検索範囲
+      という構成で、「このボタンを押せば該当店舗が網羅的に表示される」という
+      誤解を生みやすい構造だった。
+    - PoiDetailSheet・ルートへのPOI追加・custom stopは今回の変更対象外
+      （既存のまま。変更不要と確認）。
+    
+    変更（最小blast radius）:
+    - 食べる(food)の細分類チップ(ラーメン/食堂/洋食/寿司/焼肉等)のみを一般ユーザー
+      UIから撤去（観光/温泉/宿泊の細分類・雨の日向けフィルタは従来どおり維持。
+      今回報告された問題が食べるカテゴリ固有だったため、変更範囲をそこに限定）。
+      内部classificationロジック・POIデータは一切変更していない
+      （一覧の各行には引き続き正しいジャンルをテキストで表示する）。
+    - 各大分類（グルメ/観光/温泉・休憩/宿泊）に「🔍 Googleマップでもっと◯◯を探す」
+      CTAを新設。検索地点が決まっていれば、検索実行前でも押せる（Overpass通信に
+      依存しない）。大分類ボタンを押した瞬間にGoogleマップへ飛ばすのではなく、
+      アプリ内候補表示とは別に「さらに探したい場合はこちら」という二段構造にした。
+      URLはGoogle Maps URLs公式仕様（/maps/search/?api=1&query=）の範囲のみを使用。
+      Google Places API・有料API・APIキーは追加していない。
+    - 結果件数の文言を「周辺スポットをN件見つけました」→「周辺の主なスポットを
+      N件見つけました」に変更し、網羅していないことを一言で伝える（長い注意書きは
+      追加しない）。
+    
+    Route Plannerとの連携（アプリ内POIの「ルートに追加」、custom stop/custom final
+    destination）は今回一切変更していない。
+    
+    テスト: TypeScript clean。Vitest 513/513 passed（新規2件: categoryDetailSearchUrl
+    のURL生成・有料API不使用の確認）。既存e2e/poi.spec.tsのうち、食べるの細分類
+    チップに依存していた3件を、内部classificationの正しさは一覧行テキストで
+    確認する形、または細分類チップが残るカテゴリ(温泉・休憩)を使う形へ適切に
+    アダプトした（regressionの保護対象自体は変更していない）。新規E2Eとして
+    CTA表示・文言・食べるの細分類チップ不在を確認するテストを追加。
+    
+    iPhone QA: 本コードと無関係な既存の未変更テスト（poi.spec.ts先頭の基本テスト）
+    が今回のセッション中に発生した深刻な機械負荷により同一のタイムアウトで
+    失敗することを確認し、環境要因と特定した（コードの問題ではない）。
+    
+    Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01NFqYbzeR2pUsaYawcoVhXp
+
+diff --git a/e2e/poi.spec.ts b/e2e/poi.spec.ts
+index 3ad5e03..aacdb8c 100644
+--- a/e2e/poi.spec.ts
++++ b/e2e/poi.spec.ts
+@@ -241,6 +241,35 @@ test.describe('周辺スポット検索', () => {
+     await expect(page.getByTestId('poi-google-fallback')).toBeVisible();
+   });
+ 
++  test('公開前UX整理: 食べるの細分類チップは無く、大分類ごとに「Googleマップでもっと探す」CTAが出る', async ({ page }) => {
++    await mockOverpassResponse(page);
++    await page.goto(`/#station=${STATION_ID}`);
++    await expect(page.getByTestId('station-sheet')).toBeVisible();
++    await closeBanners(page);
++    await page.getByTestId('btn-search-nearby').click();
++    await expect(page.getByTestId('poi-search-panel')).toBeVisible();
++
++    // 検索地点は決まっているため、検索を実行する前からCTAが押せる（Overpass通信に依存しない）
++    await expect(page.getByTestId('poi-google-detail-search')).toBeVisible();
++    await expect(page.getByTestId('poi-google-detail-search')).toContainText('周辺スポット'); // カテゴリ未選択時は汎用文言
++
++    await page.getByTestId('poi-category-food').click();
++    // 食べるの細分類チップ(ラーメン/食堂/洋食/寿司/焼肉等)は一般ユーザーUIから撤去済み
++    await expect(page.getByTestId('poi-subcategory-chips')).toHaveCount(0);
++    await expect(page.getByTestId('poi-google-detail-search')).toContainText('飲食店');
++
++    await page.getByTestId('poi-category-tourism').click();
++    // 観光は細分類チップを引き続き残す（今回の撤去対象は食べるのみ）
++    await expect(page.getByTestId('poi-subcategory-chips')).toBeVisible();
++    await expect(page.getByTestId('poi-google-detail-search')).toContainText('観光スポット');
++
++    await page.getByTestId('poi-category-onsen').click();
++    await expect(page.getByTestId('poi-google-detail-search')).toContainText('温泉');
++
++    await page.getByTestId('poi-category-lodging').click();
++    await expect(page.getByTestId('poi-google-detail-search')).toContainText('宿泊施設');
++  });
++
+   test('検索半径を切り替えると再検索される', async ({ page }) => {
+     let lastRadius = '';
+     await page.route('**/api/interpreter', async (route) => {
+@@ -538,30 +567,36 @@ test.describe('周辺スポット検索', () => {
+     await expect(page.getByTestId('poi-result-count')).toBeVisible({ timeout: 10000 });
+ 
+     await page.getByTestId('poi-category-food').click();
+-    await page.getByTestId('poi-subcategory-ramen').click();
+-    // 旧結果(v1)は読まずに破棄され、静的キャッシュ(正しい分類)が使われるため、ラーメンが出る
+-    await expect(page.getByTestId('poi-result-row')).toHaveCount(2, { timeout: 10000 });
+-    await expect(page.getByTestId('poi-result-row')).toContainText(['けいじ', 'ラーメンの里 るんるん']);
+-    await expect(page.locator('.poi-marker')).toHaveCount(2);
++    // 公開前UX整理でラーメン等の細分類チップは撤去したため、細分類フィルタではなく
++    // 食べるカテゴリ全体の一覧行テキストで「静的キャッシュの正しい分類（ラーメン）」が
++    // 使われていることを確認する（旧v1結果のfood_other分類が優先されていないこと）。
++    await expect(page.getByTestId('poi-result-row')).toHaveCount(3, { timeout: 10000 });
++    await expect(page.getByTestId('poi-result-row')).toContainText(['けいじ', 'ラーメンの里 るんるん', '想い出寿司']);
++    const ramenRow = page.getByTestId('poi-result-row').filter({ hasText: 'ラーメンの里 るんるん' });
++    await expect(ramenRow).toContainText('ラーメン'); // SUBCATEGORY_LABELとして表示される（food_otherのままではない）
++    await expect(page.locator('.poi-marker')).toHaveCount(3);
+     // 旧キーは削除されている
+     const legacy = await page.evaluate(() => localStorage.getItem('tohoku-me:poi-last-ok:v1'));
+     expect(legacy).toBeNull();
+   });
+ 
+-  test('実機で報告された不具合の回帰: 細分類(ラーメン)が0件でも「食べる」自体が0件と誤表示しない', async ({ page }) => {
+-    // 食べる3件（すべてカフェ。ラーメンは無し）+ 温泉1件、を用意する。
+-    // 「ラーメン」を選ぶと0件になるが、「食べる」自体には3件あるため、
+-    // 「「食べる」では見つかりませんでした」という誤った表示にならないことを確認する。
++  test('実機で報告された不具合の回帰: 細分類(温泉)が0件でも「温泉・休憩」自体が0件と誤表示しない', async ({ page }) => {
++    // 温泉・休憩3件（すべて日帰り温泉相当。bath:type=onsen由来の「温泉」は無し）+ 宿泊1件、を用意する。
++    // 「温泉」を選ぶと0件になるが、「温泉・休憩」自体には3件あるため、
++    // 「「温泉・休憩」では見つかりませんでした」という誤った表示にならないことを確認する。
++    // （公開前UX整理で食べるの細分類チップは撤去したため、細分類チップが引き続き残る
++    // カテゴリ(温泉・休憩)で同じ回帰を確認する。App.tsx/PoiSearchPanel.tsxの
++    // 空表示ロジック自体はカテゴリ非依存の共通コードのため、検証の対象範囲は変わらない）
+     await page.route('**/api/interpreter', (route) =>
+       route.fulfill({
+         status: 200,
+         contentType: 'application/json',
+         body: JSON.stringify({
+           elements: [
+-            { type: 'node', id: 1, lat: 40.7171, lon: 141.1553, tags: { amenity: 'cafe', name: 'カフェA' } },
+-            { type: 'node', id: 2, lat: 40.7172, lon: 141.1554, tags: { amenity: 'cafe', name: 'カフェB' } },
+-            { type: 'node', id: 3, lat: 40.7173, lon: 141.1555, tags: { amenity: 'cafe', name: 'カフェC' } },
+-            { type: 'node', id: 4, lat: 40.7174, lon: 141.1556, tags: { natural: 'hot_spring', name: 'テスト温泉' } },
++            { type: 'node', id: 1, lat: 40.7171, lon: 141.1553, tags: { amenity: 'public_bath', name: '浴場A' } },
++            { type: 'node', id: 2, lat: 40.7172, lon: 141.1554, tags: { amenity: 'public_bath', name: '浴場B' } },
++            { type: 'node', id: 3, lat: 40.7173, lon: 141.1555, tags: { amenity: 'public_bath', name: '浴場C' } },
++            { type: 'node', id: 4, lat: 40.7174, lon: 141.1556, tags: { tourism: 'hotel', name: 'テストホテル' } },
+           ],
+         }),
+       }),
+@@ -572,21 +607,21 @@ test.describe('周辺スポット検索', () => {
+     await page.getByTestId('btn-search-nearby').click();
+     await expect(page.getByTestId('poi-result-count')).toContainText('4件見つけました', { timeout: 10000 });
+ 
+-    await page.getByTestId('poi-category-food').click();
++    await page.getByTestId('poi-category-onsen').click();
+     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました');
+-    await page.getByTestId('poi-subcategory-ramen').click();
++    await page.getByTestId('poi-subcategory-onsen').click();
+ 
+     await expect(page.getByTestId('poi-empty')).toBeVisible({ timeout: 10000 });
+-    // 「「食べる」では見つかりませんでした」という誤った表示にならないこと
+-    await expect(page.getByTestId('poi-empty')).not.toContainText('「食べる」では見つかりませんでした');
+-    // 正しくは「ラーメン」が見つからなかった旨と、「食べる」内の他ジャンルには3件ある旨
+-    await expect(page.getByTestId('poi-empty')).toContainText('「ラーメン」では見つかりませんでした');
+-    await expect(page.getByTestId('poi-empty')).toContainText('「食べる」の他の絞り込みでは3件見つかっています');
++    // 「「温泉・休憩」では見つかりませんでした」という誤った表示にならないこと
++    await expect(page.getByTestId('poi-empty')).not.toContainText('「温泉・休憩」では見つかりませんでした');
++    // 正しくは「温泉」が見つからなかった旨と、「温泉・休憩」内の他ジャンルには3件ある旨
++    await expect(page.getByTestId('poi-empty')).toContainText('「温泉」では見つかりませんでした');
++    await expect(page.getByTestId('poi-empty')).toContainText('「温泉・休憩」の他の絞り込みでは3件見つかっています');
+ 
+-    // 「「食べる」の他のジャンルを見る」ボタンで細分類だけがリセットされ、3件（カテゴリ全体）に戻る
++    // 「「温泉・休憩」の他のジャンルを見る」ボタンで細分類だけがリセットされ、3件（カテゴリ全体）に戻る
+     await page.getByTestId('poi-show-all-subcategories').click();
+     await expect(page.getByTestId('poi-result-count')).toContainText('3件見つけました');
+-    await expect(page.getByTestId('poi-category-food')).toHaveClass(/active/);
++    await expect(page.getByTestId('poi-category-onsen')).toHaveClass(/active/);
+   });
+ 
+   test('検索結果一覧が表示され、並び替えができる', async ({ page }) => {
+@@ -1048,28 +1083,17 @@ test.describe('周辺スポット検索: 細分類フィルター', () => {
+     await expect(resultCount).toContainText('7件見つけました', { timeout: 10000 });
+     await expect(markers).toHaveCount(7);
+ 
+-    // 食べるカテゴリ: 3件（ラーメン2・カフェ1）
++    // 食べるカテゴリ: 3件（ラーメン2・カフェ1、内訳は分類の正しさを一覧の行テキストで確認する。
++    // 公開前UX整理: 食べるの細分類チップ(ラーメン/カフェ等)は一般ユーザーUIから撤去したため、
++    // ここでは細分類フィルタではなく、食べるカテゴリ全体の結果と各行の表示テキストで
++    // 「データ上あるのに0件になる/誤分類される問題が無い」ことを確認する
++    // （内部classificationロジック自体は変更していないため、一覧の行テキストには
++    // 引き続き正しいジャンル名が出る）。
+     await page.getByTestId('poi-category-food').click();
+     await expect(resultCount).toContainText('3件見つけました');
+     await expect(markers).toHaveCount(3);
+-
+-    // 6. ラーメン: cuisine由来・店名由来の両方が残る（2件）
+-    await page.getByTestId('poi-subcategory-ramen').click();
+-    await expect(resultCount).toContainText('2件見つけました');
+-    await expect(page.getByTestId('poi-result-row')).toHaveCount(2);
+-    await expect(page.getByTestId('poi-result-row')).toContainText(['テスト屋台ラーメン', 'らーめん花子']);
+-    await expect(markers).toHaveCount(2);
+-
+-    // 7. カフェ: 1件
+-    await page.getByTestId('poi-subcategory-cafe').click();
+-    await expect(resultCount).toContainText('1件見つけました');
+-    await expect(markers).toHaveCount(1);
+-
+-    // 12. 細分類→すべてへ戻す（食べるカテゴリ内の「すべて」チップ。カテゴリ全体の
+-    // 「すべて」ボタン(poi-category-all)と文言が同じため、細分類チップの範囲内に限定する）
+-    await page.getByTestId('poi-subcategory-chips').getByRole('button', { name: 'すべて', exact: true }).click();
+-    await expect(resultCount).toContainText('3件見つけました');
+-    await expect(markers).toHaveCount(3);
++    await expect(page.getByTestId('poi-result-row')).toContainText(['テスト屋台ラーメン', 'らーめん花子', 'テストカフェ']);
++    await expect(page.getByTestId('poi-subcategory-chips')).toHaveCount(0);
+ 
+     // 13. カテゴリをまたいで温泉・休憩へ切り替え: 3件
+     await page.getByTestId('poi-category-onsen').click();
+diff --git a/src/App.tsx b/src/App.tsx
+index ee7e33a..d1b3b4c 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -16,7 +16,7 @@ import { STATIONS, getStation } from './data';
+ import { computeStats } from './lib/stats';
+ import { planCourses } from './lib/planner';
+ import { osrmProvider } from './lib/routing';
+-import { navToPointUrl, navToStationUrl } from './lib/gmaps';
++import { categoryDetailSearchUrl, navToPointUrl, navToStationUrl } from './lib/gmaps';
+ import {
+   filterSummary,
+   filterStations,
+@@ -42,7 +42,7 @@ import {
+ } from './lib/storage';
+ import { MAX_MANUAL_STATIONS, makeCustomStopId } from './lib/manualRoute';
+ import { toggleSelection, removeSelection, moveSelection } from './lib/routeSelection';
+-import { CATEGORY_LABEL, DEFAULT_STAY_MIN, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
++import { CATEGORY_LABEL, DEFAULT_STAY_MIN, GOOGLE_DETAIL_KEYWORD, poiDisplayName, poiGoogleSearchUrl, RAINY_DAY_SUBCATEGORIES, type Poi, type PoiCategory, type PoiSubcategory } from './lib/poi';
+ import {
+   peekCachedPois,
+   DEFAULT_RADIUS_M,
+@@ -1505,6 +1505,11 @@ export default function App() {
+                 const near = searchOrigin ? `${searchOrigin.lat},${searchOrigin.lng}` : '';
+                 openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${label} ${near}`)}`);
+               }}
++              onGoogleDetailSearch={() => {
++                if (!searchOrigin) return;
++                const keyword = poiCategory ? GOOGLE_DETAIL_KEYWORD[poiCategory] : '周辺スポット';
++                openExternal(categoryDetailSearchUrl(keyword, searchOrigin));
++              }}
+               onClose={closePoiSearch}
+               results={sortedPoiResults}
+               sort={poiSort}
+diff --git a/src/components/PoiSearchPanel.tsx b/src/components/PoiSearchPanel.tsx
+index 7db5603..210f0dc 100644
+--- a/src/components/PoiSearchPanel.tsx
++++ b/src/components/PoiSearchPanel.tsx
+@@ -1,5 +1,5 @@
+ import { useState } from 'react';
+-import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
++import { CATEGORY_LABEL, CATEGORY_SUBCATEGORIES, GOOGLE_DETAIL_KEYWORD, poiDisplayName, SUBCATEGORY_LABEL, type Poi, type PoiCategory, type PoiSubcategory } from '../lib/poi';
+ import { RADIUS_CHOICES, type EndpointAttemptLog, type SearchRadiusM } from '../lib/overpass';
+ import { PREFECTURES, type Prefecture, type Station } from '../types';
+ import { isDiagnosticsHost } from '../lib/geolocation';
+@@ -90,6 +90,8 @@ interface Props {
+   otherIncomplete: boolean;
+   onRetry: () => void;
+   onGoogleFallback: () => void;
++  /** 「Googleマップでもっと探す」（常時表示のCTA。検索実行前でも検索地点さえあれば押せる） */
++  onGoogleDetailSearch: () => void;
+   onClose: () => void;
+   /** 一覧表示する検索結果（表示用に既にフィルタ済み） */
+   results: Poi[];
+@@ -141,6 +143,7 @@ export default function PoiSearchPanel({
+   otherIncomplete,
+   onRetry,
+   onGoogleFallback,
++  onGoogleDetailSearch,
+   onClose,
+   results,
+   sort,
+@@ -295,7 +298,34 @@ export default function PoiSearchPanel({
+         </button>
+       </div>
+ 
+-      {category && (
++      {/*
++        道の駅ナビ＝発見・車旅・旅程作成、Googleマップ＝網羅的な詳細探索・口コミ・
++        写真・営業時間・ナビ、という役割分担のCTA。大分類を押した瞬間にGoogleマップへ
++        飛ばすのではなく、アプリ内候補（下の一覧）とは別に「さらに探したい場合は
++        こちら」という二段構造にする。検索を実行していなくても、検索地点さえ決まって
++        いれば押せる（Overpass通信には依存しない）。
++      */}
++      {origin && (
++        <button
++          style={{ width: '100%', marginTop: 6 }}
++          onClick={onGoogleDetailSearch}
++          data-testid="poi-google-detail-search"
++        >
++          🔍 Googleマップでもっと{category ? GOOGLE_DETAIL_KEYWORD[category] : '周辺スポット'}を探す
++        </button>
++      )}
++
++      {/*
++        食べる(food)の細分類（ラーメン/食堂/洋食/寿司/焼肉等）は、一般ユーザーUIから
++        原則撤去する（公開前UX整理）。「このボタンを押せば周辺の該当店舗が網羅的に
++        表示される」という誤解を生むため。OSMデータの登録・タグ品質・網羅率には
++        構造上Google Maps相当の網羅性を期待できず、そこを埋めようとはしない方針
++        （道の駅ナビの目的は発見・車旅・ルート作成であり、全国グルメDBではない）。
++        内部classificationロジック・POIデータ自体は変更しない（一覧の各行には
++        引き続きジャンルをテキストで表示する）。他カテゴリ(観光/温泉/宿泊)の
++        細分類は従来どおり残す。
++      */}
++      {category && category !== 'food' && (
+         <div className="poi-subcats" data-testid="poi-subcategory-chips">
+           <button className={subcategory === 'all' ? 'active' : ''} onClick={() => onChangeSubcategory('all')}>
+             すべて
+@@ -454,7 +484,7 @@ export default function PoiSearchPanel({
+             )}
+             {fromCache
+               ? '前回取得した周辺スポットを表示しています。'
+-              : `周辺スポットを${resultCount}件見つけました。`}
++              : `周辺の主なスポットを${resultCount}件見つけました。`}
+             地図のマークまたは下の一覧をタップすると詳しく見られます。
+             {revalidating && (
+               <>
+diff --git a/src/lib/gmaps.test.ts b/src/lib/gmaps.test.ts
+index 630faf6..3d865ed 100644
+--- a/src/lib/gmaps.test.ts
++++ b/src/lib/gmaps.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from 'vitest';
+ import {
+   avoidParam,
++  categoryDetailSearchUrl,
+   directionsSegments,
+   directionsUrls,
+   MAX_WAYPOINTS,
+@@ -21,6 +22,23 @@ describe('Googleマップ連携', () => {
+     expect(dec).toContain(st.address);
+   });
+ 
++  describe('categoryDetailSearchUrl（公開前UX整理: 「Googleマップでもっと探す」CTA）', () => {
++    it('公式仕様(/maps/search/?api=1&query=)のURLを生成し、検索語と検索地点の座標を含む', () => {
++      const url = categoryDetailSearchUrl('飲食店', { lat: 37.4004, lng: 140.3597 });
++      expect(url).toContain('https://www.google.com/maps/search/?api=1&query=');
++      const dec = decodeURIComponent(url);
++      expect(dec).toContain('飲食店');
++      expect(dec).toContain('37.400400');
++      expect(dec).toContain('140.359700');
++    });
++
++    it('Google Places API等の有料APIキーを含まない（クエリのみのURL）', () => {
++      const url = categoryDetailSearchUrl('観光スポット', { lat: 37.4, lng: 140.36 });
++      expect(url).not.toContain('key=');
++      expect(url).not.toContain('places');
++    });
++  });
++
+   it('経路URLの経由順が正しい', () => {
+     const pts = [
+       { lat: 37.0, lng: 140.0 },
+diff --git a/src/lib/gmaps.ts b/src/lib/gmaps.ts
+index 0764076..2b8f716 100644
+--- a/src/lib/gmaps.ts
++++ b/src/lib/gmaps.ts
+@@ -11,6 +11,24 @@ export function stationSearchUrl(st: Station): string {
+   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+ }
+ 
++/**
++ * 「Googleマップでもっと探す」CTA用の検索URL。
++ * アプリ内のOSM/Overpass由来POIは、道の駅ナビの主目的（道の駅発見・車旅・
++ * 周辺スポット発見・旅行ルート作成）に沿った「周辺に何がありそうか」の
++ * 発見用途であり、Google Mapsと同等の店舗網羅性は構造上保証できない
++ * （OSMの登録・タグ品質・網羅率に依存するため）。そのため大分類ボタンを
++ * 押した瞬間にGoogleマップへ飛ばすのではなく、アプリ内候補表示とは別に、
++ * 「さらに探したい場合はGoogleマップへ」という明確な二段構造のCTAを用意する。
++ *
++ * Google Maps URLs公式仕様（`/maps/search/?api=1&query=`）の範囲のみを使用。
++ * 検索半径を直接渡す公式パラメータは存在しないため、中心座標をqueryに含める
++ * （Google側が実際の検索範囲を決める）。Google Places API・有料APIは使わない。
++ */
++export function categoryDetailSearchUrl(keyword: string, origin: LatLng): string {
++  const q = `${keyword} ${origin.lat.toFixed(6)},${origin.lng.toFixed(6)}`;
++  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
++}
++
+ /**
+  * 道路の希望 → Google Maps URLs の avoid パラメータ。
+  * - highway_ok（おまかせ・早いルート）: 指定なし（Googleマップに任せる）
+diff --git a/src/lib/poi.ts b/src/lib/poi.ts
+index 2da662e..bef7a62 100644
+--- a/src/lib/poi.ts
++++ b/src/lib/poi.ts
+@@ -101,6 +101,18 @@ export const CATEGORY_LABEL: Record<PoiCategory, string> = {
+   lodging: '宿泊',
+ };
+ 
++/**
++ * 「Googleマップでもっと探す」CTAの検索語（内部カテゴリ名(CATEGORY_LABEL)より
++ * Google検索クエリとして自然な日本語を使う。道の駅ナビ＝発見・車旅・旅程作成、
++ * Googleマップ＝網羅的な詳細探索、という役割分担のためのCTA）。
++ */
++export const GOOGLE_DETAIL_KEYWORD: Record<PoiCategory, string> = {
++  food: '飲食店',
++  tourism: '観光スポット',
++  onsen: '温泉',
++  lodging: '宿泊施設',
++};
++
+ export const SUBCATEGORY_LABEL: Record<PoiSubcategory, string> = {
+   ramen: 'ラーメン',
+   shokudo: '食堂',

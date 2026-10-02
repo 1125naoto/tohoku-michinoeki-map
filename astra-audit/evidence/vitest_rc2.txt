@@ -1,0 +1,667 @@
+# Vitest (npx vitest run)
+# HEAD: 272d30466a1839057db75b193e2a8f91ff419d7e  RC: v1.1.0-rc2  実行: 2026-09-17T15:12:11+09:00
+
+
+ RUN  v2.1.9 C:/Users/user/Documents/DEV/道の駅
+
+ ✓ src/lib/poi.test.ts (60 tests) 40ms
+ ✓ src/lib/ui.test.ts (37 tests) 29ms
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 通信エラー時は例外を投げず failed:true を返す（アプリを落とさない）
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: network down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:167:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 接続先が1回目だけ失敗しても、同じ接続先の2回目以降(=別レースからの呼び出し)や次の接続先で成功できる
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:44:60
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 全接続先が失敗した場合はfailed:trueで打ち切る（無限リトライしない）
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 全接続先が失敗した場合はfailed:trueで打ち切る（無限リトライしない）
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 全接続先が失敗した場合はfailed:trueで打ち切る（無限リトライしない）
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:186:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > HTTPエラーステータスもfailed扱いになる
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > HTTPエラーステータスもfailed扱いになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 504
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 504
+[overpass] https://overpass-api.de/api/interpreter → HTTP 504
+[overpass] https://overpass-api.de/api/interpreter → HTTP 504
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 1つ目の接続先が429の場合、2つ目の接続先へ切り替えて成功できる
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 1つ目の接続先が504の場合、2つ目の接続先へ切り替えて成功できる
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 504
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 1つ目の接続先がタイムアウト（通信エラー）の場合、2つ目の接続先へ切り替えて成功できる
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:44:60
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:44:60
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 全接続先が失敗した場合はfailed:trueになる（同一接続先への無制限リトライはしない）
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 全接続先が失敗した場合はfailed:trueになる（同一接続先への無制限リトライはしない）
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass-api.de/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass-api.de/api/interpreter → HTTP 429 (rate limited)
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 接続先の優先順は private.coffee → maps.mail.ru(VK Maps) → overpass-api.de（旧kumi.systemsは含まれない）
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > 障害時のふるまい > 接続先の優先順は private.coffee → maps.mail.ru(VK Maps) → overpass-api.de（旧kumi.systemsは含まれない）
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > 前回成功結果の劣化フォールバック（全接続先失敗時） > 過去に成功していれば、全接続先失敗時でも前回の結果をfromCache:trueで返す
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 503
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 503
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 503
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 503
+[overpass] https://overpass-api.de/api/interpreter → HTTP 503
+[overpass] https://overpass-api.de/api/interpreter → HTTP 503
+
+stderr | src/lib/overpass.test.ts > 前回成功結果の劣化フォールバック（全接続先失敗時） > 過去に一度も成功していなければ、全接続先失敗時は素直にfailed:trueになる
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > 前回成功結果の劣化フォールバック（全接続先失敗時） > 過去に一度も成功していなければ、全接続先失敗時は素直にfailed:trueになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > 診断ログ（attemptLog） > 成功時は成功した接続先のログ(outcome:ok, status, elementCount)を含む
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 429 (rate limited)
+
+stderr | src/lib/overpass.test.ts > 診断ログ（attemptLog） > タイムアウトはoutcome:timeoutとして記録される
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://overpass.private.coffee/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+stderr | src/lib/overpass.test.ts > 診断ログ（attemptLog） > タイムアウトはoutcome:timeoutとして記録される
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://overpass-api.de/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://overpass-api.de/api/interpreter → timeout: DOMException [AbortError]: Aborted
+    at new DOMException (node:internal/per_context/domexception:76:18)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:473:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at processTimers (node:internal/timers:538:9)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+stderr | src/lib/overpass.test.ts > 検索範囲の自動拡張（searchNearbyPoisAuto） > 通信が失敗した場合は範囲を広げずに失敗を返す（無意味な再試行をしない）
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+[overpass] https://overpass.private.coffee/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > 検索範囲の自動拡張（searchNearbyPoisAuto） > 通信が失敗した場合は範囲を広げずに失敗を返す（無意味な再試行をしない）
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+[overpass] https://overpass-api.de/api/interpreter → HTTP 500
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > foodだけ全滅してもotherが成功していれば部分的な結果を返す（failed:trueにしない）
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food query down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:603:31
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > foodだけ全滅してもotherが成功していれば部分的な結果を返す（failed:trueにしない）
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food query down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:603:31
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food query down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:603:31
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > food/other両方が全滅した場合のみfailed:trueになる
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > food/other両方が全滅した場合のみfailed:trueになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > food/other両方が全滅した場合のみfailed:trueになる
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:614:49
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+
+ ✓ src/lib/placeSearch.test.ts (31 tests) 203ms
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > foodIncomplete/otherIncompleteが完全成功では両方false、food全滅では foodIncomplete:true のみになる
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:664:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > foodIncomplete/otherIncompleteが完全成功では両方false、food全滅では foodIncomplete:true のみになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:664:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:664:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > キャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:677:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > キャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:677:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > キャッシュヒット時もfoodIncomplete/otherIncompleteが保存時の値を保持して返る
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:677:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > 部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:721:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runOne (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:352:5)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:360:7
+    at Array.forEach (<anonymous>)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:359:24
+    at new Promise (<anonymous>)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > 部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:721:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: food down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:721:85
+    at mockCall (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/spy/dist/index.js:61:17)
+    at spy (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/tinyspy/dist/index.js:45:80)
+    at tryEndpoint (C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:282:23)
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.ts:351:14
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass.private.coffee/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+stderr | src/lib/overpass.test.ts > food/otherクエリの分離（都市部でラーメン等が80件上限に埋もれる不具合の修正） > 部分成功の結果は、既存の完全な劣化フォールバック(前回成功結果)を上書きしない
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+[overpass] https://overpass-api.de/api/interpreter → network error: Error: down
+    at C:\Users\user\Documents\DEV\道の駅\src\lib\overpass.test.ts:734:54
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:567:9)
+    at processTimers (node:internal/timers:541:7)
+    at file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/Users/user/Documents/DEV/%E9%81%93%E3%81%AE%E9%A7%85/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > HTTP 200でもremarkフィールドがあれば成功とみなさず、全滅時はfailed:trueになる
+[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > HTTP 200でもremarkフィールドがあれば成功とみなさず、全滅時はfailed:trueになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error: Query timed out.
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > HTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない
+[overpass] https://overpass.private.coffee/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://overpass.private.coffee/api/interpreter → elements配列が無い不正な応答 {}
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > HTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → elements配列が無い不正な応答 {}
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > HTTP 200でelements配列が無い応答も不正応答として扱い、成功の0件と混同しない
+[overpass] https://overpass-api.de/api/interpreter → elements配列が無い不正な応答 {}
+[overpass] https://overpass-api.de/api/interpreter → elements配列が無い不正な応答 {}
+
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > foodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる
+[overpass] https://overpass.private.coffee/api/interpreter → remark(実行時エラー疑い): runtime error
+
+ ✓ src/lib/overpass.test.ts (50 tests) 670ms
+stderr | src/lib/overpass.test.ts > 応答の妥当性検証（HTTP 200だがremark/elements欠如などの不正応答を失敗扱いにする） > foodだけremark応答、otherは正常な0件なら、部分成功として扱われfailed:falseになる
+[overpass] https://maps.mail.ru/osm/tools/overpass/api/interpreter → remark(実行時エラー疑い): runtime error
+[overpass] https://overpass-api.de/api/interpreter → remark(実行時エラー疑い): runtime error
+
+ ✓ src/lib/manualRoute.test.ts (30 tests) 76ms
+ ✓ src/lib/planner.test.ts (23 tests) 483ms
+ ✓ src/lib/backup.test.ts (21 tests) 34ms
+ ✓ src/lib/gmaps.test.ts (21 tests) 36ms
+ ✓ src/lib/routeDraft.test.ts (12 tests) 23ms
+ ✓ src/lib/poiProvider.test.ts (10 tests) 33ms
+ ✓ src/lib/poiStaticCache.test.ts (12 tests) 29ms
+ ✓ src/lib/storage.test.ts (12 tests) 28ms
+ ✓ src/lib/hours.test.ts (15 tests) 103ms
+ ✓ src/lib/nearbyCategories.test.ts (17 tests) 33ms
+ ✓ src/lib/geolocation.test.ts (10 tests) 26ms
+ ✓ src/lib/routeOrder.test.ts (9 tests) 17ms
+ ✓ src/lib/areaSelection.test.ts (12 tests) 21ms
+ ✓ src/lib/websearch.test.ts (10 tests) 21ms
+ ✓ src/data/stations.test.ts (122 tests) 4089ms
+   ✓ 道の駅マスターデータ > 登録地方から明らかに外れた座標がない（都道府県ごとの想定範囲でチェック） 320ms
+   ✓ 道の駅マスターデータ > 同一施設の重複登録がない（近接150m以内、または同一都道府県内の同名駅なし） 396ms
+   ✓ 北陸追加（販売版・全国展開Phase 3） > 全駅で座標が数値かつ重複がない（同一地点の異なる駅が存在しない） 462ms
+   ✓ 全国facility監査（販売版・全国横断Phase 10） > 全1237施設がfacility監査レコードを持ち、値はyes/no/unknownのいずれか 452ms
+ ✓ src/lib/routing.test.ts (4 tests) 21ms
+ ✓ src/product/user/migration.test.ts (9 tests) 20ms
+ ✓ src/product/station/nationwideStation.test.ts (7 tests) 240ms
+ ✓ src/product/region/regions.test.ts (11 tests) 25ms
+ ✓ src/lib/mapSettings.test.ts (6 tests) 13ms
+ ✓ src/lib/routeSelection.test.ts (10 tests) 14ms
+ ✓ src/product/schema/version.test.ts (5 tests) 13ms
+ ✓ src/product/config/productConfig.test.ts (6 tests) 15ms
+ ✓ src/product/entitlement/entitlement.test.ts (6 tests) 13ms
+ ✓ src/product/featureFlags/featureFlags.test.ts (3 tests) 9ms
+ ✓ src/components/PoiSearchPanel.test.ts (4 tests) 51ms
+ ✓ src/lib/storageNamespace.test.ts (1 test) 6ms
+
+ Test Files  31 passed (31)
+      Tests  586 passed (586)
+   Start at  15:12:20
+   Duration  10.60s (transform 6.61s, setup 0ms, collect 14.75s, tests 6.44s, environment 15ms, prepare 19.64s)
+

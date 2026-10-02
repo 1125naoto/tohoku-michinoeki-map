@@ -1,0 +1,51 @@
+3d6408421d4544df7e295093a6695c1072a0db1d
+1972naoto1125 <aoshanzhiren08@gmail.com>
+Tue Sep 15 16:23:26 2026 +0900
+
+ルート作成に「↻ 最初からやり直す」の逃げ道を追加
+
+Owner実機QA: Route Planner V2の機能自体は正常だが、作成途中で操作を
+間違えた場合に「どこまで戻ればいいか分からない」「面倒に感じる」という
+UX課題が報告された。大規模改修は行わず、既存の安全な reset の仕組みを
+再利用して逃げ道を追加。
+
+現状監査:
+- discardCurrentCourse（App.tsx）が既に「作成中のルートだけ」を安全に
+  初期化する関数として存在していた（訪問記録・スタンプ・行きたい・
+  保存済みルート・旅行中状態には触れない）。
+- 「このコースを取り消す」「最初から作り直す」のConfirmDialogパターンも
+  RouteResults画面には既に実装済みだった。
+- 唯一の欠落は自由地点(selectedCustomStops)のクリア漏れ（Route Planner V2
+  実装時に追加を見落としていた）と、ルート作成の早い段階
+  （地図で駅を選択中／POI・自由地点・最終目的地を設定中）からは
+  この逃げ道に到達できなかったこと。
+
+変更:
+- discardCurrentCourse: selectedCustomStopsのクリアを追加（既存の欠落修正）
+- RouteSelectBar.tsx: 地図下部の選択バーに「↻ やり直す」を追加
+  （CASE A: 道の駅選択の途中から）
+- ManualRouteBuilder.tsx: 設定画面の主CTA「🚗 このコースで作成」の下に
+  「↻ 最初からやり直す」を追加（CASE B/C/D: POI・自由地点・最終目的地を
+  設定した後から）
+- RouteResults.tsx: 既存ボタンの表記を「🔄 最初から作り直す」→
+  「↻ 最初からやり直す」に統一（機能は変更なし）
+- 出発地点は現状のUXを監査した上で意図的に維持（discardCurrentCourseは
+  origin stateに触れない。再入力の手間を避けるため）
+
+確認ダイアログ・トースト文言は既存の「訪問記録とスタンプ記録は消えません」
+パターンをそのまま再利用（新規UI文言の追加は最小限）。
+
+テスト: TypeScript clean。Vitest 511/511 passed（既存のまま、新規ロジックは
+既存discardCurrentCourseの薄い呼び出しのため単体テスト対象コードの追加なし）。
+e2e/route-restart-shortcut.spec.ts新規5件のうちCASE B/C/D
+（POI・自由地点・最終目的地を含む設定画面からのリセット、永続データ保護）は
+確認済み。CASE A・CANCEL・永続データテストは、今回のセッション中に発生した
+深刻な機械負荷（本コードと無関係な既存route-teardown.spec.tsの単純な
+tab-routeクリックすら60秒でタイムアウトすることを確認し、環境要因と特定）
+により自動検証を完走できなかったが、コード自体は既存の
+discardCurrentCourse/ConfirmDialogパターンをそのまま再利用しているのみで
+新規ロジックの複雑さは無い。
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NFqYbzeR2pUsaYawcoVhXp
+

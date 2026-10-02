@@ -1,0 +1,65 @@
+道の駅たまかわ (mne-19029) を検索地点とした場合の実際の生成URL
+============================================================
+駅データ（src/data/stations.json）:
+  id: mne-19029
+  name: たまかわ
+  pref: 福島県
+  city: 玉川村
+  address: 福島県石川郡玉川村大字岩法寺字宮ノ前140-2
+  lat: 37.2228324
+  lng: 140.4181372
+
+（参考）Owner実機で確認されたGoogleマップ検索欄の文字列:
+  「周辺スポット 37.222832,140...」
+  → 下記「すべて」のraw query textと一致する（座標自体は正しく道の駅たまかわの座標）。
+
+
+■ 新設CTA（PoiSearchPanel.tsx「Googleマップでもっと探す」、App.tsx onGoogleDetailSearch）
+   実装: src/lib/gmaps.ts categoryDetailSearchUrl(keyword, origin)
+   方式: window.open(url, '_blank')（App.tsx openExternal経由。<a>タグではない）
+
+すべて（カテゴリ未選択）:
+  raw query text: 周辺スポット 37.222832,140.418137
+  url: https://www.google.com/maps/search/?api=1&query=%E5%91%A8%E8%BE%BA%E3%82%B9%E3%83%9D%E3%83%83%E3%83%88%2037.222832%2C140.418137
+
+食べる（グルメ）:
+  raw query text: 飲食店 37.222832,140.418137
+  url: https://www.google.com/maps/search/?api=1&query=%E9%A3%B2%E9%A3%9F%E5%BA%97%2037.222832%2C140.418137
+
+観光:
+  raw query text: 観光スポット 37.222832,140.418137
+  url: https://www.google.com/maps/search/?api=1&query=%E8%A6%B3%E5%85%89%E3%82%B9%E3%83%9D%E3%83%83%E3%83%88%2037.222832%2C140.418137
+
+温泉・休憩:
+  raw query text: 温泉 37.222832,140.418137
+  url: https://www.google.com/maps/search/?api=1&query=%E6%B8%A9%E6%B3%89%2037.222832%2C140.418137
+
+宿泊:
+  raw query text: 宿泊施設 37.222832,140.418137
+  url: https://www.google.com/maps/search/?api=1&query=%E5%AE%BF%E6%B3%8A%E6%96%BD%E8%A8%AD%2037.222832%2C140.418137
+
+
+■ 比較対象1: 既存の単一施設リンク（StationSheet.tsx link-gmap、"Googleマップで開く"）
+   実装: src/lib/gmaps.ts stationSearchUrl(station)
+   方式: <a href={url} target="_blank" rel="noopener noreferrer">（window.open()ではない）
+   ※ このリンクについて実機不具合の報告は今回受けていない。
+
+  raw query text: 道の駅たまかわ 福島県石川郡玉川村大字岩法寺字宮ノ前140-2
+  url: https://www.google.com/maps/search/?api=1&query=%E9%81%93%E3%81%AE%E9%A7%85%E3%81%9F%E3%81%BE%E3%81%8B%E3%82%8F%20%E7%A6%8F%E5%B3%B6%E7%9C%8C%E7%9F%B3%E5%B7%9D%E9%83%A1%E7%8E%89%E5%B7%9D%E6%9D%91%E5%A4%A7%E5%AD%97%E5%B2%A9%E6%B3%95%E5%AF%BA%E5%AD%97%E5%AE%AE%E3%83%8E%E5%89%8D140-2
+
+
+■ 比較対象2: 完成ルート→Googleマップ分割ナビ（RouteResults.tsx gmaps-segment-link）
+   実装: src/lib/gmaps.ts directionsSegments()/directionsUrls()
+   方式: <a href={url} target="_blank" rel="noopener noreferrer">（window.open()ではない）
+   仕様: /maps/dir/?api=1&origin=...&destination=...&waypoints=...&travelmode=driving
+        （search/?api=1&query= ではなく、構造化されたorigin/destinationパラメータを使う）
+   ※ このリンクについて実機不具合の報告は今回受けていない（Google Maps分割ナビ
+     のwaypoints区切り文字二重エンコード問題は別セッションで既に修正済み・別件）。
+
+  例（出発地点(37.400400,140.359700) → 道の駅たまかわ）:
+  url: https://www.google.com/maps/dir/?api=1&origin=37.400400%2C140.359700&destination=%E9%81%93%E3%81%AE%E9%A7%85%E3%81%9F%E3%81%BE%E3%81%8B%E3%82%8F%20%E7%A6%8F%E5%B3%B6%E7%9C%8C%E7%9F%B3%E5%B7%9D%E9%83%A1%E7%8E%89%E5%B7%9D%E6%9D%91%E5%A4%A7%E5%AD%97%E5%B2%A9%E6%B3%95%E5%AF%BA%E5%AD%97%E5%AE%AE%E3%83%8E%E5%89%8D140-2&travelmode=driving
+
+
+■ 秘密情報の有無
+  上記すべてのURLに、APIキー・トークン・個人情報は含まれない
+  （道の駅たまかわは公開データ。座標・住所は国土交通省登録の公開道の駅データ）。
