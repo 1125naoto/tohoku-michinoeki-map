@@ -31,5 +31,13 @@ jobs:
         env:
           STRIPE_API_KEY: ${{ secrets.STRIPE_BILLING_WRITE_KEY }}
         run: |
+          # 値そのものは出さない。形式の診断（真偽値と長さ）だけ
+          node -e '
+            const k = process.env.STRIPE_API_KEY || "";
+            const t = k.replace(/^[\s﻿]+|[\s﻿]+$/g, "");
+            console.log("[key-format] length:", k.length, "trimmed length:", t.length,
+              "| starts rk_live_:", t.startsWith("rk_live_"), "| starts sk_live_:", t.startsWith("sk_live_"),
+              "| starts rk_test_/sk_test_:", /^(rk|sk)_test_/.test(t),
+              "| surrounding whitespace/BOM:", k !== t, "| inner chars all [A-Za-z0-9_]:", /^[A-Za-z0-9_]+$/.test(t));'
           INTRO_SCHEDULE_PROBE=1 node scripts/apply-intro-schedules.mjs
           node scripts/apply-intro-schedules.mjs

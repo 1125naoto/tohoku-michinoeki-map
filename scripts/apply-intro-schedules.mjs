@@ -17,6 +17,9 @@
 import { execFileSync } from 'node:child_process';
 import { INTRO_PRICE, planForSchedule, planForSubscription } from './introSchedulePlan.mjs';
 
+// GitHub Secret への登録時にクリップボード由来の改行・空白・BOMが混ざっても動くように、前後を除去する
+if (process.env.STRIPE_API_KEY) process.env.STRIPE_API_KEY = process.env.STRIPE_API_KEY.replace(/^[\s﻿]+|[\s﻿]+$/g, '');
+
 const mask = (s) => String(s).replace(/\b(sk|rk|pk)_(live|test)_[A-Za-z0-9*]+/g, '[KEY]');
 const short = (id) => `${String(id).slice(0, 12)}…`;
 
