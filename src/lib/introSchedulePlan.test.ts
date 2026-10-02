@@ -4,6 +4,7 @@ import {
   INTRO_SCHEDULE_MARK,
   REGULAR_PRICE,
   monthsBetweenUtc,
+  needsScheduleAlert,
   planForSchedule,
   planForSubscription,
 } from '../../scripts/introSchedulePlan.mjs';
@@ -116,5 +117,18 @@ describe('monthsBetweenUtc（Stripeの月次請求日との対応）', () => {
     const jan31 = ts('2027-01-31T00:00:00Z');
     expect(monthsBetweenUtc(jan31, ts('2027-02-28T00:00:00Z'))).toBe(1);
     expect(monthsBetweenUtc(jan31, ts('2027-03-31T00:00:00Z'))).toBe(2);
+  });
+});
+
+describe('needsScheduleAlert（PCのタスクが止まっている等の見守り）', () => {
+  const day = 86400;
+  it('切替が未設定のまま3日を過ぎた導入価格の契約だけを警告する', () => {
+    expect(needsScheduleAlert(sub(), ANCHOR + 4 * day)).toBe(true);
+    expect(needsScheduleAlert(sub(), ANCHOR + 2 * day)).toBe(false); // まだ猶予内
+  });
+  it('スケジュール設定済み・年間プラン・解約予約済みは警告しない', () => {
+    expect(needsScheduleAlert(sub({ schedule: 'sub_sched_x' }), ANCHOR + 30 * day)).toBe(false);
+    expect(needsScheduleAlert(sub({ items: { data: [{ price: { id: 'price_1ULkA7ICXxuNXmZybRGXYs1h' }, quantity: 1 }] } }), ANCHOR + 30 * day)).toBe(false);
+    expect(needsScheduleAlert(sub({ cancel_at_period_end: true }), ANCHOR + 30 * day)).toBe(false);
   });
 });

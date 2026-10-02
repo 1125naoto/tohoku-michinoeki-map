@@ -16,10 +16,10 @@ name: 道の駅ナビ全国版 購入者ゲートの同期
 #    → 決済からアクセス有効化まで、通常は同期1分以内＋デプロイ約1〜2分。
 #  - cron は、連鎖が何かの理由で途切れたときの再始動（ウォッチドッグ）として残す。
 #  - concurrency で同時に動くのは1つだけ（重なった起動は待機し、待機分は最新の1つにまとまる）。
-#  - 同じ周期で scripts/apply-intro-schedules.mjs も実行し、月額プラン（最初の2か月 250円/月）の契約に
-#    3回目の請求から500円/月へ切り替わるSubscription Scheduleを設定する。購入者一覧の同期とは独立
-#    （失敗しても active.json とアクセス判定には影響しない）。secrets.STRIPE_BILLING_WRITE_KEY
-#    （制限付きキー: Subscriptions = Write のみ）が未設定なら何もしない。
+#  - 月額プラン（最初の2か月 250円/月）の3回目の請求から500円/月への切替（Subscription Schedule）は、
+#    OwnerのPCのタスク（scripts/local-billing-runner/）が Stripe CLI のログインで設定する。
+#    ここでは各実行の最初に1回、未設定のまま3日を過ぎた契約が無いかを見守り、あればIssueでOwnerに通知する
+#    （scripts/check-intro-schedules.mjs。購入者一覧の同期とは独立で、失敗してもアクセス判定に影響しない）。
 #
 # 既定のGITHUB_TOKENによるpushはdeploy.ymlのon:pushを起動しないため
 # （refresh-poi-cache.ymlと同じ既知の挙動）、変更があれば明示的にdeploy.ymlを起動する。
@@ -38,6 +38,7 @@ on:
 permissions:
   contents: write
   actions: write
+  issues: write
 
 concurrency:
   group: sync-subscriptions
@@ -71,18 +72,16 @@ jobs:
         env:
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
           NAMI_ACCESS_CODE: ${{ secrets.NAMI_ACCESS_CODE }}
-          STRIPE_BILLING_WRITE_KEY: ${{ secrets.STRIPE_BILLING_WRITE_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          # 書き込みキーの権限を各実行の最初に1回だけ自己診断（何も作らない）
-          STRIPE_API_KEY="$STRIPE_BILLING_WRITE_KEY" INTRO_SCHEDULE_PROBE=1 node scripts/apply-intro-schedules.mjs || echo "::warning::intro schedule permission probe failed"
+          # 料金切替（OwnerのPCのタスクが設定）の見守り。各実行の最初に1回だけ
+          node scripts/check-intro-schedules.mjs || echo "::warning::intro schedule watch failed"
           end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
           while [ "$(date +%s)" -lt "$end" ]; do
             started=$(date +%s)
             # 他のpush（デプロイ等）で main が進んでいても、毎回最新に合わせてから同期する（pushの衝突を防ぐ）
             git fetch -q origin main && git reset -q --hard origin/main
             node scripts/sync-subscriptions.mjs || echo "::warning::sync failed (次の周期で再試行)"
-            STRIPE_API_KEY="$STRIPE_BILLING_WRITE_KEY" node scripts/apply-intro-schedules.mjs || echo "::warning::intro schedules failed (次の周期で再試行)"
             sleep $(( INTERVAL_SECONDS - ( $(date +%s) - started ) > 5 ? INTERVAL_SECONDS - ( $(date +%s) - started ) : 5 ))
           done
 

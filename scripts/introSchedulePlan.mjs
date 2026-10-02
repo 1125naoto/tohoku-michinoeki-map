@@ -96,3 +96,16 @@ export function planForSchedule(sub, schedule) {
     ],
   };
 }
+
+/** 切替（スケジュール）が未設定のまま、この日数を過ぎた月額プランの契約を警告する（3回目の請求は約60日後） */
+export const ALERT_GRACE_DAYS = 3;
+
+/**
+ * 見守り用: 月額プランの導入価格の契約で、スケジュールが無いまま ALERT_GRACE_DAYS を過ぎているか。
+ * （このPCのタスクが長期間止まっている・Stripe CLIのログインが切れている等の検知に使う）
+ */
+export function needsScheduleAlert(sub, nowSec, graceDays = ALERT_GRACE_DAYS) {
+  if (planForSubscription(sub).action !== 'create') return false;
+  const started = sub.start_date ?? sub.created;
+  return typeof started === 'number' && nowSec - started > graceDays * 86400;
+}

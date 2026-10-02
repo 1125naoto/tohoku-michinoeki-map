@@ -4,9 +4,11 @@
  * Subscription Schedule を設定する（GitHub Actions の購入者ゲート同期ワークフローから実行）。
  * 判定はすべて scripts/introSchedulePlan.mjs（純関数・単体テスト済み）。ここはStripe呼び出しだけ。
  *
- * 認証: 環境変数 STRIPE_API_KEY（このステップでは GitHub Secret STRIPE_BILLING_WRITE_KEY を渡す）。
- *   必要な権限は Stripe の制限付きキーの「Subscriptions: Write」だけ（Subscriptionの一覧・取得と、
- *   Subscription Schedule の作成・取得・更新）。未設定なら何もせず正常終了する。
+ * 認証（どちらか）:
+ *  - 環境変数 STRIPE_CLI_PROJECT=<プロファイル名>: このPCでログイン済みのStripe CLIの認証（OSの資格情報ストアに
+ *    保存され自動更新される）を使う。Ownerのローカル実行（scripts/local-billing-runner/）はこちら。
+ *  - 環境変数 STRIPE_API_KEY: 制限付きキー（必要な権限は「Subscriptions: Write」だけ）。
+ *  どちらも無ければ何もせず正常終了する。
  *
  * 安全性:
  *  - 何度実行しても同じ結果（設定済みのスケジュールは metadata で判別して何もしない。作成は
@@ -20,13 +22,16 @@ import { INTRO_PRICE, planForSchedule, planForSubscription } from './introSchedu
 // GitHub Secret への登録時にクリップボード由来の改行・空白・BOMが混ざっても動くように、前後を除去する
 if (process.env.STRIPE_API_KEY) process.env.STRIPE_API_KEY = process.env.STRIPE_API_KEY.replace(/^[\s﻿]+|[\s﻿]+$/g, '');
 
+const CLI_PROJECT = process.env.STRIPE_CLI_PROJECT || '';
+
 const mask = (s) => String(s).replace(/\b(sk|rk|pk)_(live|test)_[A-Za-z0-9*]+/g, '[KEY]');
 const short = (id) => `${String(id).slice(0, 12)}…`;
 
 function stripe(args) {
   let out;
   try {
-    out = execFileSync('stripe', [...args, '--live'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+    const profile = CLI_PROJECT ? ['--project-name', CLI_PROJECT] : [];
+    out = execFileSync('stripe', [...profile, ...args, '--live'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (err) {
     // 権限不足のときは、Stripeのエラー本文に必要な権限が書かれている（キーの値は含めない）
     throw new Error(mask(`${err.stdout ?? ''} ${err.stderr ?? ''}`.trim() || err.message));
@@ -83,8 +88,8 @@ function probe() {
 }
 
 function main() {
-  if (!process.env.STRIPE_API_KEY) {
-    console.log('[intro-schedules] STRIPE_BILLING_WRITE_KEY が未設定のため何もしません（月額プランの3か月目以降の切替は未設定のまま）。');
+  if (!process.env.STRIPE_API_KEY && !CLI_PROJECT) {
+    console.log('[intro-schedules] 認証（STRIPE_CLI_PROJECT または STRIPE_API_KEY）が無いため何もしません。');
     return;
   }
   if (process.env.INTRO_SCHEDULE_PROBE === '1') {

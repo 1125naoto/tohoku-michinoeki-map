@@ -10,3 +10,6 @@ export type SchedulePlan = { action: 'skip'; reason: string } | { action: 'confi
 export function planForSubscription(sub: any): SubscriptionPlan;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function planForSchedule(sub: any, schedule: any): SchedulePlan;
+export const ALERT_GRACE_DAYS: number;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function needsScheduleAlert(sub: any, nowSec: number, graceDays?: number): boolean;
