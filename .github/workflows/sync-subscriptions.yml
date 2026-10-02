@@ -28,7 +28,12 @@ on:
   schedule:
     # ウォッチドッグ（GitHub側の負荷で数時間遅れることがある。通常は自己再起動の連鎖で動く）
     - cron: '*/10 * * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      loop_minutes:
+        description: 'この実行で同期を続ける分数（確認用に短くできる。自己再起動の連鎖は既定の55分に戻る）'
+        required: false
+        default: '55'
 
 permissions:
   contents: write
@@ -43,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 65
     env:
-      LOOP_MINUTES: '55'
+      LOOP_MINUTES: ${{ inputs.loop_minutes || '55' }}
       INTERVAL_SECONDS: '60'
     steps:
       - name: Checkout
