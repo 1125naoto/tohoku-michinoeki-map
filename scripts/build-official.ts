@@ -22,6 +22,8 @@ for (const [name, source] of Object.entries(files)) {
 }
 mkdirSync(join(out, 'img'), { recursive: true });
 for (const f of readdirSync(join(root, 'public', 'official', 'img'))) copyFileSync(join(root, 'public', 'official', 'img', f), join(out, 'img', f));
+mkdirSync(join(out, 'lp'), { recursive: true });
+for (const f of readdirSync(join(root, 'public', 'official', 'lp'))) copyFileSync(join(root, 'public', 'official', 'lp', f), join(out, 'lp', f));
 mkdirSync(join(out, 'icons'), { recursive: true });
 for (const f of ['icon-48.png', 'icon-192.png']) copyFileSync(join(root, 'public', 'icons', f), join(out, 'icons', f));
 copyFileSync(join(root, 'public', 'og-image.png'), join(out, 'og-image.png'));

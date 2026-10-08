@@ -13,6 +13,7 @@ import { MONITOR_CONFIG, type MonitorConfig } from '../monitorSite/config';
 import { pricingText, type PricingText } from '../monitorSite/pricing';
 import { CHECKOUT_ATTRIBUTION_JS, evaluateSalesGate, resolveSite, taxSentence } from '../monitorSite/render';
 import { OFFICIAL_CONFIG, isValidLineUrl, type OfficialConfig } from './config';
+import { renderXProfileLp } from './lp';
 
 export interface OfficialRenderOptions {
   /** 配信パスのbase（公式ドメイン直下=`/`、GitHub Pagesプレビュー=`/tohoku-michinoeki-map/official/`）。前後に '/' */
@@ -416,7 +417,8 @@ ${stickyCta}${ctx.open ? `<script>${CHECKOUT_ATTRIBUTION_JS}${sourceJs}</script>
 </html>
 `;
 
-  const files: Record<string, string> = { 'index.html': html };
+  // Xプロフィール用LP（/lp/）。公式トップ（index.html）は上書きしない
+  const files: Record<string, string> = { 'index.html': html, ...renderXProfileLp({ base, assetBase, live }, cfg, off) };
   if (opts.standalone) {
     files['404.html'] = `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>ページが見つかりません｜${esc(cfg.productName)}</title>

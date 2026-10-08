@@ -205,7 +205,7 @@ describe('公式サイト: SEO（プレビュー／公式ドメイン稼働の�
   });
 
   it('robots.txt / sitemap.xml / 404.html は単独ビルドのみ。稼働前は全拒否・sitemapなし', () => {
-    expect(Object.keys(renderOfficialSite(PREVIEW))).toEqual(['index.html']);
+    expect(Object.keys(renderOfficialSite(PREVIEW))).toEqual(['index.html', 'lp/index.html']);
     const pre = renderOfficialSite({ ...DOMAIN, live: false });
     expect(pre['robots.txt']).toBe('User-agent: *\nDisallow: /\n');
     expect(pre['sitemap.xml']).toBeUndefined();
