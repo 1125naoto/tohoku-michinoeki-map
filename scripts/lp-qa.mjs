@@ -32,6 +32,10 @@ async function run(label, viewport, dpr, mobile) {
     try { bytes += (await r.body()).length; } catch { /* redirect等 */ }
   });
 
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
+  });
   await page.goto(url, { waitUntil: 'load' });
   await page.waitForTimeout(300);
 
@@ -40,26 +44,30 @@ async function run(label, viewport, dpr, mobile) {
   check(`[${label}] コンソールエラー・読み込み失敗が無い`, errors.length === 0 && failed.length === 0, [...errors, ...failed].join(' | '));
 
   // 画像10枚が順番どおり・表示サイズが縦横比どおり
-  const imgs = await page.$$eval('section.pg img', (els) => els.map((e) => ({ src: e.currentSrc.split('/').pop(), w: e.clientWidth, h: e.clientHeight, nat: e.naturalWidth })));
-  check(`[${label}] 画像が10枚`, imgs.length === 10, String(imgs.length));
+  const imgs = await page.$$eval('main img', (els) => els.map((e) => ({ src: e.currentSrc.split('/').pop(), w: e.clientWidth, h: e.clientHeight, nat: e.naturalWidth })));
+  check(`[${label}] 画像が15枚以上（実画面11＋素材）`, imgs.length >= 15, String(imgs.length));
+  const secs = await page.$$eval('section[id^="p"]', (els) => els.map((e) => e.id));
+  check(`[${label}] 区画 p1〜p10 が順番にある`, secs.join() === 'p1,p2,p3,p4,p5,p6,p7,p8,p9,p10', secs.join());
   await page.evaluate(async () => {
     for (const y of [...Array(30).keys()].map((i) => i * 1200)) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 60)); }
     window.scrollTo({ top: 0, behavior: 'instant' });
   });
   await page.waitForTimeout(500);
-  const loaded = await page.$$eval('section.pg img', (els) => els.every((e) => e.complete && e.naturalWidth > 0));
+  const cls = await page.evaluate(() => Math.round(window.__cls * 1000) / 1000);
+  check(`[${label}] レイアウトのずれ（CLS）が 0.1 以下（全画像を読み込むまでスクロール）`, cls <= 0.1, String(cls));
+  const loaded = await page.$$eval('main img', (els) => els.every((e) => e.complete && e.naturalWidth > 0));
   check(`[${label}] 画像が全部読み込める（遅延読み込み後）`, loaded);
 
   // 焼き込みボタンの上の実リンク: 中心をクリックして遷移先へ動く
-  const hits = await page.$$eval('a.hit', (as) => as.map((a) => ({ href: a.getAttribute('href'), label: a.getAttribute('aria-label') })));
-  check(`[${label}] 実リンクが9つ（画像1〜9のボタン）`, hits.length === 9, String(hits.length));
-  const idsOk = await page.evaluate(() => [...document.querySelectorAll('a.hit, .sticky-cta a')].every((a) => document.querySelector(a.getAttribute('href'))));
+  const hits = await page.$$eval('a.hit, a.next', (as) => as.map((a) => ({ href: a.getAttribute('href'), label: a.getAttribute('aria-label') })));
+  check(`[${label}] 「次へ」の実リンクが10（p1〜p10）`, hits.length === 10, String(hits.length));
+  const idsOk = await page.evaluate(() => [...document.querySelectorAll('a.hit, a.next, .sticky-cta a')].every((a) => document.querySelector(a.getAttribute('href'))));
   check(`[${label}] すべてのリンク先（#id）が存在する`, idsOk);
 
   let moved = 0;
   for (let i = 0; i < hits.length; i++) {
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    const loc = page.locator('a.hit').nth(i);
+    const loc = page.locator('a.hit, a.next').nth(i);
     await loc.scrollIntoViewIfNeeded();
     await loc.click({ timeout: 4000 });
     await page.waitForTimeout(hits[i].href === '#start' ? 2500 : 900); // #start は遠いので smooth scroll が長い
@@ -69,7 +77,7 @@ async function run(label, viewport, dpr, mobile) {
     if (Math.abs(targetTop) < 140 || (hits[i].href === '#start' && targetTop > 0 && targetTop < vh)) moved++;
     else console.log(`   リンク${i + 1} → ${hits[i].href}: 遷移先の上端 ${targetTop}px`);
   }
-  check(`[${label}] 各ボタンをクリックすると遷移先まで動く（9/9）`, moved === 9, `${moved}/9`);
+  check(`[${label}] 各ボタンをクリックすると遷移先まで動く（10/10）`, moved === 10, `${moved}/10`);
 
   // 購入ボタン（クリックはしない）: href と順序（説明 → ボタン）
   const buy = await page.$$eval('#start a[data-checkout]', (as) => as.map((a) => ({ href: a.href.split('?')[0], plan: a.dataset.plan, ref: new URL(a.href).searchParams.get('client_reference_id') })));
@@ -135,7 +143,7 @@ await run('pc', { width: 1280, height: 800 }, 1, false);
   const loadMs = Date.now() - t0;
   await page.waitForTimeout(500);
   const lcp = await page.evaluate(() => Math.round(window.__lcp));
-  const first = await page.$eval('section.pg img', (e) => e.currentSrc.split('/').pop());
+  const first = await page.$eval('main img', (e) => e.currentSrc.split('/').pop());
   console.log(`   [速度 低速4G相当 1.6Mbps/150ms DPR3] load ${loadMs}ms / LCP ${lcp}ms / 初回転送 ${(bytes / 1024).toFixed(0)} KB / 1枚目 ${first}`);
   check('[速度] 低速4G相当でも LCP 4秒以内', lcp > 0 && lcp <= 4000, `${lcp}ms`);
   await ctx.close();
