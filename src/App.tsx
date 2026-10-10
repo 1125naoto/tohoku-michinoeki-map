@@ -1272,6 +1272,11 @@ export default function App() {
           onConfirm={() => {
             discardCurrentCourse();
             setPendingCourseAction(null);
+            // 「最初から」= コースの作り方の選択画面。地図の選択バーから呼ばれたときも、地図に取り残さず
+            // その画面へ戻す（「🚗 コースを作る」と同じ遷移。e2e/route-restart-shortcut.spec.ts CASE A）
+            setMapFullscreen(false);
+            fsHistoryRef.current = false;
+            setTab('route');
             showRouteActionMsg('最初から作り直します。訪問記録は残っています');
           }}
           onCancel={() => setPendingCourseAction(null)}

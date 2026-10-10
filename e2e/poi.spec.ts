@@ -751,7 +751,48 @@ test.describe('周辺スポット検索', () => {
     // 根本原因の再現: 旧ビルド(subcategoriesなし・ラーメン店がfood_other分類)が
     // localStorage('tohoku-me:poi-last-ok:v1')に保存した前回結果が、新ビルドでも
     // 静的キャッシュより優先され、Overpassが失敗すると「すべては出るがラーメンは0件」になっていた。
-    // 検証は実際の静的キャッシュ(mne-18900: ラーメン2件)を使う。
+    // 静的キャッシュは、このテストを書いた時点の実データ（public/data/poi/mne-18900.json @d69334c の
+    // OSM実データ3件。ラーメン2件・寿司1件）を固定して渡す。実ファイルは定期更新（周辺スポット事前キャッシュの
+    // 定期更新）で内容が変わり、2026-09-15のbackfillでこの駅は食べるの取得が不完全（foodIncomplete）になって
+    // ラーメン0件になったため、実ファイルに依存すると「旧分類より静的キャッシュの分類を優先する」という
+    // このテストの検証対象とは無関係な理由で落ちていた。
+    const realCacheAtD69334c = (id: number, name: string, sub: string, lat: number, lng: number, distanceM: number) => ({
+      id: `osm:node/${id}`,
+      category: 'food',
+      subcategory: sub,
+      subcategories: [sub],
+      name,
+      lat,
+      lng,
+      address: null,
+      openingHoursRaw: null,
+      phone: null,
+      website: null,
+      distanceM,
+      source: 'overpass',
+      sourceUrl: `https://www.openstreetmap.org/node/${id}`,
+    });
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          stationId: STATION_ID,
+          lat: 40.7168253,
+          lng: 141.1552503,
+          radiusM: 10000,
+          generatedAt: '2026-09-07T00:00:00Z',
+          status: 'ok',
+          foodIncomplete: false,
+          otherIncomplete: false,
+          pois: [
+            realCacheAtD69334c(7168765002, 'けいじ', 'ramen', 40.6502392, 141.1964244, 8178),
+            realCacheAtD69334c(7168788700, '想い出寿司', 'sushi', 40.7787779, 141.213199, 8443),
+            realCacheAtD69334c(7168764996, 'ラーメンの里 るんるん', 'ramen', 40.6434866, 141.1989224, 8948),
+          ],
+        }),
+      }),
+    );
     await page.addInitScript(() => {
       const key = '40.7168,141.1553:3000'; // しちのへ(40.7168253,141.1552503)・既定3km
       const oldPoi = (id: number, name: string) => ({
@@ -779,6 +820,9 @@ test.describe('周辺スポット検索', () => {
     await expect(page.getByTestId('station-sheet')).toBeVisible();
     await closeBanners(page);
     await page.getByTestId('btn-search-nearby').click();
+    // 静的キャッシュは要求範囲内に絞って返す（Astra監査P1）。固定した実データ3件は8〜9km先のため、
+    // 既定の3kmではなく10kmで検索する（キャッシュの生成範囲10km以内なので静的キャッシュから返る）。
+    await page.getByTestId('poi-radius-10000').click();
     await expect(page.getByTestId('poi-result-count')).toBeVisible({ timeout: 10000 });
 
     await page.getByTestId('poi-category-food').click();
@@ -786,7 +830,8 @@ test.describe('周辺スポット検索', () => {
     // 食べるカテゴリ全体の一覧行テキストで「静的キャッシュの正しい分類（ラーメン）」が
     // 使われていることを確認する（旧v1結果のfood_other分類が優先されていないこと）。
     await expect(page.getByTestId('poi-result-row')).toHaveCount(3, { timeout: 10000 });
-    await expect(page.getByTestId('poi-result-row')).toContainText(['けいじ', 'ラーメンの里 るんるん', '想い出寿司']);
+    // 一覧は近い順（けいじ 約8.2km → 想い出寿司 約8.4km → ラーメンの里 るんるん 約8.9km）
+    await expect(page.getByTestId('poi-result-row')).toContainText(['けいじ', '想い出寿司', 'ラーメンの里 るんるん']);
     const ramenRow = page.getByTestId('poi-result-row').filter({ hasText: 'ラーメンの里 るんるん' });
     await expect(ramenRow).toContainText('ラーメン'); // SUBCATEGORY_LABELとして表示される（food_otherのままではない）
     await expect(page.locator('.poi-marker')).toHaveCount(3);

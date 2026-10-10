@@ -37,6 +37,12 @@ const COORDS: Record<string, [number, number]> = {
 };
 
 async function closeBanners(page: Page) {
+  // ホーム画面追加バナーは地図（遅延読み込み）の初期化後に出る。goto直後に「出ていない」と判断すると、
+  // 後から出たバナーが地図中央の駅マーカーを覆い、通常モードで駅をタップするシナリオ6が必ず止まっていた。
+  // 地図の初期化（E2E専用フック __setMapView の定義）を待ってから閉じる。
+  await page.waitForFunction(() => typeof (window as unknown as { __setMapView?: unknown }).__setMapView === 'function', undefined, {
+    timeout: 20000,
+  });
   const banner = page.getByTestId('a2hs-banner');
   if (await banner.isVisible().catch(() => false)) await page.getByTestId('a2hs-close').click();
   const legend = page.getByTestId('legend-panel');
@@ -86,9 +92,13 @@ async function tapStation(page: Page, id: string) {
 async function avoidSelectBarOverlap(page: Page, id: string) {
   const hasPan = await page.evaluate(() => typeof (window as unknown as { __panMapBy?: unknown }).__panMapBy === 'function');
   if (!hasPan) return;
+  // 通常モード（選択モード外）には下部の選択バーが無い。boundingBox() は要素が現れるまで待ち続けるため、
+  // 無いときに呼ぶとテスト時間を使い切っていた（シナリオ6の最初のタップ）。無ければ避ける必要も無い。
+  const bar = page.getByTestId('route-select-bar');
+  if ((await bar.count()) === 0) return;
   for (let i = 0; i < 5; i++) {
     const markerBox = await page.locator(`[data-sid="${id}"]`).boundingBox();
-    const barBox = await page.getByTestId('route-select-bar').boundingBox().catch(() => null);
+    const barBox = await bar.boundingBox().catch(() => null);
     if (!markerBox || !barBox) return;
     const markerCenterY = markerBox.y + markerBox.height / 2;
     const overlap = markerCenterY + markerBox.height / 2 + 8 - barBox.y; // マーカー下端+余白がバー上端を超えている量

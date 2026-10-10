@@ -4,7 +4,14 @@ import { expect, test, type Page } from '@playwright/test';
  * 公式ホームページ＋販売LP（プレビュー: /official/）のE2E。ビルド済みdistを配信して検証する。
  * 公式ドメイン稼働用の出力（canonical/robots/sitemap）は単体テスト（src/officialSite/render.test.ts）で網羅。
  */
-const PAYMENT_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+// 料金・購入リンクは Stripe Live の実設定（2026-10-10 読み取りで確認）と照合する（config.ts から読み込まない）。
+const MONTHLY_LINK = 'https://buy.stripe.com/bJe00kbKNgYW6PQ95W7Zu09';
+const ANNUAL_LINK = 'https://buy.stripe.com/9B6fZi5mp9wu7TU4PG7Zu08';
+const LINK_BY_PLAN: Record<string, string> = { monthly: MONTHLY_LINK, annual: ANNUAL_LINK };
+// 旧・月額250円固定の購入リンク（Stripe Live で無効化済み）。購入リンクとして出してはいけない
+const OLD_FIXED_250_LINK = 'https://buy.stripe.com/bJe5kE3eheQO8XYaa07Zu00';
+const MONTHLY = 'a[data-checkout][data-plan="monthly"]';
+const ANNUAL = 'a[data-checkout][data-plan="annual"]';
 const PATH = '/official/';
 
 async function noHorizontalOverflow(page: Page) {
@@ -55,28 +62,35 @@ test.describe('公式HP＋販売LP（プレビュー） @smoke', () => {
     expect(wide).toEqual([]);
   });
 
-  test('購入CTAが3か所以上・すべて既存のStripe Payment Linkで、押せる大きさ', async ({ page }) => {
+  test('購入CTAが3か所以上・月額/年間それぞれ正しいStripe Payment Linkで、押せる大きさ', async ({ page }) => {
     await page.goto(PATH);
     const links = page.locator('a[data-checkout]');
     expect(await links.count()).toBeGreaterThanOrEqual(3);
-    const hrefs = await links.evaluateAll((els) => els.map((e) => (e as HTMLAnchorElement).href));
-    for (const h of hrefs) expect(h).toBe(PAYMENT_LINK);
+    const ctas = await links.evaluateAll((els) => els.map((e) => ({ href: (e as HTMLAnchorElement).href, plan: e.getAttribute('data-plan') ?? '' })));
+    for (const { href, plan } of ctas) expect(href).toBe(LINK_BY_PLAN[plan]);
+    expect(ctas.filter((c) => c.plan === 'monthly').length).toBeGreaterThanOrEqual(2);
+    expect(ctas.filter((c) => c.plan === 'annual').length).toBeGreaterThanOrEqual(1);
+    // 無効化済みの旧・250円固定の購入リンクは、どこにも出ない
+    expect(await page.content()).not.toContain(OLD_FIXED_250_LINK.replace('https://', ''));
     // インラインCTA（スティッキー以外）の高さは44px以上
     const heights = await page.locator('a[data-checkout]:not(.sticky-cta *)').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
     for (const h of heights) expect(h).toBeGreaterThanOrEqual(44);
-    await expect(page.locator('a[data-checkout]').first()).toHaveText('月額250円で始める');
+    await expect(page.locator(MONTHLY).first()).toHaveText('月額プランで始める（最初の2か月 250円/月）');
+    await expect(page.locator(ANNUAL).first()).toHaveText('年間プランで始める（4,980円/年）');
   });
 
   test('utm_* と ?s= が Stripe の client_reference_id に引き継がれる（Payment Link本体は不変）', async ({ page }) => {
     await page.goto(`${PATH}?utm_source=tiktok&utm_medium=video&utm_campaign=launch1`);
-    let href = await page.locator('a[data-checkout]').first().getAttribute('href');
-    expect(href).toBe(`${PAYMENT_LINK}?client_reference_id=tiktok_video_launch1`);
+    let href = await page.locator(MONTHLY).first().getAttribute('href');
+    expect(href).toBe(`${MONTHLY_LINK}?client_reference_id=tiktok_video_launch1`);
+    href = await page.locator(ANNUAL).first().getAttribute('href');
+    expect(href).toBe(`${ANNUAL_LINK}?client_reference_id=tiktok_video_launch1`);
     await page.goto(`${PATH}?s=l`);
-    href = await page.locator('a[data-checkout]').first().getAttribute('href');
-    expect(href).toBe(`${PAYMENT_LINK}?client_reference_id=line_lp`);
+    href = await page.locator(MONTHLY).first().getAttribute('href');
+    expect(href).toBe(`${MONTHLY_LINK}?client_reference_id=line_lp`);
     await page.goto(PATH);
-    href = await page.locator('a[data-checkout]').first().getAttribute('href');
-    expect(href).toBe(PAYMENT_LINK);
+    href = await page.locator(MONTHLY).first().getAttribute('href');
+    expect(href).toBe(MONTHLY_LINK);
   });
 
   test('LINE CTAは、友だち追加URLが確定するまで出ない（仮URLなし）', async ({ page }) => {
@@ -122,12 +136,14 @@ test.describe('公式HP＋販売LP（プレビュー） @smoke', () => {
     await page.goto(PATH);
     if ((page.viewportSize()?.width ?? 0) < 640) {
       await expect(page.locator('.sticky-cta a')).toBeVisible();
-      await page.locator('#start a[data-checkout]').scrollIntoViewIfNeeded();
+      // 最後の料金パネルには月額・年間の2つのCTAがある。月額のほうへスクロールする
+      await page.locator(`#start ${MONTHLY}`).scrollIntoViewIfNeeded();
       await expect(page.locator('.sticky-cta')).toBeHidden();
     } else {
       await expect(page.locator('.sticky-cta')).toBeHidden();
     }
-    await expect(page.locator('#start a[data-checkout]')).toBeVisible();
+    await expect(page.locator(`#start ${MONTHLY}`)).toBeVisible();
+    await expect(page.locator(`#start ${ANNUAL}`)).toBeVisible();
   });
 
   test('規約・特商法・プライバシー・お問い合わせ・解約ページへのリンクがある', async ({ page }) => {

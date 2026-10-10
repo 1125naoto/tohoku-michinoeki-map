@@ -1855,9 +1855,10 @@ test.describe('スマホUI', () => {
   test('スマホでは絞り込みが初期折りたたみで、選択内容の1行サマリーが出る', async ({ page }) => {
     await page.goto('/');
     await closeLegend(page);
-    // 初期は閉じており、サマリー1行表示（例: 絞り込み：すべて・すべて）
+    // 初期は閉じており、サマリー1行表示。県を選んでいないときは「全国」（220daf3 で「全国＋複数県選択」に
+    // 変更。src/lib/ui.test.ts の filterSummary 仕様「未選択(空配列)時は『全国・すべて』」と同じ）
     await expect(page.getByTestId('chip-all')).toBeHidden();
-    await expect(page.getByTestId('filters-toggle')).toContainText('絞り込み：すべて・すべて');
+    await expect(page.getByTestId('filters-toggle')).toContainText('絞り込み：全国・すべて');
     // 展開→操作→たたむ
     await page.getByTestId('filters-toggle').click();
     await expect(page.getByTestId('chip-all')).toBeVisible();
