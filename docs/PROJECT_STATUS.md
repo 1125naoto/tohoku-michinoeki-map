@@ -25,6 +25,11 @@
 - **購入者一覧の同期**（`.github/workflows/sync-subscriptions.yml` → `scripts/sync-subscriptions.mjs`）:
   - 1回の実行で約55分間・1分ごとに Stripe（読み取り専用キー `STRIPE_API_KEY`）を見て active.json を更新し、変更があれば `deploy.yml` を起動。終了前に自分自身を `workflow_dispatch` で再起動（cron `*/10` は途切れたとき用のウォッチドッグ。GitHubのcronは実測3〜7時間間隔でしか動かない）。
   - 各実行の最初に `scripts/check-intro-schedules.mjs` が、料金切替が未設定のまま3日を過ぎた月額契約を確認し、あれば GitHub Issue で通知（解消で自動クローズ）。
+- **期限つきの一時アクセス（検証専用）**（`scripts/timedGrants.mjs`、台帳 `data/access-control/timed-grants.json`）:
+  - 公開環境のゲート内側を、顧客・招待者の資格情報を使わず正規の認証で確認するための仕組み。台帳には **SHA-256 ハッシュだけ**を置く（コードの平文はどこにも保存しない）。
+  - 同期（1分ごと）が、期限内のものだけを `active.json` に加える。期限なし・形式不正・有効期間が 24 時間超・期限切れ・発行時刻が未来のものは無視する（恒久アクセスは作れない）。認証方式（ハッシュ照合）は変えない。
+  - Stripe の購入者・NAMI のハッシュには触れない。Stripe に接続できない同期でも、期限切れの一時アクセスだけは一覧から外す（除去のみ）。
+  - 使い終わったら台帳の該当行を削除する（期限が切れていれば同期が自動で外す）。テスト: `src/lib/timedGrants.test.ts`。
 - **月額プランの 250円→500円 切替**（`scripts/apply-intro-schedules.mjs`、判定は `scripts/introSchedulePlan.mjs`）:
   - 導入価格の契約に Stripe Subscription Schedule を設定（導入価格を残り月数 → 500円/月 → release）。冪等。
   - **実行場所は Owner のPC**: Windows タスク「MichinoekiNavi Billing Runner」（10分ごと）が `scripts/local-billing-runner/run-hidden.vbs` → `run.ps1` を実行し、このPCでログイン済みの Stripe CLI（プロファイル `michinoeki-live`）で設定する。ログ: `%LOCALAPPDATA%\MichinoekiNaviBillingRunner\runner.log`（秘密値なし）。

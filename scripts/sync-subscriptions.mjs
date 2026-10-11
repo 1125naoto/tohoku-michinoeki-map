@@ -22,12 +22,17 @@
  * ナミちゃんの無料アクセス: 環境変数 NAMI_ACCESS_CODE（GitHub Secrets）、または
  * ローカルのdata/access-control/manual-grants.local.json（gitignore済み、コミットしない）
  * に書かれた招待コードのハッシュを、常に「有効」として同じ配列に加える。
+ *
+ * 期限つきの一時アクセス（検証専用）: data/access-control/timed-grants.json（ハッシュだけ・コードの平文は
+ * どこにも保存しない）の、期限内のものだけを同じ配列に加える。期限切れ・期限なし・24時間超は無視する
+ * （判定は scripts/timedGrants.mjs）。Stripeの購入者・NAMIのハッシュには触れない。
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { composeActiveHashes, pruneExpiredTimedHashes, summarizeTimedGrants } from './timedGrants.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 // 購入に使われる（使われた）Payment Link。旧リンクの購入者も解約・失効まで有効なまま扱う
@@ -44,6 +49,7 @@ const PRICE_IDS = [
   'price_1ULkA7ICXxuNXmZybRGXYs1h', // 年間プラン 4,980円/年
 ];
 const MANUAL_GRANTS_PATH = join(ROOT, 'data/access-control/manual-grants.local.json');
+const TIMED_GRANTS_PATH = join(ROOT, 'data/access-control/timed-grants.json');
 const ACTIVE_JSON_PATH = join(ROOT, 'public/access-control/active.json');
 const IN_CI = process.env.GITHUB_ACTIONS === 'true';
 
@@ -138,28 +144,41 @@ function main() {
     sessionMap = fetchSessionToSubscriptionMap();
     activeIds = fetchActiveSubscriptionIds();
   } catch (err) {
-    console.error('[sync-subscriptions] Stripe取得に失敗。active.jsonは変更しません（fail-closed）:', err.message);
+    console.error('[sync-subscriptions] Stripe取得に失敗。active.jsonは再生成しません（fail-closed）:', err.message);
     process.exitCode = 1;
+    // 再生成はしないが、期限切れの一時アクセスだけは一覧から外す（除去のみ。Stripe・NAMIのハッシュには触れない）
+    const prev = loadJson(ACTIVE_JSON_PATH, []);
+    const pruned = pruneExpiredTimedHashes(prev, loadJson(TIMED_GRANTS_PATH, []), Date.now());
+    if (JSON.stringify(pruned) !== JSON.stringify(prev)) {
+      saveJsonPretty(ACTIVE_JSON_PATH, pruned);
+      console.log('[sync-subscriptions] 期限切れの一時アクセスを一覧から外します');
+      publishActiveJson();
+    }
     return;
   }
 
-  const hashes = new Set();
+  const stripeHashes = [];
   for (const [sessionId, subId] of Object.entries(sessionMap)) {
-    if (activeIds.has(subId)) hashes.add(sha256Hex(sessionId));
+    if (activeIds.has(subId)) stripeHashes.push(sha256Hex(sessionId));
   }
-  for (const secret of manualGrantSecrets()) hashes.add(sha256Hex(secret));
-
-  const nextActive = Array.from(hashes).sort();
+  const manualHashes = manualGrantSecrets().map(sha256Hex);
+  const timedGrants = loadJson(TIMED_GRANTS_PATH, []);
+  const timed = summarizeTimedGrants(timedGrants, Date.now());
+  const nextActive = composeActiveHashes({ stripeHashes, manualHashes, timedGrants, now: Date.now() });
   const prevActive = loadJson(ACTIVE_JSON_PATH, []);
   const changed = JSON.stringify(nextActive) !== JSON.stringify(prevActive);
   saveJsonPretty(ACTIVE_JSON_PATH, nextActive);
 
   console.log(
-    `[sync-subscriptions] sessions:${Object.keys(sessionMap).length} active subscriptions:${activeIds.size} manual grants:${manualGrantSecrets().length} -> active.json entries:${nextActive.length} (${changed ? '更新あり' : '変更なし'})`,
+    `[sync-subscriptions] sessions:${Object.keys(sessionMap).length} active subscriptions:${activeIds.size} manual grants:${manualHashes.length} timed grants active:${timed.active} (rejected:${JSON.stringify(timed.rejected)}) -> active.json entries:${nextActive.length} (${changed ? '更新あり' : '変更なし'})`,
   );
 
   if (!changed) return;
+  publishActiveJson();
+}
 
+/** active.json の変更を commit・push し、デプロイを起動する（CI/ローカル共通） */
+function publishActiveJson() {
   const gitUser = IN_CI ? ['github-actions[bot]', 'github-actions[bot]@users.noreply.github.com'] : null;
   if (gitUser) {
     execFileSync('git', ['config', 'user.name', gitUser[0]], { cwd: ROOT, stdio: 'inherit' });
