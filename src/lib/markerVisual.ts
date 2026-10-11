@@ -25,6 +25,17 @@ export const STATE_COLOR: Record<MarkerState, string> = {
   pre: '#8f959d', // 開業前: グレー
 };
 
+/** 正方形の角丸パス（影用。x,y=左上、size=一辺、r=角の半径） */
+const roundRectPath = (x: number, y: number, size: number, r: number) => {
+  const f = (n: number) => Number(n.toFixed(2));
+  const x2 = f(x + size);
+  const y2 = f(y + size);
+  return (
+    `M${f(x + r)} ${y}H${f(x2 - r)}A${r} ${r} 0 0 1 ${x2} ${f(y + r)}V${f(y2 - r)}` +
+    `A${r} ${r} 0 0 1 ${f(x2 - r)} ${y2}H${f(x + r)}A${r} ${r} 0 0 1 ${x} ${f(y2 - r)}V${f(y + r)}A${r} ${r} 0 0 1 ${f(x + r)} ${y}Z`
+  );
+};
+
 /**
  * 道の駅マーク（独自作成SVG）。
  * 公式シンボルマークは国土交通省の登録商標で利用申請が必要なため画像素材は使用せず、
@@ -40,11 +51,12 @@ export const STATE_COLOR: Record<MarkerState, string> = {
  */
 const signSvg = (color: string) =>
   '<svg viewBox="0 0 60 60" aria-hidden="true">' +
-  // 影（offset y≈1px・ぼかし≈3px相当を3段の半透明で近似）
+  // 影（offset y≈1px・ぼかし≈3px相当を3段の半透明で近似）。マーク本体の色は従来どおり
+  // 「svg直下の2番目のrect」で参照されるため、影はrectではなくpathで描く
   '<g class="rs-shadow" fill="#000">' +
-  '<rect x="-3" y="-1.4" width="66" height="66" rx="15" fill-opacity="0.07"/>' +
-  '<rect x="-1.6" y="0" width="63.2" height="63.2" rx="13.6" fill-opacity="0.11"/>' +
-  '<rect x="-0.6" y="1" width="61.2" height="61.2" rx="12.6" fill-opacity="0.17"/>' +
+  `<path d="${roundRectPath(-3, -1.4, 66, 15)}" fill-opacity="0.07"/>` +
+  `<path d="${roundRectPath(-1.6, 0, 63.2, 13.6)}" fill-opacity="0.11"/>` +
+  `<path d="${roundRectPath(-0.6, 1, 61.2, 12.6)}" fill-opacity="0.17"/>` +
   '</g>' +
   // 白い縁取り + 状態色の角丸正方形
   '<rect x="0" y="0" width="60" height="60" rx="12" fill="#ffffff"/>' +

@@ -106,5 +106,7 @@ describe('マーカーの影（全駅表示の描画負荷）', () => {
     expect(html).not.toMatch(/<filter|feGaussianBlur|feDropShadow/);
     // 影はマーク本体（白縁取り・状態色）より奥に描く
     expect(html.indexOf('rs-shadow')).toBeLessThan(html.indexOf('<rect x="0" y="0"'));
+    // E2Eはマーク本体の色を「svg直下の2番目のrect」で読むため、影にrectを使わない
+    expect(html.match(/<g class="rs-shadow"[^]*?<\/g>/)?.[0]).not.toContain('<rect');
   });
 });
