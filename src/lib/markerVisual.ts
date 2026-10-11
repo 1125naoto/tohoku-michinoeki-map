@@ -31,9 +31,21 @@ export const STATE_COLOR: Record<MarkerState, string> = {
  * 案内標識で一般的な意匠の特徴（角丸正方形・白い2本の木・丸窓と縦長入口のある
  * 白い家・下部の白い道路ライン）を独自に描画したベクターデータ。
  * 背景色は訪問状態で変わる（color引数）。外周に白い縁取りを持つ。
+ *
+ * 地図背景に埋もれないための影は、ぼかしフィルターではなく半透明の角丸四角を重ねた
+ * 静的な図形で描く（.rs-shadow。SVGはoverflow:visibleで外側にはみ出させる）。以前は
+ * CSSの filter: drop-shadow を全駅（約1,240個）のマーカーへ掛けていたが、WebKitでは
+ * 再描画のたびに要素ごとにぼかしを計算するため、全駅表示中は凡例やフィルターを1回
+ * タップするだけで1フレームが数秒〜十数秒止まることを実測した。
  */
 const signSvg = (color: string) =>
   '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+  // 影（offset y≈1px・ぼかし≈3px相当を3段の半透明で近似）
+  '<g class="rs-shadow" fill="#000">' +
+  '<rect x="-3" y="-1.4" width="66" height="66" rx="15" fill-opacity="0.07"/>' +
+  '<rect x="-1.6" y="0" width="63.2" height="63.2" rx="13.6" fill-opacity="0.11"/>' +
+  '<rect x="-0.6" y="1" width="61.2" height="61.2" rx="12.6" fill-opacity="0.17"/>' +
+  '</g>' +
   // 白い縁取り + 状態色の角丸正方形
   '<rect x="0" y="0" width="60" height="60" rx="12" fill="#ffffff"/>' +
   `<rect x="2.2" y="2.2" width="55.6" height="55.6" rx="10" fill="${color}"/>` +

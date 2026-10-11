@@ -472,13 +472,14 @@ a {
   display: block;
   width: 38px;
   height: 38px;
-  /* 白縁取りはSVG内で描画。影で地図背景に埋もれないようにする（過度に大きくしない） */
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+  /* 白縁取りと影はSVG内で描画（影で地図背景に埋もれないようにする。過度に大きくしない）。
+     filter: drop-shadow は全駅表示でWebKitの再描画が極端に遅くなるため使わない（markerVisual.ts） */
 }
 .rs-marker > svg {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 /* マーク本体は全状態で青白を維持し、状態は右上バッジのみで区別 */
 .rs-badge {
@@ -794,7 +795,9 @@ a {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
-  filter: none;
+}
+.legend-item .rs-shadow {
+  display: none;
 }
 .legend-item .cluster-pill {
   padding: 0 8px;

@@ -404,6 +404,10 @@ export default function App() {
           setPoiRequestStatus('ok');
           setPoiFromCache(true);
           setPoiRevalidating(true);
+          // 事前キャッシュ自体が一部カテゴリを取得できていない駅（foodIncomplete等）では、
+          // ライブ検索が失敗・確認中の間も「周辺に無い」と断定しないよう、その印を画面へ渡す
+          setPoiFoodIncomplete(staticResult.foodIncomplete);
+          setPoiOtherIncomplete(staticResult.otherIncomplete);
         }
       }
 

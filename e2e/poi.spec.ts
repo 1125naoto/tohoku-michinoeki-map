@@ -1067,6 +1067,59 @@ test.describe('周辺スポット検索', () => {
     await expect(rows.first()).toContainText('事前キャッシュ');
   });
 
+  test('事前生成キャッシュの「食べる」が取得不完全(foodIncomplete)のとき、Overpassも失敗したら「見つからない」と断定しない', async ({
+    page,
+  }) => {
+    // 2026-09-15のbackfillで1,236駅中67駅の事前キャッシュが foodIncomplete:true（食べるの取得失敗）のまま
+    // 配信されている。以前はこの印を画面へ渡しておらず、Overpassも失敗すると「食べる」で
+    // 「見つかりませんでした」と、取得できなかっただけのものを「周辺に無い」ように表示していた。
+    await page.route('**/api/interpreter', (route) => route.abort());
+    await page.route(`**/data/poi/${STATION_ID}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          stationId: STATION_ID,
+          lat: 40.718,
+          lng: 141.156,
+          radiusM: 10000,
+          generatedAt: '2026-09-14T08:42:26Z',
+          status: 'partial',
+          foodIncomplete: true,
+          otherIncomplete: false,
+          pois: [
+            {
+              id: 'osm:node/101',
+              category: 'onsen',
+              subcategory: 'higaeri_onsen',
+              name: '事前キャッシュ温泉',
+              lat: 40.72,
+              lng: 141.158,
+              address: null,
+              openingHoursRaw: null,
+              phone: null,
+              website: null,
+              distanceM: 300,
+              source: 'overpass',
+              sourceUrl: 'https://www.openstreetmap.org/node/101',
+            },
+          ],
+        }),
+      }),
+    );
+
+    await page.goto(`/#station=${STATION_ID}`);
+    await expect(page.getByTestId('station-sheet')).toBeVisible();
+    await closeBanners(page);
+    await page.getByTestId('btn-search-nearby').click();
+    await expect(page.getByTestId('poi-result-count')).toContainText('前回取得した周辺スポットを表示しています', {
+      timeout: 5000,
+    });
+    await page.getByTestId('poi-category-food').click();
+    await expect(page.getByTestId('poi-empty-incomplete')).toContainText('「食べる」の情報を取得できませんでした');
+    await expect(page.getByTestId('poi-empty')).not.toContainText('見つかりませんでした');
+  });
+
   test('事前生成キャッシュが無い駅（未生成）では通常どおりOverpass検索に進む', async ({ page }) => {
     // 静的キャッシュが404(未生成)の場合はnullとして扱われ、通常のOverpass検索フローに
     // 何の影響も与えないことを確認する（事前キャッシュが「無いと壊れる」設計になっていないこと）。

@@ -98,3 +98,13 @@ describe('凡例と地図マーカーの一致', () => {
     }
   });
 });
+
+describe('マーカーの影（全駅表示の描画負荷）', () => {
+  it('影はSVG内の静的な図形で描き、ぼかしフィルターを使わない', () => {
+    const html = markerHtml('none', 'mne-1');
+    expect(html).toContain('<g class="rs-shadow"');
+    expect(html).not.toMatch(/<filter|feGaussianBlur|feDropShadow/);
+    // 影はマーク本体（白縁取り・状態色）より奥に描く
+    expect(html.indexOf('rs-shadow')).toBeLessThan(html.indexOf('<rect x="0" y="0"'));
+  });
+});
